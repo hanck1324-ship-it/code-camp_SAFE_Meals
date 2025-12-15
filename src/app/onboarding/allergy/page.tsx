@@ -4,15 +4,22 @@ import { useRouter } from 'next/navigation';
 import { AllergyCategoryScreen } from '@/components/onboarding/allergy-category-screen';
 import { useState } from 'react';
 import { Language } from '@/lib/translations';
+import { useAppStore } from '@/commons/stores/useAppStore';
 
 export default function AllergyOnboardingPage() {
   const router = useRouter();
   const [language, setLanguage] = useState<Language>('en');
 
   const handleCategorySelect = (categories: string[]) => {
-    // In a real app, you'd persist these categories
-    console.log('Selected Allergy Categories:', categories);
-    router.push('/onboarding/diet');
+    // Store selected categories for next step
+    if (categories.length > 0) {
+      // Navigate to detail screen with categories
+      const params = new URLSearchParams({ categories: categories.join(',') });
+      router.push(`/onboarding/allergy-detail?${params}`);
+    } else {
+      // Skip to diet if no categories selected
+      router.push('/onboarding/diet');
+    }
   };
 
   const handleBack = () => {

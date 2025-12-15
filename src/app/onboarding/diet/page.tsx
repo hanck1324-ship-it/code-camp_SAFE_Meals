@@ -12,10 +12,18 @@ export default function DietOnboardingPage() {
   const { completeOnboarding } = useAppStore();
 
   const handleCategorySelect = (categories: string[]) => {
-    // In a real app, you'd persist these categories
+    // Store selected categories for next step
     console.log('Selected Diet Categories:', categories);
-    completeOnboarding();
-    router.replace('/dashboard');
+    
+    // If "noPreference" or no categories selected, skip to dashboard
+    if (categories.includes('noPreference') || categories.length === 0) {
+      completeOnboarding();
+      router.replace('/dashboard');
+    } else {
+      // Navigate to detail screen with categories
+      const params = new URLSearchParams({ categories: categories.join(',') });
+      router.push(`/onboarding/diet-detail?${params}`);
+    }
   };
 
   const handleBack = () => {
