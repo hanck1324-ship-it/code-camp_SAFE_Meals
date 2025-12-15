@@ -1,5 +1,5 @@
 import { Globe } from 'lucide-react';
-import { Language, languageNames } from '../lib/translations';
+import { Language, languageNames } from '@/lib/translations';
 
 interface LanguageSelectorProps {
   currentLanguage: Language;

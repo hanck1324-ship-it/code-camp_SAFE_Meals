@@ -1,10 +1,10 @@
 import { X, CheckCircle, AlertTriangle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { Language, translations } from '../lib/translations';
+import { Language, translations } from '@/lib/translations';
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { SafetyBadge, SafetyLevel } from './common/safety-badge';
-import { MenuListItem } from './common/menu-list-item';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Button } from '@/components/ui/button';
+import { SafetyBadge, SafetyLevel } from '@/components/common/safety-badge';
+import { MenuListItem } from '@/components/common/menu-list-item';
+import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 
 interface MenuItem {
   id: string;

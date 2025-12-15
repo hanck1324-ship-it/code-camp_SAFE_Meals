@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import logo from 'figma:asset/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
+const logo = '/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
 
 interface SplashScreenProps {
   onComplete: () => void;

@@ -1,6 +1,6 @@
 import { Camera, Shield, MapPin, Star, ChevronRight } from 'lucide-react';
-import { Button } from './ui/button';
-import { Language, translations } from '../lib/translations';
+import { Button } from '@/components/ui/button';
+import { Language, translations } from '@/lib/translations';
 import { LanguageSelector } from './language-selector';
 
 interface HomeScreenProps {

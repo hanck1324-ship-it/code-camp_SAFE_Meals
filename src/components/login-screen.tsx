@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Language, translations } from '../lib/translations';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Language, translations } from '@/lib/translations';
 import { LanguageSelector } from './language-selector';
-import logo from 'figma:asset/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
+const logo = '/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
 
 interface LoginScreenProps {
   onLogin: () => void;

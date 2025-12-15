@@ -37,6 +37,7 @@
           "input-otp": "^1.4.2",
           "lucide-react": "^0.487.0",
           "next-themes": "^0.4.6",
+          "next": "14.2.5",
           "react": "^18.3.1",
           "react-day-picker": "^8.10.1",
           "react-dom": "^18.3.1",
@@ -47,13 +48,21 @@
           "tailwind-merge": "*",
           "vaul": "^1.1.2"
       },
-      "devDependencies": {
-          "@types/node": "^20.10.0",
-          "@vitejs/plugin-react-swc": "^3.10.2",
-          "vite": "6.3.5"
-      },
-      "scripts": {
-          "dev": "vite",
-          "build": "vite build"
-      }
+  "devDependencies": {
+      "@types/node": "^20.10.0",
+      "@types/react": "^18.3.1",
+      "@types/react-dom": "^18.3.1",
+      "autoprefixer": "^10.4.16",
+      "eslint": "^8.57.0",
+      "eslint-config-next": "14.2.5",
+      "postcss": "^8.4.32",
+      "tailwindcss": "^3.4.1",
+      "typescript": "^5.3.3"
+  },
+  "scripts": {
+      "dev": "next dev",
+      "build": "next build",
+      "start": "next start",
+      "lint": "next lint"
+  }
   }

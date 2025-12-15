@@ -1,5 +1,5 @@
 import { X, CheckCircle, AlertTriangle, AlertCircle, ChevronLeft } from 'lucide-react';
-import { Language, translations } from '../lib/translations';
+import { Language, translations } from '@/lib/translations';
 import { LanguageSelector } from './language-selector';
 
 interface MenuItem {

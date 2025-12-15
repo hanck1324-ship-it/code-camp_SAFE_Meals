@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Lock, AlertTriangle, X } from 'lucide-react';
-import { Language, translations } from '../lib/translations';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
+import { Language, translations } from '@/lib/translations';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface SafetyCommunicationCardProps {
   userProfile: {

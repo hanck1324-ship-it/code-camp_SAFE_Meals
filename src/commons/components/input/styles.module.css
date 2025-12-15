@@ -1,0 +1,8 @@
+.wrapper {
+  @apply flex flex-col gap-1;
+}
+
+.error {
+  @apply text-xs text-red-500;
+}
+

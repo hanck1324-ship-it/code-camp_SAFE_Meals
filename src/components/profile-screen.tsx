@@ -1,6 +1,6 @@
 import { Shield, Lock, Bell, Globe, HelpCircle, LogOut, ChevronRight } from 'lucide-react';
-import { Button } from './ui/button';
-import { Language, translations, languageNames } from '../lib/translations';
+import { Button } from '@/components/ui/button';
+import { Language, translations, languageNames } from '@/lib/translations';
 import { LanguageSelector } from './language-selector';
 
 interface ProfileScreenProps {

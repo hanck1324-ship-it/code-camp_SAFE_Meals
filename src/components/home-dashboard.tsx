@@ -1,7 +1,7 @@
 import { Star, MapPin, Clock } from 'lucide-react';
-import { Language, translations } from '../lib/translations';
+import { Language, translations } from '@/lib/translations';
 import { LanguageSelector } from './language-selector';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 
 interface HomeDashboardProps {
   onScanMenu: () => void;

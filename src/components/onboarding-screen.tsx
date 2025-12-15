@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Check, Shell, Beef, Milk, Wheat, Egg, Leaf, Moon, Plus, X, Droplet, Apple, Sprout } from 'lucide-react';
-import { Button } from './ui/button';
-import { Language, translations } from '../lib/translations';
+import { Button } from '@/components/ui/button';
+import { Language, translations } from '@/lib/translations';
 import { LanguageSelector } from './language-selector';
-import { Input } from './ui/input';
-import { AllergyCard } from './common/allergy-card';
+import { Input } from '@/components/ui/input';
+import { AllergyCard } from '@/components/common/allergy-card';
 
 interface OnboardingScreenProps {
   onComplete: (allergies: string[], diets: string[]) => void;
@@ -128,7 +128,7 @@ export function OnboardingScreen({ onComplete, language, onLanguageChange }: Onb
                     variant="outline"
                     className="flex-1 h-8 text-xs"
                   >
-                    {t.cancel}
+                    {t.back}
                   </Button>
                 </div>
               </div>
