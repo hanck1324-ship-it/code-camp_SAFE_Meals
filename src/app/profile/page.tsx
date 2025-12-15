@@ -1,29 +1,27 @@
-"use client";
-import { ProfileScreen } from "@/components/profile-screen";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/app/_providers/auth-provider";
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Button } from '@/commons/components/button';
+import { useAppStore } from '@/commons/stores/useAppStore';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { user, logout } = useAppStore();
+
+  if (!user) {
+    router.replace('/auth/login?redirect=/profile');
+    return null;
+  }
 
   return (
-    <ProfileScreen
-      userProfile={{ allergies: [], diets: [] }}
-      onNavigate={(screen) => {
-        if (screen === 'notifications') router.push('/settings/notifications');
-        else if (screen === 'languageSettings') router.push('/settings/language');
-        else if (screen === 'help') router.push('/settings/help');
-        else if (screen === 'safetyCard') router.push('/safety-card');
-        else if (screen === 'safetyProfileEdit') router.push('/profile/edit');
-      }}
-      language="ko"
-      onLanguageChange={() => {}}
-      onLogout={() => {
-        logout();
-        router.push('/auth/login');
-      }}
-    />
+    <div className="min-h-screen flex flex-col items-center p-4">
+      <h2 className="text-xl font-semibold mt-6 mb-4">My Page</h2>
+      <p className="mb-8">Logged in as <span className="font-medium">{user.email}</span></p>
+      <div className="w-full max-w-xs space-y-3">
+        <Button className="w-full" onClick={() => router.push('/profile/settings')}>Settings</Button>
+        <Button className="w-full" onClick={() => router.push('/profile/help')}>Help & Support</Button>
+        <Button className="w-full bg-red-500 hover:bg-red-600 text-white" onClick={() => { logout(); router.replace('/auth/login'); }}>Logout</Button>
+      </div>
+    </div>
   );
 }
-
