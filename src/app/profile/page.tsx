@@ -1,27 +1,54 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Button } from '@/commons/components/button';
 import { useAppStore } from '@/commons/stores/useAppStore';
+import { ProfileScreen } from '@/components/profile-screen';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout } = useAppStore();
+  const { user, logout, language, setLanguage } = useAppStore();
 
+  // Redirect unauthenticated users to login
   if (!user) {
     router.replace('/auth/login?redirect=/profile');
     return null;
   }
 
+  // Temporary sample data – in real app fetch from API / DB
+  const userProfile = {
+    allergies: ['egg'],
+    diets: ['garlicOnionFree'],
+  };
+
+  const handleNavigate = (screen: 'safetyProfileEdit' | 'notifications' | 'languageSettings' | 'help' | 'safetyCard') => {
+    switch (screen) {
+      case 'safetyProfileEdit':
+        router.push('/profile/settings');
+        break;
+      case 'notifications':
+        router.push('/settings/notifications');
+        break;
+      case 'languageSettings':
+        router.push('/settings/language');
+        break;
+      case 'help':
+        router.push('/settings/help');
+        break;
+      case 'safetyCard':
+        router.push('/profile/safety-card');
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center p-4">
-      <h2 className="text-xl font-semibold mt-6 mb-4">My Page</h2>
-      <p className="mb-8">Logged in as <span className="font-medium">{user.email}</span></p>
-      <div className="w-full max-w-xs space-y-3">
-        <Button className="w-full" onClick={() => router.push('/profile/settings')}>Settings</Button>
-        <Button className="w-full" onClick={() => router.push('/profile/help')}>Help & Support</Button>
-        <Button className="w-full bg-red-500 hover:bg-red-600 text-white" onClick={() => { logout(); router.replace('/auth/login'); }}>Logout</Button>
-      </div>
-    </div>
+    <ProfileScreen
+      userProfile={userProfile}
+      onNavigate={handleNavigate}
+      language={language as any}
+      onLanguageChange={(lang) => setLanguage(lang as any) }
+      onLogout={logout}
+    />
   );
 }
