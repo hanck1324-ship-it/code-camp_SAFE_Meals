@@ -1,39 +1,36 @@
-'use client';
-
 import { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/commons/components/button';
-import { Input } from '@/commons/components/input';
-import { Language, translations } from '@/lib/translations';
-import Image from 'next/image';
-import logo from '@/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
-import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/commons/stores/useAppStore';
-import { LanguageSelector } from '@/components/language-selector';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Language, translations } from '../lib/translations';
+import { LanguageSelector } from './language-selector';
+import logo from 'figma:asset/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
 
-interface Props {
-  searchParams?: { redirect?: string };
+interface LoginScreenProps {
+  onLogin: () => void;
+  onSocialLogin: () => void;
+  language: Language;
+  onLanguageChange: (language: Language) => void;
 }
 
-export default function LoginPage({ searchParams }: Props) {
+export function LoginScreen({ onLogin, onSocialLogin, language, onLanguageChange }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [language, setLanguage] = useState<Language>('en');
+  const t = translations[language];
 
-  const loginText: Record<Language, {
-    title: string;
-    subtitle: string;
-    email: string;
-    password: string;
-    login: string;
-    or: string;
-    signup: string;
-    forgot: string;
-    continueWithGoogle: string;
-    continueWithApple: string;
-    continueWithFacebook: string;
-  }> = {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real app, this would validate credentials
+    onLogin();
+  };
+
+  const handleSocialLogin = (provider: string) => {
+    // In a real app, this would handle OAuth flow
+    onSocialLogin();
+  };
+
+  const loginText = {
     ko: {
       title: 'SafeMeals에 로그인',
       subtitle: '안전한 식사를 시작하세요',
@@ -99,38 +96,27 @@ export default function LoginPage({ searchParams }: Props) {
       continueWithApple: 'Continuar con Apple',
       continueWithFacebook: 'Continuar con Facebook',
     },
-  } as const;
+  };
 
   const currentText = loginText[language];
 
-  const router = useRouter();
-
-  const handleSocialLogin = (provider: string) => {
-    // TODO: OAuth flow
-    alert(`${provider} login is not implemented yet.`);
-  };
-  const login = useAppStore((s) => s.login);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // simple mock auth
-    login({ email });
-    const redirect = searchParams?.redirect || '/dashboard';
-    router.replace(redirect);
-  };
-
   return (
-    <div className="min-h-screen bg-white flex flex-col p-6 pb-28">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex flex-col p-6">
+      {/* Language Selector */}
       <div className="flex justify-end mb-4">
-        <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
+        <LanguageSelector currentLanguage={language} onLanguageChange={onLanguageChange} />
       </div>
+
       <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+        {/* Logo */}
         <div className="flex flex-col items-center mb-12">
-            <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
-              <Image src={logo} alt="SafeMeals Logo" width={128} height={128} className="object-contain" />
-            </div>
+          <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
+            <img src={logo} alt="SafeMeals Logo" className="w-32 h-32 object-contain" />
+          </div>
           <p className="text-muted-foreground text-center">{currentText.subtitle}</p>
         </div>
+
+        {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm mb-2">{currentText.email}</label>
@@ -146,6 +132,7 @@ export default function LoginPage({ searchParams }: Props) {
               />
             </div>
           </div>
+
           <div>
             <label className="block text-sm mb-2">{currentText.password}</label>
             <div className="relative">
@@ -163,23 +150,28 @@ export default function LoginPage({ searchParams }: Props) {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
               </button>
             </div>
           </div>
-          <Button
-            type="submit"
-            className="w-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] hover:from-[#27AE60] hover:to-[#229954] text-white h-12 rounded-full shadow-lg shadow-[#2ECC71]/30"
-          >
-            {currentText.login}
-          </Button>
-        
+
           <button
             type="button"
             className="text-sm text-[#2ECC71] hover:underline"
           >
             {currentText.forgot}
           </button>
+
+          <Button
+            type="submit"
+            className="w-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] hover:from-[#27AE60] hover:to-[#229954] text-white h-12 rounded-full shadow-lg shadow-[#2ECC71]/30"
+          >
+            {currentText.login}
+          </Button>
         </form>
 
         {/* Divider */}
@@ -191,24 +183,27 @@ export default function LoginPage({ searchParams }: Props) {
 
         {/* Social Login Buttons */}
         <div className="space-y-3">
-          <button
+          <Button
             onClick={() => handleSocialLogin('google')}
+            variant="outline"
             className="w-full h-12 rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
           >
             {currentText.continueWithGoogle}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleSocialLogin('apple')}
+            variant="outline"
             className="w-full h-12 rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
           >
             {currentText.continueWithApple}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleSocialLogin('facebook')}
+            variant="outline"
             className="w-full h-12 rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
           >
             {currentText.continueWithFacebook}
-          </button>
+          </Button>
         </div>
 
         {/* Sign Up Link */}
