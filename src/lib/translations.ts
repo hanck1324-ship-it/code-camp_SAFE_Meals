@@ -37,6 +37,8 @@ export const translations = {
     fruitsVeggiesDesc: '특정 과일 알레르기',
     additives: '첨가물',
     additivesDesc: '아황산염, MSG 등',
+    etc: '기타',
+    etcDesc: '직접 검색',
     // Allergy Detail
     selectSpecificAllergies: '세부 항목을 선택해주세요',
     allergyDetailDesc: '선택한 카테고리의 구체적인 알레르기를 선택하세요',
@@ -301,6 +303,8 @@ export const translations = {
     fruitsVeggiesDesc: 'Specific fruit allergies',
     additives: 'Additives',
     additivesDesc: 'Sulfites, MSG, etc.',
+    etc: 'Other',
+    etcDesc: 'Search directly',
     // Allergy Detail
     selectSpecificAllergies: 'Select specific items',
     allergyDetailDesc: 'Choose specific allergies from your selected categories',
@@ -565,6 +569,8 @@ export const translations = {
     fruitsVeggiesDesc: '特定の果物アレルギー',
     additives: '添加物',
     additivesDesc: '硫黄酸塩、MSGなど',
+    etc: 'その他',
+    etcDesc: '直接検索',
     // Allergy Detail
     selectSpecificAllergies: '特定の項目を選択してください',
     allergyDetailDesc: '選択したカテゴリの具体的なアレルギーを選択してください',
@@ -829,6 +835,8 @@ export const translations = {
     fruitsVeggiesDesc: '特定水果过敏',
     additives: '添加剂',
     additivesDesc: '亚硫酸盐、味精等',
+    etc: '其他',
+    etcDesc: '直接搜索',
     // Allergy Detail
     selectSpecificAllergies: '选择具体项目',
     allergyDetailDesc: '从您选择的类别中选择具体过敏源',
@@ -1093,6 +1101,8 @@ export const translations = {
     fruitsVeggiesDesc: 'Alergias a frutas específicas',
     additives: 'Aditivos',
     additivesDesc: 'Sulfitos, MSG, etc.',
+    etc: 'Otro',
+    etcDesc: 'Buscar directamente',
     // Allergy Detail
     selectSpecificAllergies: 'Selecciona elementos específicos',
     allergyDetailDesc: 'Elige alergias específicas de tus categorías seleccionadas',
