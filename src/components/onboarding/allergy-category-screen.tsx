@@ -6,6 +6,7 @@ import { Language, translations } from '../../lib/translations';
 interface AllergyCategoryScreenProps {
   onCategorySelect: (categories: string[]) => void;
   onBack: () => void;
+  onEtcClick: () => void;
   language: Language;
   onLanguageChange: (language: Language) => void;
 }
@@ -17,7 +18,7 @@ interface CategoryOption {
   description: string;
 }
 
-export function AllergyCategoryScreen({ onCategorySelect, onBack, language, onLanguageChange }: AllergyCategoryScreenProps) {
+export function AllergyCategoryScreen({ onCategorySelect, onBack, onEtcClick, language, onLanguageChange }: AllergyCategoryScreenProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const t = translations[language];
 
@@ -92,6 +93,24 @@ export function AllergyCategoryScreen({ onCategorySelect, onBack, language, onLa
               </div>
             </button>
           ))}
+          
+          {/* ETC Card - Search */}
+          <button
+            onClick={onEtcClick}
+            className="relative p-6 rounded-2xl border-2 border-gray-300 border-dashed bg-gradient-to-br from-gray-50 to-white hover:border-[#2ECC71] hover:bg-[#2ECC71]/5 transition-all"
+          >
+            <div className="flex flex-col items-center text-center gap-3">
+              <span className="text-5xl">🔍</span>
+              <div>
+                <div className="text-sm mb-1 text-gray-900">
+                  {t.etc}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {t.etcDesc}
+                </div>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
