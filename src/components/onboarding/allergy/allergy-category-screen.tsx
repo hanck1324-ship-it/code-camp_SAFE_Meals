@@ -57,7 +57,7 @@ export function AllergyCategoryScreen({ onCategorySelect, onBack, onEtcClick, la
       </div>
 
       {/* Category Grid */}
-      <div className="flex-1 px-6 pb-6 overflow-y-auto">
+      <div className="px-6 pb-4 overflow-y-auto">
         <div className="grid grid-cols-2 gap-4">
           {categories.map((category) => (
             <button
@@ -115,7 +115,7 @@ export function AllergyCategoryScreen({ onCategorySelect, onBack, onEtcClick, la
       </div>
 
       {/* Bottom Button */}
-      <div className="p-6 border-t border-gray-100">
+      <div className="px-6 pt-[19px] pb-6 border-t border-gray-100">
         <Button
           onClick={() => onCategorySelect(selectedCategories)}
           disabled={selectedCategories.length === 0}

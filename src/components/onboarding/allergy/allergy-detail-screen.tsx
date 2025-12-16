@@ -117,7 +117,7 @@ export function AllergyDetailScreen({ categories, onAllergySelect, onBack, langu
       </div>
 
       {/* Allergy List */}
-      <div className="flex-1 px-6 pb-6 overflow-y-auto">
+      <div className="px-6 pb-4 overflow-y-auto">
         <div className="space-y-6">
           {groupedOptions.map(({ category, options }) => (
             <div key={category}>
@@ -152,7 +152,7 @@ export function AllergyDetailScreen({ categories, onAllergySelect, onBack, langu
       </div>
 
       {/* Bottom Button */}
-      <div className="p-6 border-t border-gray-100">
+      <div className="px-6 pt-[19px] pb-6 border-t border-gray-100">
         <Button
           onClick={() => onAllergySelect(selectedAllergies)}
           disabled={selectedAllergies.length === 0}

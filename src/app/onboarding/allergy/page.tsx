@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { AllergyCategoryScreen } from '@/components/onboarding/allergy-category-screen';
+import { AllergyCategoryScreen } from '@/components/onboarding/allergy/allergy-category-screen';
 import { useState } from 'react';
 import { Language } from '@/lib/translations';
 import { useAppStore } from '@/commons/stores/useAppStore';

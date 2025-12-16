@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AllergyDetailScreen } from '@/components/onboarding/allergy-detail-screen';
+import { AllergyDetailScreen } from '@/components/onboarding/allergy/allergy-detail-screen';
 import { useState, Suspense } from 'react';
 import { Language } from '@/lib/translations';
 
