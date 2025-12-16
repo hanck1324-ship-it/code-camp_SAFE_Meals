@@ -2,6 +2,8 @@
 
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/_providers/auth-provider';
+import { supabase } from '@/lib/supabase-browser';
 
 interface SignupForm {
   email: string;
@@ -13,7 +15,8 @@ interface SignupForm {
 }
 
 export function useAuthSignupForm() {
-  const router = useRouter();
+    const router = useRouter();
+  const { signup } = useAuth();
 
   const {
     control,
@@ -25,14 +28,35 @@ export function useAuthSignupForm() {
       email: '',
       password: '',
       passwordConfirm: '',
-      language: '',
+            language: 'ko',
       phone: '',
       name: '',
     },
   });
 
-  const onSubmit = handleSubmit((data) => {
-    console.log('signup', data);
+  const onSubmit = handleSubmit(async (data) => {
+    // Supabase Auth 회원가입 (v1: { user, error } 반환)
+    const { user, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (error || !user) {
+      alert(error?.message ?? 'signup error');
+      return;
+    }
+
+    // signup 테이블에 프로필 정보 저장
+    await supabase.from('signup').insert({
+      id: user.id,
+      real_name: data.name,
+      phone: data.phone,
+      language: data.language,
+    });
+
+    // AuthContext 에도 사용자 상태 반영
+    await signup(data.email, data.password);
+
     router.replace('/onboarding/allergy');
   });
 
