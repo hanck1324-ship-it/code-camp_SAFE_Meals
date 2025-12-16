@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/commons/components/button';
 import { Input } from '@/commons/components/input';
@@ -17,10 +17,20 @@ interface Props {
 }
 
 export default function LoginPage({ searchParams }: Props) {
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { language } = useTranslation();
+
+  // 이미 로그인되어 있으면 redirect 파라미터 또는 /dashboard 로 이동
+  const router = useRouter();
+  useEffect(() => {
+    if (user) {
+      const to = searchParams?.redirect || '/dashboard';
+      router.replace(to);
+    }
+  }, [user, router, searchParams]);
 
   const loginText: Record<Language, {
     title: string;
@@ -103,8 +113,6 @@ export default function LoginPage({ searchParams }: Props) {
   } as const;
 
   const currentText = loginText[language];
-
-  const router = useRouter();
 
   const handleSocialLogin = (provider: string) => {
     // TODO: OAuth flow
