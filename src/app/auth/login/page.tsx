@@ -214,7 +214,11 @@ export default function LoginPage({ searchParams }: Props) {
         {/* Sign Up Link */}
         <p className="text-center mt-6 text-sm text-muted-foreground">
           {currentText.signup === 'Sign Up' ? "Don't have an account? " : '계정이 없으신가요? '}
-          <button className="text-[#2ECC71] hover:underline">
+          <button
+            type="button"
+            onClick={() => router.push('/auth/signup')}
+            className="text-[#2ECC71] hover:underline"
+          >
             {currentText.signup}
           </button>
         </p>
