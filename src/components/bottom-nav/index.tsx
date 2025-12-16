@@ -20,6 +20,7 @@ export function BottomNav({ activeTab, onTabChange, language = 'ko' }: BottomNav
     if (activeTab) return activeTab;
     if (pathname === '/dashboard' || pathname === '/') return 'home' as const;
     if (pathname === '/scan') return 'scan' as const;
+    if (pathname === '/profile/safety-card') return 'safetyCard' as const;
     if (pathname?.includes('/profile')) return 'myPage' as const;
     return 'home' as const;
   }, [pathname, activeTab]);
@@ -31,8 +32,8 @@ export function BottomNav({ activeTab, onTabChange, language = 'ko' }: BottomNav
       // 기본 라우팅 동작
       if (tab === 'home') router.push('/dashboard');
       else if (tab === 'scan') router.push('/scan');
+      else if (tab === 'safetyCard') router.push('/profile/safety-card');
       else if (tab === 'myPage') router.push('/profile');
-      // safetyCard는 나중에 구현
     }
   };
 

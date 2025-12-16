@@ -2,13 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { DietCategoryScreen } from '@/components/onboarding/diet/ category/diet-category-screen';
-import { useState } from 'react';
-import { Language } from '@/lib/translations';
 import { useAppStore } from '@/commons/stores/useAppStore';
+import { useLanguageStore } from '@/commons/stores/useLanguageStore';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function DietOnboardingPage() {
   const router = useRouter();
-  const [language, setLanguage] = useState<Language>('en');
+  const language = useLanguageStore((state) => state.language);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const { completeOnboarding } = useAppStore();
 
   const handleCategorySelect = (categories: string[]) => {
@@ -31,12 +32,14 @@ export default function DietOnboardingPage() {
   };
 
   return (
-    <DietCategoryScreen
-      onCategorySelect={handleCategorySelect}
-      onBack={handleBack}
-      language={language}
-      onLanguageChange={setLanguage}
-    />
+    <RequireAuth>
+      <DietCategoryScreen
+        onCategorySelect={handleCategorySelect}
+        onBack={handleBack}
+        language={language}
+        onLanguageChange={setLanguage}
+      />
+    </RequireAuth>
   );
 }
 

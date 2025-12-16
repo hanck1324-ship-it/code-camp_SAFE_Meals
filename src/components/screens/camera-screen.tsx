@@ -1,9 +1,10 @@
+'use client';
+
 import { Camera, X, Zap } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Language } from '../../lib/translations';
+import { Language } from '@/lib/translations';
 
 interface CameraScreenProps {
-  onCapture: () => void;
+  onCapture?: () => void;
   onClose: () => void;
   language: Language;
   onCapturePhoto: () => void;

@@ -1,24 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { ProfileScreen } from '@/components/profile';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout } = useAppStore();
-
-  // Redirect unauthenticated users to login
-  useEffect(() => {
-    if (!user) {
-      router.replace('/auth/login?redirect=/profile');
-    }
-  }, [user, router]);
-
-  if (!user) {
-    return null;
-  }
+  const { logout } = useAppStore();
 
   // Temporary sample data – in real app fetch from API / DB
   const userProfile = {
@@ -55,10 +44,12 @@ export default function ProfilePage() {
   };
 
   return (
-    <ProfileScreen
-      userProfile={userProfile}
-      onNavigate={handleNavigate}
-      onLogout={handleLogout}
-    />
+    <RequireAuth>
+      <ProfileScreen
+        userProfile={userProfile}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+      />
+    </RequireAuth>
   );
 }
