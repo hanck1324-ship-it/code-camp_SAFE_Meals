@@ -1,23 +1,29 @@
 import { Shield, Lock, Bell, Globe, HelpCircle, LogOut, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language, translations, languageNames } from '@/lib/translations';
-import { LanguageSelector } from './language-selector';
+import { LanguageSelector } from '../language-selector';
 
 interface ProfileScreenProps {
   userProfile: {
     allergies: string[];
     diets: string[];
   };
-  onNavigate: (screen: 'safetyProfileEdit' | 'notifications' | 'languageSettings' | 'help' | 'safetyCard') => void;
+  onNavigate: (
+    screen:
+      | 'safetyProfileEdit'
+      | 'notifications'
+      | 'languageSettings'
+      | 'help'
+      | 'safetyCard',
+  ) => void;
   language: Language;
   onLanguageChange: (language: Language) => void;
   onLogout: () => void;
 }
 
 export function ProfileScreen({ userProfile, onNavigate, language, onLanguageChange, onLogout }: ProfileScreenProps) {
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
 
-  // Get sample badges (first 3 items)
   const sampleAllergies = userProfile.allergies.slice(0, 2);
   const sampleDiets = userProfile.diets.slice(0, 2);
   const sampleBadges = [...sampleAllergies, ...sampleDiets].slice(0, 4);
@@ -29,12 +35,7 @@ export function ProfileScreen({ userProfile, onNavigate, language, onLanguageCha
       subtitle: t.editAllergiesDiets || 'Edit allergies & dietary preferences',
       action: () => onNavigate('safetyProfileEdit'),
     },
-    {
-      icon: Bell,
-      label: t.notifications,
-      subtitle: t.enabled,
-      action: () => onNavigate('notifications'),
-    },
+    { icon: Bell, label: t.notifications, subtitle: t.enabled, action: () => onNavigate('notifications') },
     {
       icon: Globe,
       label: t.language,
@@ -51,7 +52,7 @@ export function ProfileScreen({ userProfile, onNavigate, language, onLanguageCha
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header - NO BACK BUTTON (Root Tab) */}
+      {/* Header */}
       <div className="px-6 pt-8 pb-4 bg-white">
         <div className="flex items-center justify-between">
           <h1>{t.myProfile}</h1>
@@ -59,17 +60,15 @@ export function ProfileScreen({ userProfile, onNavigate, language, onLanguageCha
         </div>
       </div>
 
-      {/* Safety Profile Summary Card */}
+      {/* Safety Profile Summary */}
       <div className="px-6 py-6">
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-          {/* Icon */}
           <div className="flex justify-center mb-4">
             <div className="w-20 h-20 bg-gradient-to-br from-[#2ECC71] to-[#27AE60] rounded-full flex items-center justify-center shadow-lg shadow-[#2ECC71]/20">
               <Shield className="w-10 h-10 text-white" />
             </div>
           </div>
 
-          {/* Title & Subtitle */}
           <div className="text-center mb-4">
             <h2 className="mb-1">{t.safetyProfile}</h2>
             <p className="text-sm text-muted-foreground">
@@ -77,21 +76,16 @@ export function ProfileScreen({ userProfile, onNavigate, language, onLanguageCha
             </p>
           </div>
 
-          {/* Sample Badges */}
           {sampleBadges.length > 0 && (
             <div className="flex flex-wrap gap-2 justify-center mb-6">
               {sampleBadges.map((badge, index) => (
-                <div
-                  key={index}
-                  className="px-3 py-1.5 bg-[#2ECC71]/10 text-[#2ECC71] rounded-full text-sm"
-                >
+                <div key={index} className="px-3 py-1.5 bg-[#2ECC71]/10 text-[#2ECC71] rounded-full text-sm">
                   {badge}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Primary Action Button */}
           <Button
             onClick={() => onNavigate('safetyCard')}
             className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#2ECC71] to-[#27AE60] hover:from-[#27AE60] hover:to-[#229954] text-white shadow-lg shadow-[#2ECC71]/30"
@@ -127,7 +121,7 @@ export function ProfileScreen({ userProfile, onNavigate, language, onLanguageCha
         </div>
       </div>
 
-      {/* Logout Button */}
+      {/* Logout */}
       <div className="px-6 mt-6">
         <Button
           onClick={onLogout}
@@ -139,10 +133,7 @@ export function ProfileScreen({ userProfile, onNavigate, language, onLanguageCha
         </Button>
       </div>
 
-      {/* App Version */}
-      <div className="text-center mt-4 text-sm text-muted-foreground">
-        Version 1.0.0
-      </div>
+      <div className="text-center mt-4 text-sm text-muted-foreground">Version 1.0.0</div>
     </div>
   );
 }

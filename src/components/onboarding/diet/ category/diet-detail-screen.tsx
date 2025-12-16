@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Check } from 'lucide-react';
-import { Button } from '../../ui/button';
-import { Language, translations } from '../../../lib/translations';
+import { Button } from '@/components/ui/button';
+import { Language, translations } from '@/lib/translations';
 
 interface DietDetailScreenProps {
   categories: string[];

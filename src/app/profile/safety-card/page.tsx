@@ -10,7 +10,7 @@ import { translations } from "@/lib/translations";
 export default function SafetyCardPage() {
   const router = useRouter();
   const { language } = useAppStore();
-  const t = translations[language];
+  const t = translations[language] || translations['en'];
 
   const [pin, setPin] = useState("");
   const [unlocked, setUnlocked] = useState(false);
@@ -82,7 +82,7 @@ export default function SafetyCardPage() {
         <button onClick={() => router.back()} className="p-2 mr-2">
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-lg font-medium">{t.enterSecurityPin}</h1>
+        <h1 className="text-lg font-medium">{t.enterSecurityPin ?? 'Enter PIN'}</h1>
       </div>
 
       {/* Icon */}

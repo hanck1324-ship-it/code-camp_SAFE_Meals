@@ -80,16 +80,14 @@ export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProp
 
           {/* Alert Box */}
           {item.warningKey && (
-            <div 
+            <div
               className="p-4 rounded-xl border-2 flex gap-3"
-              style={{ 
+              style={{
                 backgroundColor: `${getStatusColor()}10`,
-                borderColor: getStatusColor()
+                borderColor: getStatusColor(),
               }}
             >
-              <div className="flex-shrink-0 mt-0.5">
-                {getStatusIcon()}
-              </div>
+              <div className="flex-shrink-0 mt-0.5">{getStatusIcon()}</div>
               <div>
                 <h4 className="mb-1" style={{ color: getStatusColor() }}>
                   {t.warning}
@@ -109,7 +107,9 @@ export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProp
                 <div
                   key={index}
                   className={`flex items-center justify-between p-3 rounded-lg ${
-                    ingredient.safe ? 'bg-gray-50' : 'bg-[#E74C3C]/10 border border-[#E74C3C]'
+                    ingredient.safe
+                      ? 'bg-gray-50'
+                      : 'bg-[#E74C3C]/10 border border-[#E74C3C]'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -132,10 +132,7 @@ export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProp
 
           {/* Safety Status */}
           <div className="pt-4">
-            <div 
-              className="p-4 rounded-xl text-center"
-              style={{ backgroundColor: `${getStatusColor()}` }}
-            >
+            <div className="p-4 rounded-xl text-center" style={{ backgroundColor: `${getStatusColor()}` }}>
               <div className="flex items-center justify-center gap-2 text-white">
                 {getStatusIcon()}
                 <span className="text-white">

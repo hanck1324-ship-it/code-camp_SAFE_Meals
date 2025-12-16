@@ -1,6 +1,6 @@
 import { Star, MapPin, Clock } from 'lucide-react';
 import { Language, translations } from '@/lib/translations';
-import { LanguageSelector } from './language-selector';
+import { LanguageSelector } from '../language-selector';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 
 interface HomeDashboardProps {
@@ -136,3 +136,4 @@ export function HomeDashboard({ onScanMenu, language, onLanguageChange }: HomeDa
     </div>
   );
 }
+

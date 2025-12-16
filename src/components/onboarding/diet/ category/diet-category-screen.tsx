@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import { Button } from '../../../ui/button';
-import { Language, translations } from '../../../../lib/translations';
+import { Button } from '@/components/ui/button';
+import { Language, translations } from '@/lib/translations';
 
 interface DietCategoryScreenProps {
   onCategorySelect: (categories: string[]) => void;

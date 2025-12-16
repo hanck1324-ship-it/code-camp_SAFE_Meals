@@ -1,16 +1,24 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { ProfileScreen } from '@/components/profile-screen';
+import { Language } from '@/lib/translations';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout, language, setLanguage } = useAppStore();
+  const { user, logout } = useAppStore();
+  const [language, setLanguage] = useState<Language>('en');
 
   // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!user) {
+      router.replace('/auth/login?redirect=/profile');
+    }
+  }, [user, router]);
+
   if (!user) {
-    router.replace('/auth/login?redirect=/profile');
     return null;
   }
 
@@ -46,8 +54,8 @@ export default function ProfilePage() {
     <ProfileScreen
       userProfile={userProfile}
       onNavigate={handleNavigate}
-      language={language as any}
-      onLanguageChange={(lang) => setLanguage(lang as any) }
+      language={language}
+      onLanguageChange={setLanguage}
       onLogout={logout}
     />
   );

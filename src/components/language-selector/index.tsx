@@ -6,14 +6,6 @@ import type { Language } from '@/lib/translations';
 
 /**
  * 언어 선택 컴포넌트
- * 
- * 전역 언어 상태를 자동으로 관리하므로 props 전달이 필요 없습니다.
- * 
- * @example
- * ```tsx
- * // 간단하게 사용 가능
- * <LanguageSelector />
- * ```
  */
 export function LanguageSelector() {
   const { language, setLanguage } = useTranslation();
@@ -28,7 +20,7 @@ export function LanguageSelector() {
         className="appearance-none bg-transparent text-sm outline-none cursor-pointer pr-2 font-medium"
         aria-label="언어 선택"
       >
-        {supportedLanguages.map(({ code, name }) => (   //map 사용을 통하여 언어 설정을 매끄럽게 하고 코드의 가독성을 높이고자 함 
+        {supportedLanguages.map(({ code, name }) => (
           <option key={code} value={code}>
             {name}
           </option>
@@ -37,3 +29,4 @@ export function LanguageSelector() {
     </div>
   );
 }
+
