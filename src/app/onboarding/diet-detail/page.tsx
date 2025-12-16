@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { DietDetailScreen } from '@/components/onboarding/diet-detail-screen';
+import { DietDetailScreen } from '@/components/onboarding/diet/diet-detail-screen';
 import { useState, Suspense } from 'react';
 import { Language } from '@/lib/translations';
 import { useAppStore } from '@/commons/stores/useAppStore';
@@ -33,7 +33,7 @@ function DietDetailContent() {
       onBack={handleBack}
       language={language}
       onLanguageChange={setLanguage}
-    />
+    혓
   );
 }
 
