@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "./_providers/auth-provider";
 import dynamic from "next/dynamic";
 import Layout from "@/commons/layout";
+import { ConditionalBottomNav } from "@/commons/onboarding/conditional-bottom-nav";
 
 const BottomNav = dynamic(
   () => import("@/components/bottom-nav").then((m) => m.BottomNav),
@@ -25,7 +26,7 @@ export default function RootLayout({
         <AuthProvider>
           <Layout>
             <div className="flex-grow overflow-y-auto">{children}</div>
-            <BottomNav />
+            <ConditionalBottomNav />
           </Layout>
         </AuthProvider>
       </body>

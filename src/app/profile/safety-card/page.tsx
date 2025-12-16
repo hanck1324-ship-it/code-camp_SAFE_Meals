@@ -73,6 +73,7 @@ export default function SafetyCardPage() {
       </div>
     );
   }
+  
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#f5fffa] pt-4 px-4">

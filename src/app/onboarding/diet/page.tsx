@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { DietCategoryScreen } from '@/components/onboarding/diet-category-screen';
+import { DietCategoryScreen } from '@/components/onboarding/diet/ category/diet-category-screen';
 import { useState } from 'react';
 import { Language } from '@/lib/translations';
 import { useAppStore } from '@/commons/stores/useAppStore';

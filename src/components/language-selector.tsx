@@ -1,25 +1,38 @@
+'use client';
+
 import { Globe } from 'lucide-react';
-import { Language, languageNames } from '@/lib/translations';
+import { useTranslation, getSupportedLanguages } from '@/hooks/useTranslation';
+import type { Language } from '@/lib/translations';
 
-interface LanguageSelectorProps {
-  currentLanguage: Language;
-  onLanguageChange: (language: Language) => void;
-}
+/**
+ * 언어 선택 컴포넌트
+ * 
+ * 전역 언어 상태를 자동으로 관리하므로 props 전달이 필요 없습니다.
+ * 
+ * @example
+ * ```tsx
+ * // 간단하게 사용 가능
+ * <LanguageSelector />
+ * ```
+ */
+export function LanguageSelector() {
+  const { language, setLanguage } = useTranslation();
+  const supportedLanguages = getSupportedLanguages();
 
-export function LanguageSelector({ currentLanguage, onLanguageChange }: LanguageSelectorProps) {
   return (
-    <div className="relative inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-full">
+    <div className="relative inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-full hover:border-gray-300 transition-colors">
       <Globe className="w-4 h-4 text-gray-600" />
       <select
-        value={currentLanguage}
-        onChange={(e) => onLanguageChange(e.target.value as Language)}
-        className="appearance-none bg-transparent text-sm outline-none cursor-pointer pr-2"
+        value={language}
+        onChange={(e) => setLanguage(e.target.value as Language)}
+        className="appearance-none bg-transparent text-sm outline-none cursor-pointer pr-2 font-medium"
+        aria-label="언어 선택"
       >
-        <option value="ko">{languageNames.ko}</option>
-        <option value="en">{languageNames.en}</option>
-        <option value="ja">{languageNames.ja}</option>
-        <option value="zh">{languageNames.zh}</option>
-        <option value="es">{languageNames.es}</option>
+        {supportedLanguages.map(({ code, name }) => (   //map 사용을 통하여 언어 설정을 매끄럽게 하고 코드의 가독성을 높이고자 함 
+          <option key={code} value={code}>
+            {name}
+          </option>
+        ))}
       </select>
     </div>
   );
