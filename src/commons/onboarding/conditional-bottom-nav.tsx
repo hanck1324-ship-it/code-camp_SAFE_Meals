@@ -8,7 +8,6 @@ export function ConditionalBottomNav() {
 
   // 하단 네비게이션을 숨길 페이지 경로들
   const hideNavPaths = [
-    '/auth/login',
     '/auth/signup',
     '/onboarding',
   ];

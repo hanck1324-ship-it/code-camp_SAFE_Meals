@@ -66,3 +66,4 @@ export function BottomNav({ activeTab, onTabChange, language = 'ko' }: BottomNav
     </div>
   );
 }
+

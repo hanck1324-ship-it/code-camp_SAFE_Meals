@@ -1,7 +1,7 @@
 import { Camera, Shield, MapPin, Star, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language, translations } from '@/lib/translations';
-import { LanguageSelector } from './language-selector';
+import { LanguageSelector } from '../language-selector';
 
 interface HomeScreenProps {
   userProfile: {
@@ -123,3 +123,4 @@ export function HomeScreen({ userProfile, onScanMenu, onOpenProfile, language, o
     </div>
   );
 }
+

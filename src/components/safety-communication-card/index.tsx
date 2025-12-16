@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, AlertTriangle, X } from 'lucide-react';
+import { Lock, AlertTriangle } from 'lucide-react';
 import { Language, translations } from '@/lib/translations';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ export function SafetyCommunicationCard({ userProfile, language }: SafetyCommuni
   const [showPinOverlay, setShowPinOverlay] = useState(true);
   const [pin, setPin] = useState('');
   const t = translations[language];
-  const tKo = translations['ko']; // 한국어 번역 추가
+  const tKo = translations['ko'];
 
   const handlePinSubmit = () => {
     if (pin.length === 4) {
@@ -25,21 +25,18 @@ export function SafetyCommunicationCard({ userProfile, language }: SafetyCommuni
     }
   };
 
-  // Get primary allergy for display
   const primaryAllergy = userProfile.allergies[0] || 'peanuts';
   const allergyText = t[primaryAllergy as keyof typeof t] || primaryAllergy;
   const allergyTextKo = tKo[primaryAllergy as keyof typeof tKo] || primaryAllergy;
 
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
-      {/* Emergency-style Card */}
+      {/* Card */}
       <div className="flex-1 flex flex-col items-center justify-center p-8">
-        {/* Warning Symbol */}
         <div className="w-32 h-32 bg-gradient-to-br from-[#E74C3C] to-[#C0392B] rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-[#E74C3C]/40 animate-pulse">
           <AlertTriangle className="w-16 h-16 text-white" />
         </div>
 
-        {/* Large Korean Text - Always displayed first */}
         <div className="bg-white border-4 border-[#E74C3C] rounded-3xl p-8 shadow-2xl mb-6 max-w-md">
           <div className="text-center space-y-6">
             <p className="text-3xl leading-relaxed">
@@ -51,28 +48,21 @@ export function SafetyCommunicationCard({ userProfile, language }: SafetyCommuni
           </div>
         </div>
 
-        {/* User's Selected Language Translation */}
         {language !== 'ko' && (
           <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-6 max-w-md">
             <p className="text-center text-muted-foreground text-lg">
               {t.iHaveAllergy} <span className="text-[#E74C3C]">{allergyText}</span> {t.allergyText}.
-              {t.doesThisFoodContain} <span className="text-[#E74C3C]">{allergyText}</span>{t.containQuestion}
+              {t.doesThisFoodContain} <span className="text-[#E74C3C]">{allergyText}</span>
+              {t.containQuestion}
             </p>
           </div>
         )}
 
-        {/* Additional Allergies */}
         {userProfile.allergies.length > 1 && (
           <div className="mt-8 max-w-md w-full">
-            {/* Korean Label */}
-            <h3 className="text-center mb-3 text-muted-foreground">
-              {tKo.otherAllergies}
-            </h3>
-            {/* User Language Label (if different) */}
+            <h3 className="text-center mb-3 text-muted-foreground">{tKo.otherAllergies}</h3>
             {language !== 'ko' && (
-              <h3 className="text-center mb-3 text-muted-foreground text-sm">
-                {t.otherAllergies}
-              </h3>
+              <h3 className="text-center mb-3 text-muted-foreground text-sm">{t.otherAllergies}</h3>
             )}
             <div className="flex flex-wrap gap-2 justify-center">
               {userProfile.allergies.slice(1).map((allergy, index) => (
@@ -83,9 +73,7 @@ export function SafetyCommunicationCard({ userProfile, language }: SafetyCommuni
                   <div className="text-[#E74C3C] text-center">
                     <div>{tKo[allergy as keyof typeof tKo] || allergy}</div>
                     {language !== 'ko' && (
-                      <div className="text-sm opacity-70">
-                        {t[allergy as keyof typeof t] || allergy}
-                      </div>
+                      <div className="text-sm opacity-70">{t[allergy as keyof typeof t] || allergy}</div>
                     )}
                   </div>
                 </div>
@@ -95,7 +83,6 @@ export function SafetyCommunicationCard({ userProfile, language }: SafetyCommuni
         )}
       </div>
 
-      {/* PIN Overlay */}
       {showPinOverlay && (
         <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center z-50 p-6">
           <div className="w-full max-w-sm">
@@ -104,9 +91,7 @@ export function SafetyCommunicationCard({ userProfile, language }: SafetyCommuni
             </div>
 
             <h2 className="text-center mb-2">{t.enterSecurityPin}</h2>
-            <p className="text-center text-muted-foreground mb-8">
-              {t.pinDescription}
-            </p>
+            <p className="text-center text-muted-foreground mb-8">{t.pinDescription}</p>
 
             <div className="mb-6">
               <Input
@@ -129,9 +114,7 @@ export function SafetyCommunicationCard({ userProfile, language }: SafetyCommuni
               {t.confirm}
             </Button>
 
-            <p className="text-center text-xs text-muted-foreground mt-6">
-              {t.sensitiveHealthInfo}
-            </p>
+            <p className="text-center text-xs text-muted-foreground mt-6">{t.sensitiveHealthInfo}</p>
           </div>
         </div>
       )}
