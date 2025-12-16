@@ -33,7 +33,7 @@ export function useAuthSignupForm() {
 
   const onSubmit = handleSubmit((data) => {
     console.log('signup', data);
-    router.replace('/dashboard');
+    router.replace('/onboarding/allergy');
   });
 
   return {
