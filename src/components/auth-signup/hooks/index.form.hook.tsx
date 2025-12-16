@@ -2,7 +2,6 @@
 
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/_providers/auth-provider';
 import { supabase } from '@/lib/supabase-browser';
 
 interface SignupForm {
@@ -16,7 +15,6 @@ interface SignupForm {
 
 export function useAuthSignupForm() {
     const router = useRouter();
-  const { signup } = useAuth();
 
   const {
     control,
@@ -49,13 +47,11 @@ export function useAuthSignupForm() {
     // signup 테이블에 프로필 정보 저장
     await supabase.from('signup').insert({
       id: user.id,
+      email: data.email,
       real_name: data.name,
       phone: data.phone,
       language: data.language,
     });
-
-    // AuthContext 에도 사용자 상태 반영
-    await signup(data.email, data.password);
 
     router.replace('/onboarding/allergy');
   });

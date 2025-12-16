@@ -8,7 +8,7 @@ import { Language } from '@/lib/translations';
 import Image from 'next/image';
 import logo from '@/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/commons/stores/useAppStore';
+import { useAuth } from '@/app/_providers/auth-provider';
 import { LanguageSelector } from '@/components/language-selector';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -110,15 +110,17 @@ export default function LoginPage({ searchParams }: Props) {
     // TODO: OAuth flow
     alert(`${provider} login is not implemented yet.`);
   };
-  const login = useAppStore((s) => s.login);
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // simple mock auth
-    login({ email });
-    // 로그인 후 홈 화면으로 이동
-    const redirect = searchParams?.redirect || '/dashboard';
-    router.replace(redirect);
+    try {
+      await login(email, password);
+      const redirectTo = searchParams?.redirect || '/dashboard';
+      router.replace(redirectTo);
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   return (

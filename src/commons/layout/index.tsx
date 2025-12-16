@@ -2,6 +2,7 @@
 
 import React from "react";
 import { NextThemesProvider } from "@/commons/providers/next-themes/next-themes.provider";
+import SiteHeader from "@/commons/components/site-header";
 import styles from "./styles.module.css";
 
 interface LayoutProps {
@@ -17,6 +18,9 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <NextThemesProvider>
       <div className={styles.container}>
+        {/* 헤더 */}
+        <SiteHeader />
+
         <main className={styles.main}>{children}</main>
 
         <footer className={styles.footer}>

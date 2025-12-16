@@ -89,7 +89,6 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = "" }) => {
                     value={field.value ?? ""}
                     onChange={(e) => field.onChange(e.target.value)}
                   >
-                    <option value="">언어를 선택해주세요</option>
                     <option value="ko">한글</option>
                     <option value="en">English</option>
                     <option value="ja">日本語</option>

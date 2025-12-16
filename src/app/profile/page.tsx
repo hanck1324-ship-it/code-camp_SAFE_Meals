@@ -2,12 +2,12 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/commons/stores/useAppStore';
+import { useAuth } from '@/app/_providers/auth-provider';
 import { ProfileScreen } from '@/components/profile';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout } = useAppStore();
+  const { user, profile, logout } = useAuth();
 
   // Redirect unauthenticated users to login
   useEffect(() => {
@@ -22,6 +22,7 @@ export default function ProfilePage() {
 
   // Temporary sample data – in real app fetch from API / DB
   const userProfile = {
+    real_name: profile?.real_name ?? '',
     allergies: [],
     diets: [],
   };
@@ -48,8 +49,8 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     // 로그아웃 후 홈 화면으로 리다이렉트 (redirect 파라미터 없이)
     router.replace('/auth/login');
   };

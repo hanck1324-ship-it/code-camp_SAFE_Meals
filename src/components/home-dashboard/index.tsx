@@ -57,17 +57,6 @@ export function HomeDashboard({ onScanMenu }: HomeDashboardProps) {
 
   return (
     <div className="min-h-screen bg-white pb-24">
-      {/* Header */}
-      <div className="px-6 pt-8 pb-6 bg-white shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-[#2ECC71]">{t.appName}</h1>
-            <p className="text-sm text-muted-foreground">{t.tagline}</p>
-          </div>
-          <LanguageSelector />
-        </div>
-      </div>
-
       {/* Recent Scans */}
       <div className="px-6 mb-8 pt-6">
         <div className="flex items-center justify-between mb-4">
