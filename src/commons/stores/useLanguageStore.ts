@@ -18,16 +18,16 @@ interface LanguageState {
 
 /**
  * 언어 설정 전용 스토어
- * 
- * 언어 관련 상태만 독립적으로 관리하여 
+ *
+ * 언어 관련 상태만 독립적으로 관리하여
  * 코드의 재사용성과 유지보수성을 높입니다.
- * 
+ *
  * @example
  * ```tsx
  * // 언어만 필요한 경우
  * const language = useLanguageStore((state) => state.language);
  * const setLanguage = useLanguageStore((state) => state.setLanguage);
- * 
+ *
  * // 또는 구조 분해
  * const { language, setLanguage } = useLanguageStore();
  * ```
@@ -44,4 +44,3 @@ export const useLanguageStore = create<LanguageState>()(
     }
   )
 );
-

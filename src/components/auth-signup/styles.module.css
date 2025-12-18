@@ -1,5 +1,5 @@
 .container {
-  @apply min-h-screen flex items-center justify-center p-4;
+  @apply flex min-h-screen items-center justify-center p-4;
   background-color: var(--color-background);
 }
 
@@ -8,7 +8,9 @@
   background-color: var(--color-card);
   border-radius: var(--radius-lg);
   padding: 2rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .header {
@@ -16,7 +18,7 @@
 }
 
 .title {
-  @apply text-2xl font-semibold mb-2;
+  @apply mb-2 text-2xl font-semibold;
   color: var(--color-foreground);
   font-weight: var(--font-weight-medium);
 }
@@ -39,7 +41,7 @@
 }
 
 .selectWrapper {
-  @apply w-full flex flex-col gap-1;
+  @apply flex w-full flex-col gap-1;
 }
 
 .selectLabel {
@@ -48,7 +50,7 @@
 }
 
 .select {
-  @apply w-full border rounded px-3 py-2 bg-[var(--color-input-background)] outline-none;
+  @apply w-full rounded border bg-[var(--color-input-background)] px-3 py-2 outline-none;
 }
 
 .buttonGroup {
@@ -77,4 +79,3 @@
 .loginLink:hover {
   @apply underline;
 }
-

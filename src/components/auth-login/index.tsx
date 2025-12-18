@@ -1,26 +1,31 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Controller } from "react-hook-form";
-import { Input } from "@/commons/components/input";
-import { Button } from "@/commons/components/button";
-import { useAuthLoginForm } from "./hooks/index.form.hook";
-import styles from "./styles.module.css";
+import React from 'react';
+import { Controller } from 'react-hook-form';
+import { Input } from '@/commons/components/input';
+import { Button } from '@/commons/components/button';
+import { useAuthLoginForm } from './hooks/index.form.hook';
+import styles from './styles.module.css';
 
 export interface AuthLoginProps {
   className?: string;
 }
 
-export const AuthLogin: React.FC<AuthLoginProps> = ({ className = "" }) => {
+export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
   const { control, errors, onSubmit, isFormFilled, isLoading } =
     useAuthLoginForm();
 
   return (
-    <div className={`${styles.container} ${className}`} data-testid="auth-login-container">
+    <div
+      className={`${styles.container} ${className}`}
+      data-testid="auth-login-container"
+    >
       <div className={styles.card}>
         <div className={styles.header}>
           <h1 className={styles.title}>로그인</h1>
-          <p className={styles.subtitle}>계정에 로그인하여 서비스를 이용해보세요</p>
+          <p className={styles.subtitle}>
+            계정에 로그인하여 서비스를 이용해보세요
+          </p>
         </div>
         <form className={styles.form} onSubmit={onSubmit}>
           <div className={styles.inputGroup}>
@@ -66,13 +71,13 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = "" }) => {
               disabled={!isFormFilled || isLoading}
               className={styles.submitButton}
             >
-              {isLoading ? "로그인 중..." : "로그인"}
+              {isLoading ? '로그인 중...' : '로그인'}
             </Button>
           </div>
         </form>
         <div className={styles.footer}>
           <p className={styles.footerText}>
-            아직 계정이 없으신가요? {" "}
+            아직 계정이 없으신가요?{' '}
             <a href="/auth/signup" className={styles.signupLink}>
               회원가입하기
             </a>
@@ -83,7 +88,6 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = "" }) => {
   );
 };
 
-AuthLogin.displayName = "AuthLogin";
+AuthLogin.displayName = 'AuthLogin';
 
 export default AuthLogin;
-

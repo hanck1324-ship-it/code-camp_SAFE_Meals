@@ -8,7 +8,7 @@
 
 ### 사용할 프롬프트:
 
-```markdown
+````markdown
 [구현 경로]
 src/components/allergy-filter/index.tsx
 src/components/allergy-filter/hooks/use-allergy-filter.tsx
@@ -24,6 +24,7 @@ src/components/allergy-filter/hooks/use-allergy-filter.tsx
 ==============================================
 
 [기술스택]
+
 - Tailwind CSS (스타일링)
 - shadcn/ui: Button, Badge, Card
 - lucide-react: Filter, X, Check
@@ -34,47 +35,46 @@ src/components/allergy-filter/hooks/use-allergy-filter.tsx
 
 [핵심요구사항-1] 필터 UI 구현
 
-1-1. 필터 버튼 그룹
-     - "전체", "안전", "주의", "위험" 4개 버튼
-     - 선택된 버튼은 bg-[#2ECC71] 스타일
-     - 미선택 버튼은 border-gray-200 스타일
+1-1. 필터 버튼 그룹 - "전체", "안전", "주의", "위험" 4개 버튼 - 선택된 버튼은 bg-[#2ECC71] 스타일 - 미선택 버튼은 border-gray-200 스타일
 
-1-2. 알레르기 목록
-     - Badge 컴포넌트로 표시
-     - 클릭하면 필터 추가/제거
-     - 선택된 항목은 체크 아이콘 표시
+1-2. 알레르기 목록 - Badge 컴포넌트로 표시 - 클릭하면 필터 추가/제거 - 선택된 항목은 체크 아이콘 표시
 
-1-3. 반응형 디자인
-     - 모바일: flex-col, gap-2
-     - 태블릿: flex-row, gap-4
+1-3. 반응형 디자인 - 모바일: flex-col, gap-2 - 태블릿: flex-row, gap-4
 
 ==============================================
 
 [핵심요구사항-2] 로직 구현 (hooks/use-allergy-filter.tsx)
 
 2-1. 상태 관리
+
 ```typescript
-const [selectedLevel, setSelectedLevel] = useState<'all' | 'safe' | 'caution' | 'danger'>('all');
+const [selectedLevel, setSelectedLevel] = useState<
+  'all' | 'safe' | 'caution' | 'danger'
+>('all');
 const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
 ```
+````
 
 2-2. 필터 토글 함수
+
 ```typescript
 const toggleAllergy = (allergyId: string) => {
-  setSelectedAllergies(prev =>
+  setSelectedAllergies((prev) =>
     prev.includes(allergyId)
-      ? prev.filter(id => id !== allergyId)
+      ? prev.filter((id) => id !== allergyId)
       : [...prev, allergyId]
   );
 };
 ```
 
 2-3. 필터링된 결과 반환
+
 ```typescript
-const filteredItems = items.filter(item => {
+const filteredItems = items.filter((item) => {
   const levelMatch = selectedLevel === 'all' || item.level === selectedLevel;
-  const allergyMatch = selectedAllergies.length === 0 || 
-    selectedAllergies.some(id => item.allergyIds.includes(id));
+  const allergyMatch =
+    selectedAllergies.length === 0 ||
+    selectedAllergies.some((id) => item.allergyIds.includes(id));
   return levelMatch && allergyMatch;
 });
 ```
@@ -83,26 +83,18 @@ const filteredItems = items.filter(item => {
 
 [핵심요구사항-3] 다국어 처리
 
-3-1. 필요한 번역 키
-     - t.filterAll
-     - t.filterSafe
-     - t.filterCaution
-     - t.filterDanger
-     - t.selectedCount
+3-1. 필요한 번역 키 - t.filterAll - t.filterSafe - t.filterCaution - t.filterDanger - t.selectedCount
 
 ==============================================
 
 [핵심요구사항-4] 테스트 지원
 
-4-1. data-testid 추가
-     - 필터 컨테이너: "allergy-filter"
-     - 레벨 버튼: "filter-level-{level}"
-     - 알레르기 배지: "allergy-badge-{id}"
-     - 초기화 버튼: "filter-reset"
+4-1. data-testid 추가 - 필터 컨테이너: "allergy-filter" - 레벨 버튼: "filter-level-{level}" - 알레르기 배지: "allergy-badge-{id}" - 초기화 버튼: "filter-reset"
 
 ==============================================
 
 [주의사항]
+
 - CSS Module 사용 금지
 - position: absolute 사용 금지
 - 하드코딩된 텍스트 금지
@@ -111,6 +103,7 @@ const filteredItems = items.filter(item => {
 ==============================================
 
 [체크리스트]
+
 - [ ] Tailwind CSS만 사용
 - [ ] shadcn/ui 컴포넌트 활용
 - [ ] 로직이 훅으로 분리
@@ -118,7 +111,8 @@ const filteredItems = items.filter(item => {
 - [ ] data-testid 추가
 - [ ] 반응형 디자인
 - [ ] TypeScript 타입 정의
-```
+
+````
 
 ---
 
@@ -159,9 +153,10 @@ const url = `http://openapi.foodsafetykorea.go.kr/api/${API_KEY}/${SERVICE_ID}/j
 
 const response = await fetch(url);
 const data = await response.json();
-```
+````
 
 1-3. 응답 데이터 정제
+
 ```typescript
 const result = {
   success: true,
@@ -175,6 +170,7 @@ const result = {
 [핵심요구사항-2] 에러 처리
 
 2-1. API 키 검증
+
 ```typescript
 if (!API_KEY) {
   return NextResponse.json(
@@ -185,16 +181,15 @@ if (!API_KEY) {
 ```
 
 2-2. 파라미터 검증
+
 ```typescript
 if (!type || !['recipe', 'haccp'].includes(type)) {
-  return NextResponse.json(
-    { error: '유효하지 않은 타입' },
-    { status: 400 }
-  );
+  return NextResponse.json({ error: '유효하지 않은 타입' }, { status: 400 });
 }
 ```
 
 2-3. API 호출 실패 처리
+
 ```typescript
 if (!response.ok) {
   throw new Error(`API 호출 실패: ${response.status}`);
@@ -206,6 +201,7 @@ if (!response.ok) {
 [핵심요구사항-3] 캐싱 설정
 
 3-1. Next.js 캐싱
+
 ```typescript
 export const revalidate = 3600; // 1시간
 ```
@@ -215,14 +211,15 @@ export const revalidate = 3600; // 1시간
 [핵심요구사항-4] TypeScript 타입
 
 4-1. 응답 타입 정의
+
 ```typescript
 interface FoodSafetyResponse {
   success: boolean;
   data: Array<{
-    BSSH_NM?: string;      // 업소명
-    PRDLST_NM?: string;    // 제품명
-    ADDR?: string;         // 주소
-    RCP_NM?: string;       // 레시피명
+    BSSH_NM?: string; // 업소명
+    PRDLST_NM?: string; // 제품명
+    ADDR?: string; // 주소
+    RCP_NM?: string; // 레시피명
   }>;
   total: number;
 }
@@ -243,7 +240,7 @@ export async function GET(request: Request) {
     const type = searchParams.get('type') as 'recipe' | 'haccp';
     const start = searchParams.get('start') || '1';
     const end = searchParams.get('end') || '10';
-    
+
     // 검증
     if (!type || !['recipe', 'haccp'].includes(type)) {
       return NextResponse.json(
@@ -251,7 +248,7 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
-    
+
     const API_KEY = process.env.NEXT_PUBLIC_FOOD_SAFETY_API_KEY;
     if (!API_KEY) {
       return NextResponse.json(
@@ -259,25 +256,21 @@ export async function GET(request: Request) {
         { status: 500 }
       );
     }
-    
+
     const SERVICE_ID = type === 'recipe' ? 'COOKRCP01' : 'I1250';
     const url = `http://openapi.foodsafetykorea.go.kr/api/${API_KEY}/${SERVICE_ID}/json/${start}/${end}`;
-    
+
     const response = await fetch(url);
     const data = await response.json();
-    
+
     return NextResponse.json({
       success: true,
       data: data[SERVICE_ID]?.row || [],
       total: data[SERVICE_ID]?.total_count || 0,
     });
-    
   } catch (error) {
     console.error('API Error:', error);
-    return NextResponse.json(
-      { error: '서버 내부 오류' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '서버 내부 오류' }, { status: 500 });
   }
 }
 ```
@@ -285,13 +278,15 @@ export async function GET(request: Request) {
 ==============================================
 
 [체크리스트]
+
 - [ ] 환경변수 사용
 - [ ] 파라미터 검증
 - [ ] 에러 처리
 - [ ] 적절한 HTTP 상태 코드
 - [ ] TypeScript 타입 정의
 - [ ] 캐싱 설정
-```
+
+````
 
 ---
 
@@ -390,7 +385,7 @@ test.describe('로그인 페이지', () => {
     await page.getByTestId('input-email').fill('test@example.com');
     await page.getByTestId('input-password').fill('password123');
     await page.getByTestId('button-login').click();
-    
+
     // 대시보드로 리다이렉트
     await expect(page).toHaveURL('/dashboard', { timeout: 2000 });
   });
@@ -398,7 +393,7 @@ test.describe('로그인 페이지', () => {
   test('이메일 없이 로그인 시도', async ({ page }) => {
     await page.getByTestId('input-password').fill('password123');
     await page.getByTestId('button-login').click();
-    
+
     // 에러 메시지 표시
     await expect(page.getByTestId('error-message')).toBeVisible();
   });
@@ -406,14 +401,14 @@ test.describe('로그인 페이지', () => {
   test('비밀번호 표시/숨김 토글', async ({ page }) => {
     const passwordInput = page.getByTestId('input-password');
     const toggleButton = page.getByTestId('button-toggle-password');
-    
+
     // 초기 상태: 비밀번호 숨김
     await expect(passwordInput).toHaveAttribute('type', 'password');
-    
+
     // 토글 클릭
     await toggleButton.click();
     await expect(passwordInput).toHaveAttribute('type', 'text');
-    
+
     // 다시 토글
     await toggleButton.click();
     await expect(passwordInput).toHaveAttribute('type', 'password');
@@ -425,17 +420,19 @@ test.describe('로그인 페이지', () => {
     await expect(page.getByTestId('button-facebook')).toBeVisible();
   });
 });
-```
+````
 
 ==============================================
 
 [체크리스트]
+
 - [ ] 모든 주요 시나리오 테스트
 - [ ] data-testid 사용
 - [ ] timeout 2000ms 이하
 - [ ] 경로만 사용 (baseURL 제외)
 - [ ] 실제 API 호출
-```
+
+````
 
 ---
 
@@ -490,15 +487,16 @@ export function useDashboardData() {
       return res.json();
     },
   });
-  
+
   return {
     haccpList: haccpData?.haccp || [],
     isLoading,
   };
 }
-```
+````
 
 Step 2: components/recent-scans.tsx 생성
+
 ```typescript
 import { Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -518,7 +516,7 @@ interface RecentScansProps {
 
 export function RecentScans({ scans }: RecentScansProps) {
   const { t } = useTranslation();
-  
+
   return (
     <div className="px-6 mb-8 pt-6">
       <div className="flex items-center justify-between mb-4">
@@ -547,6 +545,7 @@ export function RecentScans({ scans }: RecentScansProps) {
 ```
 
 Step 3: index.tsx 리팩토링
+
 ```typescript
 import { useDashboardData } from './hooks/use-dashboard-data';
 import { RecentScans } from './components/recent-scans';
@@ -561,7 +560,7 @@ interface HomeDashboardProps {
 export function HomeDashboard({ onScanMenu }: HomeDashboardProps) {
   const { t } = useTranslation();
   const { haccpList, isLoading } = useDashboardData();
-  
+
   return (
     <div className="min-h-screen bg-white pb-24" data-testid="home-dashboard">
       {/* Header */}
@@ -574,10 +573,10 @@ export function HomeDashboard({ onScanMenu }: HomeDashboardProps) {
           <LanguageSelector />
         </div>
       </div>
-      
+
       {/* Recent Scans */}
       <RecentScans scans={recentScansData} />
-      
+
       {/* HACCP List */}
       <HaccpList items={haccpList} isLoading={isLoading} />
     </div>
@@ -597,6 +596,7 @@ export function HomeDashboard({ onScanMenu }: HomeDashboardProps) {
 - [ ] 파일 크기 200줄 이하
 - [ ] TypeScript 에러 없음
 - [ ] npm run build 성공
+
 ```
 
 ---
@@ -605,29 +605,34 @@ export function HomeDashboard({ onScanMenu }: HomeDashboardProps) {
 
 ### 1. 명확한 구조 사용
 ```
+
 [섹션명] ← 대괄호로 섹션 구분
 ========= ← 구분선으로 가독성 향상
-```
+
+````
 
 ### 2. 코드 예시 포함
 ```typescript
 // 좋은 프롬프트는 예시 코드를 포함합니다
 const example = "이렇게요";
-```
+````
 
 ### 3. 체크리스트 제공
+
 ```
 - [ ] 항목 1
 - [ ] 항목 2
 ```
 
 ### 4. 금지사항 명시
+
 ```
 ❌ 하지 말 것
 ✅ 해야 할 것
 ```
 
 ### 5. Step-by-step 지시
+
 ```
 Step 1: ...
 Step 2: ...
@@ -637,4 +642,3 @@ Step 3: ...
 ---
 
 이 예시들을 참고하여 프로젝트에 맞는 프롬프트를 작성하세요!
-

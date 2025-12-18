@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React from "react";
-import styles from "./styles.module.css";
+import React from 'react';
+import styles from './styles.module.css';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -10,7 +10,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, errorMessage, className = "", ...rest }, ref) => {
+  ({ label, error, errorMessage, className = '', ...rest }, ref) => {
     return (
       <div className={`${styles.wrapper} ${className}`}>
         {label && <label className={styles.label}>{label}</label>}
@@ -19,12 +19,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {...rest}
           className={`${styles.input} ${error ? styles.errorBorder : styles.normalBorder}`}
         />
-        {error && errorMessage && <span className={styles.error}>{errorMessage}</span>}
+        {error && errorMessage && (
+          <span className={styles.error}>{errorMessage}</span>
+        )}
       </div>
     );
   }
 );
-Input.displayName = "Input";
+Input.displayName = 'Input';
 
 export default Input;
-

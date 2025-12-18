@@ -11,10 +11,7 @@ export default function HelpPage() {
 
   return (
     <RequireAuth>
-      <HelpSupportScreen
-        onBack={() => router.back()}
-        language={language}
-      />
+      <HelpSupportScreen onBack={() => router.back()} language={language} />
     </RequireAuth>
   );
 }

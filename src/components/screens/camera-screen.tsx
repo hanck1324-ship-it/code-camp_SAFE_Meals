@@ -43,7 +43,12 @@ const cameraText = {
   },
 };
 
-export function CameraScreen({ onCapture, onClose, language, onCapturePhoto }: CameraScreenProps) {
+export function CameraScreen({
+  onCapture,
+  onClose,
+  language,
+  onCapturePhoto,
+}: CameraScreenProps) {
   const t = cameraText[language];
 
   return (
@@ -51,8 +56,8 @@ export function CameraScreen({ onCapture, onClose, language, onCapturePhoto }: C
       {/* Mock Camera Viewfinder */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-gray-800">
         {/* Placeholder for camera feed */}
-        <div className="w-full h-full flex items-center justify-center text-white/50">
-          <Camera className="w-32 h-32" />
+        <div className="flex h-full w-full items-center justify-center text-white/50">
+          <Camera className="h-32 w-32" />
         </div>
       </div>
 
@@ -60,26 +65,26 @@ export function CameraScreen({ onCapture, onClose, language, onCapturePhoto }: C
       <div className="relative z-10 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-white mb-1">{t.title}</h2>
-            <p className="text-white/70 text-sm">{t.subtitle}</p>
+            <h2 className="mb-1 text-white">{t.title}</h2>
+            <p className="text-sm text-white/70">{t.subtitle}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-colors hover:bg-white/20"
           >
-            <X className="w-6 h-6 text-white" />
+            <X className="h-6 w-6 text-white" />
           </button>
         </div>
       </div>
 
       {/* Scanning Frame */}
       <div className="absolute inset-0 flex items-center justify-center p-12">
-        <div className="relative w-full h-96 border-4 border-[#2ECC71] rounded-2xl">
+        <div className="relative h-96 w-full rounded-2xl border-4 border-[#2ECC71]">
           {/* Corner decorations */}
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-xl" />
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-xl" />
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-xl" />
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-xl" />
+          <div className="absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-4 border-t-4 border-white" />
+          <div className="absolute right-0 top-0 h-8 w-8 rounded-tr-xl border-r-4 border-t-4 border-white" />
+          <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-white" />
+          <div className="absolute bottom-0 right-0 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-white" />
         </div>
       </div>
 
@@ -87,16 +92,16 @@ export function CameraScreen({ onCapture, onClose, language, onCapturePhoto }: C
       <div className="absolute bottom-0 left-0 right-0 p-8 pb-12">
         <div className="flex items-center justify-between">
           {/* Flash Toggle */}
-          <button className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors">
-            <Zap className="w-6 h-6 text-white" />
+          <button className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-colors hover:bg-white/20">
+            <Zap className="h-6 w-6 text-white" />
           </button>
 
           {/* Capture Button */}
           <button
             onClick={onCapturePhoto}
-            className="relative w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
+            className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg transition-transform hover:scale-105 active:scale-95"
           >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#2ECC71] to-[#27AE60]" />
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#2ECC71] to-[#27AE60]" />
           </button>
 
           {/* Spacer */}

@@ -17,7 +17,11 @@ interface MenuDetailModalProps {
   language: Language;
 }
 
-export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProps) {
+export function MenuDetailModal({
+  item,
+  onClose,
+  language,
+}: MenuDetailModalProps) {
   const t = translations[language];
 
   // Sample ingredients data
@@ -32,11 +36,11 @@ export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProp
   const getStatusIcon = () => {
     switch (item.safetyStatus) {
       case 'safe':
-        return <CheckCircle className="w-6 h-6 text-white" />;
+        return <CheckCircle className="h-6 w-6 text-white" />;
       case 'warning':
-        return <AlertTriangle className="w-6 h-6 text-gray-900" />;
+        return <AlertTriangle className="h-6 w-6 text-gray-900" />;
       case 'danger':
-        return <AlertCircle className="w-6 h-6 text-white" />;
+        return <AlertCircle className="h-6 w-6 text-white" />;
     }
   };
 
@@ -52,24 +56,26 @@ export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProp
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-in fade-in">
-      <div className="w-full max-w-md bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom">
+    <div className="animate-in fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/50">
+      <div className="animate-in slide-in-from-bottom max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white">
         {/* Header */}
-        <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-gray-200 flex items-start justify-between">
+        <div className="sticky top-0 flex items-start justify-between border-b border-gray-200 bg-white px-6 pb-4 pt-6">
           <div className="flex-1">
-            <h2 className="mb-1">{t[item.titleKey as keyof typeof t] as string}</h2>
+            <h2 className="mb-1">
+              {t[item.titleKey as keyof typeof t] as string}
+            </h2>
             <p className="text-sm text-muted-foreground">{item.koreanName}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-6 space-y-6">
+        <div className="space-y-6 px-6 py-6">
           {/* Description */}
           <div>
             <h3 className="mb-2">Description</h3>
@@ -81,13 +87,13 @@ export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProp
           {/* Alert Box */}
           {item.warningKey && (
             <div
-              className="p-4 rounded-xl border-2 flex gap-3"
+              className="flex gap-3 rounded-xl border-2 p-4"
               style={{
                 backgroundColor: `${getStatusColor()}10`,
                 borderColor: getStatusColor(),
               }}
             >
-              <div className="flex-shrink-0 mt-0.5">{getStatusIcon()}</div>
+              <div className="mt-0.5 flex-shrink-0">{getStatusIcon()}</div>
               <div>
                 <h4 className="mb-1" style={{ color: getStatusColor() }}>
                   {t.warning}
@@ -106,23 +112,25 @@ export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProp
               {ingredients.map((ingredient, index) => (
                 <div
                   key={index}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
+                  className={`flex items-center justify-between rounded-lg p-3 ${
                     ingredient.safe
                       ? 'bg-gray-50'
-                      : 'bg-[#E74C3C]/10 border border-[#E74C3C]'
+                      : 'border border-[#E74C3C] bg-[#E74C3C]/10'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     {ingredient.safe ? (
-                      <CheckCircle className="w-4 h-4 text-[#2ECC71]" />
+                      <CheckCircle className="h-4 w-4 text-[#2ECC71]" />
                     ) : (
-                      <AlertCircle className="w-4 h-4 text-[#E74C3C]" />
+                      <AlertCircle className="h-4 w-4 text-[#E74C3C]" />
                     )}
                     <div>
                       <p className={ingredient.safe ? '' : 'text-[#E74C3C]'}>
                         {ingredient.en}
                       </p>
-                      <p className="text-xs text-muted-foreground">{ingredient.ko}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ingredient.ko}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -132,7 +140,10 @@ export function MenuDetailModal({ item, onClose, language }: MenuDetailModalProp
 
           {/* Safety Status */}
           <div className="pt-4">
-            <div className="p-4 rounded-xl text-center" style={{ backgroundColor: `${getStatusColor()}` }}>
+            <div
+              className="rounded-xl p-4 text-center"
+              style={{ backgroundColor: `${getStatusColor()}` }}
+            >
               <div className="flex items-center justify-center gap-2 text-white">
                 {getStatusIcon()}
                 <span className="text-white">

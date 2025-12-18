@@ -4,4 +4,3 @@ export default function Index() {
   redirect('/auth/login');
   return null;
 }
-

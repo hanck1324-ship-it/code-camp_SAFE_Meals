@@ -16,10 +16,10 @@ interface AppState {
 
 /**
  * 전역 앱 상태 관리 스토어
- * 
+ *
  * 사용자 정보, 온보딩 상태 등 앱의 핵심 상태를 관리합니다.
  * (언어 설정은 useLanguageStore에서 별도 관리)
- * 
+ *
  * @example
  * ```tsx
  * const user = useAppStore((state) => state.user);

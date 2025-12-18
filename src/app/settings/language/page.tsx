@@ -1,7 +1,7 @@
-"use client";
-import { LanguageSettingsScreen } from "@/components/profile/language-settings-screen";
-import { useRouter } from "next/navigation";
-import { RequireAuth } from "@/components/auth/require-auth";
+'use client';
+import { LanguageSettingsScreen } from '@/components/profile/language-settings-screen';
+import { useRouter } from 'next/navigation';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function LanguageSettingsPage() {
   const router = useRouter();
@@ -15,4 +15,3 @@ export default function LanguageSettingsPage() {
     </RequireAuth>
   );
 }
-

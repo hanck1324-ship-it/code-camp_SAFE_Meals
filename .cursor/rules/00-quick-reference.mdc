@@ -46,7 +46,6 @@ public/assets/                  → 이미지 및 에셋
 ## 🚫 절대 하지 말 것
 
 - ❌ CSS Module로 새 스타일 파일 작성
-- ❌ public/icons/, public/images/ 폴더 사용
 - ❌ react-portal 직접 구현
 - ❌ position: absolute 남용
 - ❌ !important 사용

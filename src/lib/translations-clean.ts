@@ -110,7 +110,8 @@ export const translations = {
     garlicOnionFreeDesc: '마늘·양파 기피',
     // Onboarding
     welcomeTitle: 'SafeMeals에 오신 것을 환영합니다',
-    welcomeDescription: '새로운 음식을 탐험하는 동안 안전하게 지킬 수 있도록 맞춤 안전 프로필을 설정하세요.',
+    welcomeDescription:
+      '새로운 음식을 탐험하는 동안 안전하게 지킬 수 있도록 맞춤 안전 프로필을 설정하세요.',
     selectAllergies: '알레르기 선택',
     dietaryPreferences: '식단 선호도',
     continueButton: 'SafeMeals 시작하기',
@@ -146,7 +147,8 @@ export const translations = {
     eatFearlessly: '안전하게, 어디서나',
     active: '',
     readyToScan: '스캔 준비 완료',
-    scanDescription: '카메라를 메뉴에 비추면 번역과 안전 알림을 즉시 확인할 수 있습니다',
+    scanDescription:
+      '카메라를 메뉴에 비추면 번역과 안전 알림을 즉시 확인할 수 있습니다',
     scanMenu: '메뉴 스캔',
     safeNearby: '주변 안전 식당',
     viewAll: '전체보기',
@@ -201,7 +203,8 @@ export const translations = {
     logOut: '로그아웃',
     // PIN Modal
     enterSecurityPin: '보안 PIN 입력',
-    pinDescription: '건강 데이터는 민감합니다. 변경하려면 4자리 PIN을 입력하세요.',
+    pinDescription:
+      '건강 데이터는 민감합니다. 변경하려면 4자리 PIN을 입력하세요.',
     enterPin: '4자리 PIN 입력',
     cancel: '취소',
     confirm: '확인',
@@ -248,7 +251,8 @@ export const translations = {
     additivesDesc: 'Sulfites, MSG, etc.',
     // Allergy Detail
     selectSpecificAllergies: 'Select specific items',
-    allergyDetailDesc: 'Choose specific allergies from your selected categories',
+    allergyDetailDesc:
+      'Choose specific allergies from your selected categories',
     shrimp: 'Shrimp',
     crab: 'Crab',
     lobster: 'Lobster',
@@ -294,7 +298,8 @@ export const translations = {
     noPreferenceDesc: 'No specific dietary restrictions',
     // Diet Detail
     selectSpecificDiets: 'Select specific preferences',
-    dietDetailDesc: 'Choose specific dietary preferences from your selected categories',
+    dietDetailDesc:
+      'Choose specific dietary preferences from your selected categories',
     strictVegan: 'Strict Vegan',
     strictVeganDesc: 'No animal products',
     lactoVegetarian: 'Lacto Vegetarian',
@@ -319,7 +324,8 @@ export const translations = {
     garlicOnionFreeDesc: 'Avoids garlic & onion',
     // Onboarding
     welcomeTitle: 'Welcome to SafeMeals',
-    welcomeDescription: 'Let\'s personalize your safety profile to keep you safe while exploring new cuisines.',
+    welcomeDescription:
+      "Let's personalize your safety profile to keep you safe while exploring new cuisines.",
     selectAllergies: 'Select Your Allergies',
     dietaryPreferences: 'Dietary Preferences',
     continueButton: 'Continue to SafeMeals',
@@ -355,7 +361,8 @@ export const translations = {
     eatFearlessly: 'Eat fearlessly, anywhere',
     active: 'active',
     readyToScan: 'Ready to Scan',
-    scanDescription: 'Point your camera at any menu to instantly see translations and safety alerts',
+    scanDescription:
+      'Point your camera at any menu to instantly see translations and safety alerts',
     scanMenu: 'Scan Menu',
     safeNearby: 'Safe Nearby',
     viewAll: 'View All',
@@ -410,7 +417,8 @@ export const translations = {
     logOut: 'Log Out',
     // PIN Modal
     enterSecurityPin: 'Enter Security PIN',
-    pinDescription: 'Your health data is sensitive. Please enter your 4-digit PIN to make changes.',
+    pinDescription:
+      'Your health data is sensitive. Please enter your 4-digit PIN to make changes.',
     enterPin: 'Enter 4-digit PIN',
     cancel: 'Cancel',
     confirm: 'Confirm',
@@ -424,7 +432,8 @@ export const translations = {
     tagline: '安全に、どこでも',
     // Onboarding
     welcomeTitle: 'SafeMealsへようこそ',
-    welcomeDescription: '新しい料理を探索する際に安全を保つために、安全プロファイルをカスタマイズしましょう。',
+    welcomeDescription:
+      '新しい料理を探索する際に安全を保つために、安全プロファイルをカスタマイズしましょう。',
     selectAllergies: 'アレルギーを選択',
     dietaryPreferences: '食事の好み',
     continueButton: 'SafeMealsを始める',
@@ -461,7 +470,8 @@ export const translations = {
     eatFearlessly: '安全に、どこでも',
     active: '有効',
     readyToScan: 'スキャン準備完了',
-    scanDescription: 'メニューにカメラを向けると、翻訳と安全アラートが即座に表示されます',
+    scanDescription:
+      'メニューにカメラを向けると、翻訳と安全アラートが即座に表示されます',
     scanMenu: 'メニューをスキャン',
     safeNearby: '近くの安全な店',
     viewAll: 'すべて表示',
@@ -516,7 +526,8 @@ export const translations = {
     logOut: 'ログアウト',
     // PIN Modal
     enterSecurityPin: 'セキュリティPINを入力',
-    pinDescription: 'あなたの健康データは機密です。変更するには4桁のPINを入力してください。',
+    pinDescription:
+      'あなたの健康データは機密です。変更するには4桁のPINを入力してください。',
     enterPin: '4桁のPINを入力',
     cancel: 'キャンセル',
     confirm: '確認',
@@ -530,7 +541,8 @@ export const translations = {
     tagline: '安全饮食，随时随地',
     // Onboarding
     welcomeTitle: '欢迎使用SafeMeals',
-    welcomeDescription: '让我们个性化您的安全配置文件，以便在探索新美食时保护您的安全。',
+    welcomeDescription:
+      '让我们个性化您的安全配置文件，以便在探索新美食时保护您的安全。',
     selectAllergies: '选择您的过敏源',
     dietaryPreferences: '饮食偏好',
     continueButton: '继续使用SafeMeals',
@@ -636,7 +648,8 @@ export const translations = {
     tagline: 'Come sin miedo, en cualquier lugar',
     // Onboarding
     welcomeTitle: 'Bienvenido a SafeMeals',
-    welcomeDescription: 'Personalicemos tu perfil de seguridad para mantenerte seguro mientras exploras nuevas cocinas.',
+    welcomeDescription:
+      'Personalicemos tu perfil de seguridad para mantenerte seguro mientras exploras nuevas cocinas.',
     selectAllergies: 'Selecciona tus Alergias',
     dietaryPreferences: 'Preferencias Dietéticas',
     continueButton: 'Continuar a SafeMeals',
@@ -673,7 +686,8 @@ export const translations = {
     eatFearlessly: 'Come sin miedo, en cualquier lugar',
     active: '',
     readyToScan: 'Listo para Escanear',
-    scanDescription: 'Apunta tu cámara a cualquier menú para ver traducciones y alertas de seguridad al instante',
+    scanDescription:
+      'Apunta tu cámara a cualquier menú para ver traducciones y alertas de seguridad al instante',
     scanMenu: 'Escanear Menú',
     safeNearby: 'Seguro Cerca',
     viewAll: 'Ver Todo',
@@ -708,7 +722,8 @@ export const translations = {
     bulgogi: 'Bulgogi',
     bulgogiDesc: 'Carne de res marinada a la parrilla en salsa de soja',
     veggieKimbap: 'Kimbap de Verduras',
-    veggieKimbapDesc: 'Rollos de arroz con pepino, zanahoria y rábano encurtido',
+    veggieKimbapDesc:
+      'Rollos de arroz con pepino, zanahoria y rábano encurtido',
     mayContainFishSauce: 'Puede contener salsa de pescado',
     containsBeefStock: 'Contiene caldo de res oculto',
     containsMeat: 'Contiene carne (res)',
@@ -728,7 +743,8 @@ export const translations = {
     logOut: 'Cerrar Sesión',
     // PIN Modal
     enterSecurityPin: 'Ingrese PIN de Seguridad',
-    pinDescription: 'Tus datos de salud son sensibles. Ingresa tu PIN de 4 dígitos para hacer cambios.',
+    pinDescription:
+      'Tus datos de salud son sensibles. Ingresa tu PIN de 4 dígitos para hacer cambios.',
     enterPin: 'Ingrese PIN de 4 dígitos',
     cancel: 'Cancelar',
     confirm: 'Confirmar',

@@ -95,23 +95,28 @@ const allergyDetails = {
   },
 };
 
-export function AllergyDetailScreen({ category, onComplete, onBack, language }: AllergyDetailScreenProps) {
+export function AllergyDetailScreen({
+  category,
+  onComplete,
+  onBack,
+  language,
+}: AllergyDetailScreenProps) {
   const [selected, setSelected] = useState<string[]>([]);
-  
+
   const details = allergyDetails[category as keyof typeof allergyDetails];
-  
+
   if (!details) {
     return null;
   }
 
   const toggleItem = (id: string) => {
-    setSelected(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
 
   const selectAll = () => {
-    setSelected(details.items.map(item => item.id));
+    setSelected(details.items.map((item) => item.id));
   };
 
   const clearAll = () => {
@@ -164,36 +169,38 @@ export function AllergyDetailScreen({ category, onComplete, onBack, language }: 
   const t = getText[language];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={onBack} className="p-2 -ml-2">
-            <ChevronLeft className="w-6 h-6" />
+      <div className="border-b border-gray-200 px-6 pb-4 pt-6">
+        <div className="mb-4 flex items-center justify-between">
+          <button onClick={onBack} className="-ml-2 p-2">
+            <ChevronLeft className="h-6 w-6" />
           </button>
           <div className="flex-1 text-center">
             <h2>{t.title}</h2>
           </div>
           <div className="w-10" />
         </div>
-        <p className="text-sm text-muted-foreground text-center">{t.subtitle}</p>
+        <p className="text-center text-sm text-muted-foreground">
+          {t.subtitle}
+        </p>
       </div>
 
       {/* Content */}
       <div className="flex-1 p-6">
         {/* Quick Actions */}
-        <div className="flex gap-3 mb-6">
+        <div className="mb-6 flex gap-3">
           <Button
             onClick={selectAll}
             variant="outline"
-            className="flex-1 h-10 rounded-full border-2 border-[#2ECC71] text-[#2ECC71] hover:bg-[#2ECC71]/10"
+            className="h-10 flex-1 rounded-full border-2 border-[#2ECC71] text-[#2ECC71] hover:bg-[#2ECC71]/10"
           >
             {t.selectAll}
           </Button>
           <Button
             onClick={clearAll}
             variant="outline"
-            className="flex-1 h-10 rounded-full"
+            className="h-10 flex-1 rounded-full"
           >
             {t.clearAll}
           </Button>
@@ -207,20 +214,20 @@ export function AllergyDetailScreen({ category, onComplete, onBack, language }: 
               <button
                 key={item.id}
                 onClick={() => toggleItem(item.id)}
-                className={`
-                  relative p-4 rounded-2xl border-2 transition-all text-left
-                  ${isSelected
+                className={`relative rounded-2xl border-2 p-4 text-left transition-all ${
+                  isSelected
                     ? 'border-[#2ECC71] bg-[#2ECC71]/5'
                     : 'border-gray-200 bg-white hover:border-gray-300'
-                  }
-                `}
+                } `}
               >
                 {isSelected && (
-                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#2ECC71] flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white" />
+                  <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#2ECC71]">
+                    <Check className="h-4 w-4 text-white" />
                   </div>
                 )}
-                <p className={`${isSelected ? 'text-[#2ECC71]' : 'text-gray-900'} mb-1`}>
+                <p
+                  className={`${isSelected ? 'text-[#2ECC71]' : 'text-gray-900'} mb-1`}
+                >
                   {language === 'ko' ? item.ko : item.en}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -245,7 +252,7 @@ export function AllergyDetailScreen({ category, onComplete, onBack, language }: 
       <div className="p-6">
         <Button
           onClick={() => onComplete(selected)}
-          className="w-full h-14 rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] hover:from-[#27AE60] hover:to-[#229954] text-white shadow-lg shadow-[#2ECC71]/30"
+          className="h-14 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
           disabled={selected.length === 0}
         >
           {t.continue}

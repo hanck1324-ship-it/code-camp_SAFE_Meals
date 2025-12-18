@@ -39,10 +39,15 @@ function AllergyDetailContent() {
 export default function AllergyDetailPage() {
   return (
     <RequireAuth>
-      <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-white">
+            Loading...
+          </div>
+        }
+      >
         <AllergyDetailContent />
       </Suspense>
     </RequireAuth>
   );
 }
-

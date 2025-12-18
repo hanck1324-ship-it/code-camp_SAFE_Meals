@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { NextThemesProvider } from "@/commons/providers/next-themes/next-themes.provider";
-import styles from "./styles.module.css";
+import React from 'react';
+import { NextThemesProvider } from '@/commons/providers/next-themes/next-themes.provider';
+import styles from './styles.module.css';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,4 +26,3 @@ export default function Layout({ children }: LayoutProps) {
     </NextThemesProvider>
   );
 }
-

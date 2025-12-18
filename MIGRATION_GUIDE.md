@@ -7,6 +7,7 @@
 ### 1. 폴더 구조 변경
 
 **이전 구조 (Vite):**
+
 ```
 src/
   ├── App.tsx
@@ -17,6 +18,7 @@ src/
 ```
 
 **새 구조 (Next.js 14):**
+
 ```
 app/                    # Next.js App Router
   ├── layout.tsx       # 루트 레이아웃
@@ -63,9 +65,11 @@ const logo = '/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
 ### 5. 라우팅 변경
 
 **이전 (SPA - 상태 기반):**
+
 - `App.tsx`에서 `currentScreen` 상태로 화면 전환
 
 **이후 (Next.js - 파일 기반 라우팅):**
+
 - `app/page.tsx`가 홈 페이지
 - 향후 각 화면을 별도 라우트로 분리 가능:
   - `app/login/page.tsx`
@@ -76,11 +80,13 @@ const logo = '/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
 ### 6. 패키지 변경
 
 **추가된 패키지:**
+
 - `next`: Next.js 프레임워크
 - `eslint-config-next`: Next.js ESLint 설정
 - `autoprefixer`, `postcss`: Tailwind CSS를 위한 PostCSS 플러그인
 
 **제거된 패키지:**
+
 - `vite`: 더 이상 사용하지 않음
 - `@vitejs/plugin-react-swc`: 더 이상 사용하지 않음
 
@@ -89,10 +95,10 @@ const logo = '/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
 ```json
 {
   "scripts": {
-    "dev": "next dev",        // 이전: "vite"
-    "build": "next build",    // 이전: "vite build"
-    "start": "next start",    // 새로 추가
-    "lint": "next lint"       // 새로 추가
+    "dev": "next dev", // 이전: "vite"
+    "build": "next build", // 이전: "vite build"
+    "start": "next start", // 새로 추가
+    "lint": "next lint" // 새로 추가
   }
 }
 ```
@@ -114,6 +120,7 @@ npm run dev
 ### 3. 향후 개선 사항
 
 1. **라우팅 개선**: 각 화면을 별도 라우트로 분리
+
    ```typescript
    // app/login/page.tsx
    // app/signup/page.tsx
@@ -123,6 +130,7 @@ npm run dev
 2. **서버 컴포넌트 활용**: 가능한 곳에서 서버 컴포넌트 사용
 
 3. **이미지 최적화**: Next.js `Image` 컴포넌트 사용
+
    ```typescript
    import Image from 'next/image';
    ```
@@ -135,4 +143,3 @@ npm run dev
 
 - 기존 `src/` 디렉토리는 백업용으로 남겨두었습니다. 안전하게 마이그레이션이 완료되면 삭제할 수 있습니다.
 - `vite.config.ts`와 `index.html`은 더 이상 사용되지 않지만, 참고용으로 남겨두었습니다.
-

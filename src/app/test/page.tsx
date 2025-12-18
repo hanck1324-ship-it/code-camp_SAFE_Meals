@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface TestResult {
@@ -75,9 +81,9 @@ export default function TestPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">연결 테스트</h1>
-      <p className="text-muted-foreground mb-8">
+    <div className="container mx-auto max-w-4xl p-6">
+      <h1 className="mb-6 text-3xl font-bold">연결 테스트</h1>
+      <p className="mb-8 text-muted-foreground">
         Supabase와 API 키 연결 상태를 확인합니다.
       </p>
 
@@ -98,9 +104,7 @@ export default function TestPage() {
             {loading.supabase ? '테스트 중...' : 'Supabase 테스트'}
           </Button>
           {supabaseResult && (
-            <Alert
-              variant={supabaseResult.success ? 'default' : 'destructive'}
-            >
+            <Alert variant={supabaseResult.success ? 'default' : 'destructive'}>
               <AlertDescription>
                 <div className="space-y-2">
                   <p className="font-semibold">
@@ -111,7 +115,7 @@ export default function TestPage() {
                     <p className="text-red-600">{supabaseResult.error}</p>
                   )}
                   {supabaseResult.details && (
-                    <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                    <pre className="overflow-auto rounded bg-muted p-2 text-xs">
                       {JSON.stringify(supabaseResult.details, null, 2)}
                     </pre>
                   )}
@@ -139,9 +143,7 @@ export default function TestPage() {
             {loading.apiKey ? '테스트 중...' : 'API 키 테스트'}
           </Button>
           {apiKeyResult && (
-            <Alert
-              variant={apiKeyResult.success ? 'default' : 'destructive'}
-            >
+            <Alert variant={apiKeyResult.success ? 'default' : 'destructive'}>
               <AlertDescription>
                 <div className="space-y-2">
                   <p className="font-semibold">
@@ -152,7 +154,7 @@ export default function TestPage() {
                     <p className="text-red-600">{apiKeyResult.error}</p>
                   )}
                   {apiKeyResult.details && (
-                    <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                    <pre className="overflow-auto rounded bg-muted p-2 text-xs">
                       {JSON.stringify(apiKeyResult.details, null, 2)}
                     </pre>
                   )}
@@ -187,20 +189,20 @@ export default function TestPage() {
             >
               <AlertDescription>
                 <div className="space-y-2">
-                  <p className="font-semibold text-lg">
+                  <p className="text-lg font-semibold">
                     {statusResult.summary?.message}
                   </p>
                   {statusResult.details && (
                     <div className="space-y-4">
                       <div>
                         <p className="font-semibold">Supabase:</p>
-                        <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                        <pre className="overflow-auto rounded bg-muted p-2 text-xs">
                           {JSON.stringify(statusResult.supabase, null, 2)}
                         </pre>
                       </div>
                       <div>
                         <p className="font-semibold">API 키:</p>
-                        <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                        <pre className="overflow-auto rounded bg-muted p-2 text-xs">
                           {JSON.stringify(statusResult.apiKey, null, 2)}
                         </pre>
                       </div>
@@ -215,4 +217,3 @@ export default function TestPage() {
     </div>
   );
 }
-

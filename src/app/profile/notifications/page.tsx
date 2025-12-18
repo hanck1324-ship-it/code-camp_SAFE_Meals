@@ -11,11 +11,7 @@ export default function NotificationsSettingsPage() {
 
   return (
     <RequireAuth>
-      <NotificationsScreen
-        onBack={() => router.back()}
-        language={language}
-      />
+      <NotificationsScreen onBack={() => router.back()} language={language} />
     </RequireAuth>
   );
 }
-

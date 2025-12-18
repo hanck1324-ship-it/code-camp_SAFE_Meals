@@ -13,7 +13,12 @@ interface LoginScreenProps {
   onLanguageChange: (language: Language) => void;
 }
 
-export function LoginScreen({ onLogin, onSocialLogin, language, onLanguageChange }: LoginScreenProps) {
+export function LoginScreen({
+  onLogin,
+  onSocialLogin,
+  language,
+  onLanguageChange,
+}: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,9 +38,12 @@ export function LoginScreen({ onLogin, onSocialLogin, language, onLanguageChange
   const currentText = loginText[language];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex flex-col p-6">
-      <div className="flex justify-end mb-4">
-        <LanguageSelector currentLanguage={language} onLanguageChange={onLanguageChange} />
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-gray-50 to-white p-6">
+      <div className="mb-4 flex justify-end">
+        <LanguageSelector
+          currentLanguage={language}
+          onLanguageChange={onLanguageChange}
+        />
       </div>
       {/* ...rest original JSX omitted for brevity... */}
     </div>

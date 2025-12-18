@@ -1,6 +1,6 @@
 /* AuthProvider (mock) */
-"use client";
-import { createContext, useContext, useState, ReactNode } from "react";
+'use client';
+import { createContext, useContext, useState, ReactNode } from 'react';
 
 export type User = {
   id: string;
@@ -46,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be inside AuthProvider");
+  if (!ctx) throw new Error('useAuth must be inside AuthProvider');
   return ctx;
 }
-

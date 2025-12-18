@@ -17,7 +17,13 @@ interface AllergyOption {
   category: string;
 }
 
-export function AllergyDetailScreen({ categories, onAllergySelect, onBack, language, onLanguageChange }: AllergyDetailScreenProps) {
+export function AllergyDetailScreen({
+  categories,
+  onAllergySelect,
+  onBack,
+  language,
+  onLanguageChange,
+}: AllergyDetailScreenProps) {
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
   const t = translations[language];
 
@@ -70,19 +76,19 @@ export function AllergyDetailScreen({ categories, onAllergySelect, onBack, langu
     { id: 'foodDyes', label: t.foodDyes, category: 'additives' },
   ];
 
-  const filteredOptions = allAllergyOptions.filter(option =>
+  const filteredOptions = allAllergyOptions.filter((option) =>
     categories.includes(option.category)
   );
 
   const toggleAllergy = (id: string) => {
-    setSelectedAllergies(prev =>
-      prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
+    setSelectedAllergies((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
   };
 
-  const groupedOptions = categories.map(category => ({
+  const groupedOptions = categories.map((category) => ({
     category,
-    options: filteredOptions.filter(option => option.category === category),
+    options: filteredOptions.filter((option) => option.category === category),
   }));
 
   const getCategoryLabel = (category: string) => {
@@ -99,48 +105,57 @@ export function AllergyDetailScreen({ categories, onAllergySelect, onBack, langu
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
       <div className="p-6 pb-4">
         {/* Progress */}
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-sm text-gray-500">{t.step} 2 {t.of} 4</span>
-          <div className="flex-1 h-2 bg-gray-100 rounded-full">
-            <div className="h-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] rounded-full" style={{ width: '50%' }} />
+        <div className="mb-6 flex items-center gap-2">
+          <span className="text-sm text-gray-500">
+            {t.step} 2 {t.of} 4
+          </span>
+          <div className="h-2 flex-1 rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60]"
+              style={{ width: '50%' }}
+            />
           </div>
         </div>
 
         <h1 className="mb-2">{t.selectSpecificAllergies}</h1>
-        <p className="text-muted-foreground">
-          {t.allergyDetailDesc}
-        </p>
+        <p className="text-muted-foreground">{t.allergyDetailDesc}</p>
       </div>
 
       {/* Allergy List */}
-      <div className="px-6 pb-4 overflow-y-auto">
+      <div className="overflow-y-auto px-6 pb-4">
         <div className="space-y-6">
           {groupedOptions.map(({ category, options }) => (
             <div key={category}>
-              <h3 className="text-sm mb-3 text-gray-600">{getCategoryLabel(category)}</h3>
+              <h3 className="mb-3 text-sm text-gray-600">
+                {getCategoryLabel(category)}
+              </h3>
               <div className="space-y-2">
                 {options.map((option) => (
                   <button
                     key={option.id}
                     onClick={() => toggleAllergy(option.id)}
-                    className={`
-                      w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all
-                      ${selectedAllergies.includes(option.id)
+                    className={`flex w-full items-center justify-between rounded-xl border-2 p-4 transition-all ${
+                      selectedAllergies.includes(option.id)
                         ? 'border-[#2ECC71] bg-[#2ECC71]/5'
                         : 'border-gray-200 bg-white hover:border-gray-300'
-                      }
-                    `}
+                    } `}
                   >
-                    <span className={selectedAllergies.includes(option.id) ? 'text-[#2ECC71]' : 'text-gray-900'}>
+                    <span
+                      className={
+                        selectedAllergies.includes(option.id)
+                          ? 'text-[#2ECC71]'
+                          : 'text-gray-900'
+                      }
+                    >
                       {option.label}
                     </span>
                     {selectedAllergies.includes(option.id) && (
-                      <div className="w-6 h-6 rounded-full bg-[#2ECC71] flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2ECC71]">
+                        <Check className="h-4 w-4 text-white" />
                       </div>
                     )}
                   </button>
@@ -152,20 +167,20 @@ export function AllergyDetailScreen({ categories, onAllergySelect, onBack, langu
       </div>
 
       {/* Bottom Button */}
-      <div className="px-6 pt-[19px] pb-6 border-t border-gray-100">
+      <div className="border-t border-gray-100 px-6 pb-6 pt-[19px]">
         <Button
           onClick={() => onAllergySelect(selectedAllergies)}
           disabled={selectedAllergies.length === 0}
-          className="w-full h-14 rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] hover:from-[#27AE60] hover:to-[#229954] text-white shadow-lg shadow-[#2ECC71]/30 mb-4"
+          className="mb-4 h-14 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
         >
           {t.next}
         </Button>
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
-            className="text-gray-500 hover:text-gray-700 flex items-center gap-1"
+            className="flex items-center gap-1 text-gray-500 hover:text-gray-700"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="h-5 w-5" />
             {t.back}
           </button>
           <button

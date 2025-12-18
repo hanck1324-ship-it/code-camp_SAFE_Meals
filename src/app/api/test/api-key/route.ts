@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 /**
  * 식품안전나라 API 키 테스트
  * GET /api/test/api-key
- * 
+ *
  * 식품안전나라 API가 정상적으로 작동하는지 확인합니다.
  */
 export async function GET() {
@@ -100,9 +100,15 @@ export async function GET() {
         status: response.status,
         hasData,
         dataCount,
-        sampleData: hasData && dataCount > 0 ? {
-          firstItem: Object.keys(data[RECIPE_ID].row[0] || {}).slice(0, 3),
-        } : null,
+        sampleData:
+          hasData && dataCount > 0
+            ? {
+                firstItem: Object.keys(data[RECIPE_ID].row[0] || {}).slice(
+                  0,
+                  3
+                ),
+              }
+            : null,
       },
       timestamp: new Date().toISOString(),
     });
@@ -120,4 +126,3 @@ export async function GET() {
     );
   }
 }
-

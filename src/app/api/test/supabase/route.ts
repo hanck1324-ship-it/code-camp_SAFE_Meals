@@ -4,7 +4,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 /**
  * Supabase 연결 테스트 API
  * GET /api/test/supabase
- * 
+ *
  * Supabase 클라이언트가 정상적으로 연결되는지 확인합니다.
  */
 export async function GET() {
@@ -24,7 +24,8 @@ export async function GET() {
             urlLength: supabaseUrl?.length || 0,
             keyLength: supabaseKey?.length || 0,
           },
-          message: '.env.local 파일에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 설정해주세요.',
+          message:
+            '.env.local 파일에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 설정해주세요.',
         },
         { status: 400 }
       );
@@ -32,8 +33,8 @@ export async function GET() {
 
     // 2. Supabase 클라이언트 연결 테스트
     const supabase = getSupabaseClient();
-    
-    // 간단한 쿼리로 연결 확인 (auth.users 테이블은 접근 권한이 필요하므로, 
+
+    // 간단한 쿼리로 연결 확인 (auth.users 테이블은 접근 권한이 필요하므로,
     // 대신 health check를 위해 빈 쿼리 실행)
     const { data, error } = await supabase
       .from('_test_connection')
@@ -52,7 +53,9 @@ export async function GET() {
         keyPrefix: supabaseKey.substring(0, 20) + '...', // 키 일부만 표시
         urlLength: supabaseUrl.length,
         keyLength: supabaseKey.length,
-        connectionStatus: connectionTest.error ? '연결 확인됨 (인증 필요)' : '완전 연결됨',
+        connectionStatus: connectionTest.error
+          ? '연결 확인됨 (인증 필요)'
+          : '완전 연결됨',
       },
       timestamp: new Date().toISOString(),
     });
@@ -70,4 +73,3 @@ export async function GET() {
     );
   }
 }
-

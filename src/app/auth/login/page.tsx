@@ -17,20 +17,23 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const { language } = useTranslation();
 
-  const loginText: Record<Language, {
-    title: string;
-    subtitle: string;
-    email: string;
-    password: string;
-    login: string;
-    or: string;
-    signup: string;
-    forgot: string;
-    forgotEmail: string;
-    continueWithGoogle: string;
-    continueWithApple: string;
-    continueWithFacebook: string;
-  }> = {
+  const loginText: Record<
+    Language,
+    {
+      title: string;
+      subtitle: string;
+      email: string;
+      password: string;
+      login: string;
+      or: string;
+      signup: string;
+      forgot: string;
+      forgotEmail: string;
+      continueWithGoogle: string;
+      continueWithApple: string;
+      continueWithFacebook: string;
+    }
+  > = {
     ko: {
       title: 'SafeMeals에 로그인',
       subtitle: '안전한 식사를 시작하세요',
@@ -132,65 +135,81 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col p-6 pb-28">
-      <div className="flex justify-end mb-4">
+    <div className="flex min-h-screen flex-col bg-white p-6 pb-28">
+      <div className="mb-4 flex justify-end">
         <LanguageSelector />
       </div>
-      <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
-        <div className="flex flex-col items-center mb-12">
-            <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
-              <Image src="/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png" alt="SafeMeals Logo" width={160} height={160} className="object-contain" />
-            </div>
-          <p className="text-muted-foreground text-center">{currentText.subtitle}</p>
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
+        <div className="mb-12 flex flex-col items-center">
+          <div className="mb-4 rounded-2xl bg-white p-6 shadow-lg">
+            <Image
+              src="/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png"
+              alt="SafeMeals Logo"
+              width={160}
+              height={160}
+              className="object-contain"
+            />
+          </div>
+          <p className="text-center text-muted-foreground">
+            {currentText.subtitle}
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="flex items-center gap-2 text-sm mb-2">
-              <Mail className="w-4 h-4 text-muted-foreground" />
+            <label className="mb-2 flex items-center gap-2 text-sm">
+              <Mail className="h-4 w-4 text-muted-foreground" />
               {currentText.email}
             </label>
             <div className="relative">
               <Input
                 type="email"
                 value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                className="rounded-xl h-12 bg-white border-gray-200"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setEmail(e.target.value)
+                }
+                className="h-12 rounded-xl border-gray-200 bg-white"
                 placeholder="you@example.com"
                 required
               />
             </div>
           </div>
           <div>
-            <label className="flex items-center gap-2 text-sm mb-2">
-              <Lock className="w-4 h-4 text-muted-foreground" />
+            <label className="mb-2 flex items-center gap-2 text-sm">
+              <Lock className="h-4 w-4 text-muted-foreground" />
               {currentText.password}
             </label>
             <div className="relative">
               <Input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                className="pr-12 rounded-xl h-12 bg-white border-gray-200"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setPassword(e.target.value)
+                }
+                className="h-12 rounded-xl border-gray-200 bg-white pr-12"
                 placeholder="••••••••"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gray-700 transition-colors cursor-pointer"
+                className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-gray-700"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
               </button>
             </div>
           </div>
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] hover:from-[#27AE60] hover:to-[#229954] text-white h-12 rounded-full shadow-lg shadow-[#2ECC71]/30"
+            className="h-12 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
           >
             {currentText.login}
           </Button>
-        
-          <div className="flex justify-between items-center">
+
+          <div className="flex items-center justify-between">
             <button
               type="button"
               className="text-sm text-[#2ECC71] hover:underline"
@@ -207,37 +226,41 @@ function LoginContent() {
         </form>
 
         {/* Divider */}
-        <div className="flex items-center gap-4 my-6">
-          <div className="flex-1 h-px bg-gray-200"></div>
-          <span className="text-sm text-muted-foreground">{currentText.or}</span>
-          <div className="flex-1 h-px bg-gray-200"></div>
+        <div className="my-6 flex items-center gap-4">
+          <div className="h-px flex-1 bg-gray-200"></div>
+          <span className="text-sm text-muted-foreground">
+            {currentText.or}
+          </span>
+          <div className="h-px flex-1 bg-gray-200"></div>
         </div>
 
         {/* Social Login Buttons */}
         <div className="space-y-3">
           <button
             onClick={() => handleSocialLogin('google')}
-            className="w-full h-12 rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
+            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
           >
             {currentText.continueWithGoogle}
           </button>
           <button
             onClick={() => handleSocialLogin('apple')}
-            className="w-full h-12 rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
+            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
           >
             {currentText.continueWithApple}
           </button>
           <button
             onClick={() => handleSocialLogin('facebook')}
-            className="w-full h-12 rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
+            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
           >
             {currentText.continueWithFacebook}
           </button>
         </div>
 
         {/* Sign Up Link */}
-        <p className="text-center mt-6 text-sm text-muted-foreground">
-          {currentText.signup === 'Sign Up' ? "Don't have an account? " : '계정이 없으신가요? '}
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          {currentText.signup === 'Sign Up'
+            ? "Don't have an account? "
+            : '계정이 없으신가요? '}
           <button className="text-[#2ECC71] hover:underline">
             {currentText.signup}
           </button>
@@ -249,7 +272,13 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-white">
+          Loading...
+        </div>
+      }
+    >
       <LoginContent />
     </Suspense>
   );

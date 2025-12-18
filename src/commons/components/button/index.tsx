@@ -1,25 +1,25 @@
-import React, { forwardRef } from "react";
-import styles from "./styles.module.css";
+import React, { forwardRef } from 'react';
+import styles from './styles.module.css';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "tertiary";
-  size?: "small" | "medium" | "large";
+  variant?: 'primary' | 'secondary' | 'tertiary';
+  size?: 'small' | 'medium' | 'large';
   loading?: boolean;
   icon?: React.ReactNode;
-  iconPosition?: "left" | "right";
+  iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
-      variant = "primary",
-      size = "medium",
+      variant = 'primary',
+      size = 'medium',
       loading = false,
       icon,
-      iconPosition = "left",
+      iconPosition = 'left',
       fullWidth = false,
-      className = "",
+      className = '',
       disabled,
       children,
       ...props
@@ -36,19 +36,28 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className,
     ]
       .filter(Boolean)
-      .join(" ");
+      .join(' ');
 
     const isDisabled = disabled || loading;
 
     return (
-      <button ref={ref} className={buttonClasses} disabled={isDisabled} {...props}>
+      <button
+        ref={ref}
+        className={buttonClasses}
+        disabled={isDisabled}
+        {...props}
+      >
         {loading ? (
           <span className={styles.loadingSpinner} />
         ) : (
           <>
-            {icon && iconPosition === "left" && <span className={styles.iconLeft}>{icon}</span>}
+            {icon && iconPosition === 'left' && (
+              <span className={styles.iconLeft}>{icon}</span>
+            )}
             <span>{children}</span>
-            {icon && iconPosition === "right" && <span className={styles.iconRight}>{icon}</span>}
+            {icon && iconPosition === 'right' && (
+              <span className={styles.iconRight}>{icon}</span>
+            )}
           </>
         )}
       </button>
@@ -56,7 +65,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   }
 );
 
-Button.displayName = "Button";
+Button.displayName = 'Button';
 
 export default Button;
-

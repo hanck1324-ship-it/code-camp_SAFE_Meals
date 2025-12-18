@@ -29,12 +29,12 @@
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: oklch(0.708 0 0);
-  
+
   /* SafeMeals Brand Colors */
-  --safe-green: #2ECC71;
-  --warning-yellow: #F1C40F;
-  --danger-red: #E74C3C;
-  
+  --safe-green: #2ecc71;
+  --warning-yellow: #f1c40f;
+  --danger-red: #e74c3c;
+
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);

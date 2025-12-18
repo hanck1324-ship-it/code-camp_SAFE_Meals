@@ -71,4 +71,3 @@ export const ROUTES = {
   SETTINGS: SETTINGS_URLS,
   API: API_URLS,
 } as const;
-

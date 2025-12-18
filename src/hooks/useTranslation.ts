@@ -4,14 +4,14 @@ import type { Language } from '@/lib/translations';
 
 /**
  * 다국어 번역을 위한 커스텀 훅
- * 
+ *
  * 전역 언어 상태를 자동으로 가져와서 번역 객체를 반환합니다.
- * 
+ *
  * @example
  * ```tsx
  * function MyComponent() {
  *   const { t, language, setLanguage, languageName } = useTranslation();
- *   
+ *
  *   return (
  *     <div>
  *       <h1>{t.appName}</h1>
@@ -24,7 +24,7 @@ import type { Language } from '@/lib/translations';
  *   );
  * }
  * ```
- * 
+ *
  * @returns {Object} 번역 객체 및 언어 설정 함수
  * @returns {Object} t - 현재 언어의 번역 객체
  * @returns {Language} language - 현재 선택된 언어 코드
@@ -53,9 +53,9 @@ export function useTranslation() {
 
 /**
  * 특정 언어의 번역을 가져오는 함수 (정적 사용)
- * 
+ *
  * 컴포넌트 외부에서 번역이 필요한 경우 사용합니다.
- * 
+ *
  * @example
  * ```tsx
  * const koreanText = getTranslation('ko', 'appName'); // 'SafeMeals'
@@ -63,14 +63,14 @@ export function useTranslation() {
  */
 export function getTranslation(
   language: Language,
-  key: keyof typeof translations['ko']
+  key: keyof (typeof translations)['ko']
 ): string {
   return translations[language][key];
 }
 
 /**
  * 지원되는 모든 언어 목록 반환
- * 
+ *
  * @example
  * ```tsx
  * const languages = getSupportedLanguages();
@@ -87,4 +87,3 @@ export function getSupportedLanguages() {
     name: languageNames[code],
   }));
 }
-

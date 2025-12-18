@@ -4,9 +4,16 @@ import dynamic from 'next/dynamic';
 import { NextThemesProvider } from '@/commons/providers/next-themes/next-themes.provider';
 import Layout from '@/commons/layout';
 
-const BottomNav = dynamic(() => import('@/components/bottom-nav').then((m) => m.BottomNav), { ssr: false });
+const BottomNav = dynamic(
+  () => import('@/components/bottom-nav').then((m) => m.BottomNav),
+  { ssr: false }
+);
 
-export default function MobileLayout({ children }: { children: React.ReactNode }) {
+export default function MobileLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <NextThemesProvider>
       <Layout>
@@ -16,4 +23,3 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
     </NextThemesProvider>
   );
 }
-

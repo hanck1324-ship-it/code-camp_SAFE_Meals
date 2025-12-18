@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { Home, Camera, Shield, User } from 'lucide-react';
 import { Language, translations } from '@/lib/translations';
 import { usePathname, useRouter } from 'next/navigation';
@@ -10,7 +10,11 @@ interface BottomNavProps {
   language?: Language;
 }
 
-export function BottomNav({ activeTab, onTabChange, language = 'ko' }: BottomNavProps) {
+export function BottomNav({
+  activeTab,
+  onTabChange,
+  language = 'ko',
+}: BottomNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const t = translations[language];
@@ -45,8 +49,8 @@ export function BottomNav({ activeTab, onTabChange, language = 'ko' }: BottomNav
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom">
-      <div className="max-w-md mx-auto flex items-center justify-around h-20">
+    <div className="safe-area-bottom fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
+      <div className="mx-auto flex h-20 max-w-md items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
@@ -58,7 +62,9 @@ export function BottomNav({ activeTab, onTabChange, language = 'ko' }: BottomNav
                 isActive ? 'text-[#2ECC71]' : 'text-gray-400'
               }`}
             >
-              <Icon className={`w-6 h-6 ${isActive ? 'fill-[#2ECC71]/20' : ''}`} />
+              <Icon
+                className={`h-6 w-6 ${isActive ? 'fill-[#2ECC71]/20' : ''}`}
+              />
               <span className="text-xs">{tab.label}</span>
             </button>
           );
@@ -67,4 +73,3 @@ export function BottomNav({ activeTab, onTabChange, language = 'ko' }: BottomNav
     </div>
   );
 }
-

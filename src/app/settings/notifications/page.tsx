@@ -1,6 +1,6 @@
-"use client";
-import { NotificationsScreen } from "@/components/profile/notifications-screen";
-import { RequireAuth } from "@/components/auth/require-auth";
+'use client';
+import { NotificationsScreen } from '@/components/profile/notifications-screen';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function NotificationsSettingsPage() {
   return (
@@ -9,4 +9,3 @@ export default function NotificationsSettingsPage() {
     </RequireAuth>
   );
 }
-

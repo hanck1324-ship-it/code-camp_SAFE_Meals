@@ -1,18 +1,18 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { AuthProvider } from "./_providers/auth-provider";
-import dynamic from "next/dynamic";
-import Layout from "@/commons/layout";
-import { ConditionalBottomNav } from "@/commons/onboarding/conditional-bottom-nav";
+import type { Metadata } from 'next';
+import './globals.css';
+import { AuthProvider } from './_providers/auth-provider';
+import dynamic from 'next/dynamic';
+import Layout from '@/commons/layout';
+import { ConditionalBottomNav } from '@/commons/onboarding/conditional-bottom-nav';
 
 const BottomNav = dynamic(
-  () => import("@/components/bottom-nav").then((m) => m.BottomNav),
+  () => import('@/components/bottom-nav').then((m) => m.BottomNav),
   { ssr: false }
 );
 
 export const metadata: Metadata = {
-  title: "SafeMeals App Design",
-  description: "SafeMeals - 안전하게, 어디서나",
+  title: 'SafeMeals App Design',
+  description: 'SafeMeals - 안전하게, 어디서나',
 };
 
 export default function RootLayout({

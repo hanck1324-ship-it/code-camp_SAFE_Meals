@@ -112,7 +112,8 @@ export const translations = {
     garlicOnionFreeDesc: '마늘·양파 기피',
     // Onboarding
     welcomeTitle: 'SafeMeals에 오신 것을 환영합니다',
-    welcomeDescription: '새로운 음식을 탐험하는 동안 안전하게 지킬 수 있도록 맞춤 안전 프로필을 설정하세요.',
+    welcomeDescription:
+      '새로운 음식을 탐험하는 동안 안전하게 지킬 수 있도록 맞춤 안전 프로필을 설정하세요.',
     selectAllergies: '알레르기 선택',
     dietaryPreferences: '식단 선호도',
     continueButton: 'SafeMeals 시작하기',
@@ -148,7 +149,8 @@ export const translations = {
     eatFearlessly: '안전하게, 어디서나',
     active: '',
     readyToScan: '스캔 준비 완료',
-    scanDescription: '카메라를 메뉴에 비추면 번역과 안전 알림을 즉시 확인할 수 있습니다',
+    scanDescription:
+      '카메라를 메뉴에 비추면 번역과 안전 알림을 즉시 확인할 수 있습니다',
     scanMenu: '메뉴 스캔',
     safeNearby: '주변 안전 식당',
     viewAll: '전체보기',
@@ -210,7 +212,8 @@ export const translations = {
     editAllergies: '알레르기 편집',
     noDietsAdded: '아직 식습관이 추가되지 않았습니다',
     editDietaryPreferences: '식습관 편집',
-    safetyProfileInfo: '안전 프로필은 메뉴를 스캔하고 안전한 요리를 식별하는 데 사용됩니다. 최상의 경험을 위해 최신 상태로 유지하세요.',
+    safetyProfileInfo:
+      '안전 프로필은 메뉴를 스캔하고 안전한 요리를 식별하는 데 사용됩니다. 최상의 경험을 위해 최신 상태로 유지하세요.',
     scanAlerts: '스캔 알림',
     scanAlertsDesc: '스캔 결과가 준비되면 알림 받기',
     allergyWarnings: '알레르기 경고',
@@ -219,12 +222,14 @@ export const translations = {
     nearbyRestaurantsDesc: '주변의 안전한 식당 발견하기',
     newFeatures: '새로운 기능',
     newFeaturesDesc: '새로운 앱 기능에 대한 업데이트',
-    notificationsInfo: '이 설정은 언제든지 변경할 수 있습니다. 중요한 알레르기 경고는 안전을 위해 항상 활성화됩니다.',
+    notificationsInfo:
+      '이 설정은 언제든지 변경할 수 있습니다. 중요한 알레르기 경고는 안전을 위해 항상 활성화됩니다.',
     languageInfo: '앱 인터페이스와 메뉴 번역이 선택한 언어로 업데이트됩니다.',
     protectedAccess: '보호된 접근',
     incorrectPin: 'PIN이 올바르지 않습니다. 다시 시도해주세요.',
     unlock: '잠금 해제',
-    pinSecurityInfo: '안전 카드에는 민감한 알레르기 정보가 포함되어 있습니다. PIN은 귀하만이 식당 직원과 공유할 수 있도록 보장합니다.',
+    pinSecurityInfo:
+      '안전 카드에는 민감한 알레르기 정보가 포함되어 있습니다. PIN은 귀하만이 식당 직원과 공유할 수 있도록 보장합니다.',
     demoPin: '데모: 아무 4자리 PIN 사용',
     faq: 'FAQ',
     faqDesc: '자주 묻는 질문',
@@ -236,11 +241,14 @@ export const translations = {
     contactSupportDesc: '팀에게 도움 받기',
     commonQuestions: '자주 묻는 질문',
     faqQuestion1: 'OCR 스캔의 정확도는 어떻게 되나요?',
-    faqAnswer1: '지원되는 언어의 인쇄된 메뉴에 대해 95% 이상의 정확도를 가진 OCR 기술을 사용합니다.',
+    faqAnswer1:
+      '지원되는 언어의 인쇄된 메뉴에 대해 95% 이상의 정확도를 가진 OCR 기술을 사용합니다.',
     faqQuestion2: '이 앱을 오프라인으로 사용할 수 있나요?',
-    faqAnswer2: '메뉴 스캔에는 인터넷 연결이 필요하지만, 저장된 안전 프로필은 오프라인에서 작동합니다.',
+    faqAnswer2:
+      '메뉴 스캔에는 인터넷 연결이 필요하지만, 저장된 안전 프로필은 오프라인에서 작동합니다.',
     faqQuestion3: '알레르기를 어떻게 업데이트하나요?',
-    faqAnswer3: '내 프로필 > 안전 프로필 > 알레르기 집으로 이동하여 알레르기 목록을 업데이트하세요.',
+    faqAnswer3:
+      '내 프로필 > 안전 프로필 > 알레르기 집으로 이동하여 알레르기 목록을 업데이트하세요.',
     needMoreHelp: '더 많은 도움이 필요하신가요?',
     contactUsDesc: '저희 지원팀이 도와드리겠습니다',
     // Restaurants
@@ -307,7 +315,8 @@ export const translations = {
     etcDesc: 'Search directly',
     // Allergy Detail
     selectSpecificAllergies: 'Select specific items',
-    allergyDetailDesc: 'Choose specific allergies from your selected categories',
+    allergyDetailDesc:
+      'Choose specific allergies from your selected categories',
     shrimp: 'Shrimp',
     crab: 'Crab',
     lobster: 'Lobster',
@@ -353,7 +362,8 @@ export const translations = {
     noPreferenceDesc: 'No specific dietary restrictions',
     // Diet Detail
     selectSpecificDiets: 'Select specific preferences',
-    dietDetailDesc: 'Choose specific dietary preferences from your selected categories',
+    dietDetailDesc:
+      'Choose specific dietary preferences from your selected categories',
     strictVegan: 'Strict Vegan',
     strictVeganDesc: 'No animal products',
     lactoVegetarian: 'Lacto Vegetarian',
@@ -378,7 +388,8 @@ export const translations = {
     garlicOnionFreeDesc: 'Avoids garlic & onion',
     // Onboarding
     welcomeTitle: 'Welcome to SafeMeals',
-    welcomeDescription: 'Let\'s personalize your safety profile to keep you safe while exploring new cuisines.',
+    welcomeDescription:
+      "Let's personalize your safety profile to keep you safe while exploring new cuisines.",
     selectAllergies: 'Select Your Allergies',
     dietaryPreferences: 'Dietary Preferences',
     continueButton: 'Continue to SafeMeals',
@@ -414,7 +425,8 @@ export const translations = {
     eatFearlessly: 'Eat fearlessly, anywhere',
     active: 'active',
     readyToScan: 'Ready to Scan',
-    scanDescription: 'Point your camera at any menu to instantly see translations and safety alerts',
+    scanDescription:
+      'Point your camera at any menu to instantly see translations and safety alerts',
     scanMenu: 'Scan Menu',
     safeNearby: 'Safe Nearby',
     viewAll: 'View All',
@@ -476,7 +488,8 @@ export const translations = {
     editAllergies: 'Edit Allergies',
     noDietsAdded: 'No diets added yet',
     editDietaryPreferences: 'Edit Dietary Preferences',
-    safetyProfileInfo: 'Your safety profile is used to scan menus and identify safe foods. Keep it up to date for the best experience.',
+    safetyProfileInfo:
+      'Your safety profile is used to scan menus and identify safe foods. Keep it up to date for the best experience.',
     scanAlerts: 'Scan Alerts',
     scanAlertsDesc: 'Receive alerts when scan results are ready',
     allergyWarnings: 'Allergy Warnings',
@@ -485,12 +498,15 @@ export const translations = {
     nearbyRestaurantsDesc: 'Discover safe restaurants nearby',
     newFeatures: 'New Features',
     newFeaturesDesc: 'Updates on new app features',
-    notificationsInfo: 'You can change this setting anytime. Important allergy warnings are always enabled for safety.',
-    languageInfo: 'App interface and menu translations will be updated to your selected language.',
+    notificationsInfo:
+      'You can change this setting anytime. Important allergy warnings are always enabled for safety.',
+    languageInfo:
+      'App interface and menu translations will be updated to your selected language.',
     protectedAccess: 'Protected Access',
     incorrectPin: 'PIN is incorrect. Please try again.',
     unlock: 'Unlock',
-    pinSecurityInfo: 'The safety card contains sensitive allergy information. PIN ensures that only you can share it with restaurant staff.',
+    pinSecurityInfo:
+      'The safety card contains sensitive allergy information. PIN ensures that only you can share it with restaurant staff.',
     demoPin: 'Demo: Use any 4-digit PIN',
     faq: 'FAQ',
     faqDesc: 'Frequently Asked Questions',
@@ -502,11 +518,14 @@ export const translations = {
     contactSupportDesc: 'Get help from our team',
     commonQuestions: 'Common Questions',
     faqQuestion1: 'What is the accuracy of OCR scanning?',
-    faqAnswer1: 'We use OCR technology with over 95% accuracy for printed menus in supported languages.',
+    faqAnswer1:
+      'We use OCR technology with over 95% accuracy for printed menus in supported languages.',
     faqQuestion2: 'Can I use this app offline?',
-    faqAnswer2: 'Menu scanning requires an internet connection, but saved safety profiles work offline.',
+    faqAnswer2:
+      'Menu scanning requires an internet connection, but saved safety profiles work offline.',
     faqQuestion3: 'How do I update my allergies?',
-    faqAnswer3: 'Go to My Profile > Safety Profile > Edit Allergies to update your allergy list.',
+    faqAnswer3:
+      'Go to My Profile > Safety Profile > Edit Allergies to update your allergy list.',
     needMoreHelp: 'Need more help?',
     contactUsDesc: 'Our support team is here to help',
     // Restaurants
@@ -644,7 +663,8 @@ export const translations = {
     garlicOnionFreeDesc: 'ニンニクと玉ねぎを避ける',
     // Onboarding
     welcomeTitle: 'SafeMealsへようこそ',
-    welcomeDescription: '新しい料理を探索する際に安全を保つために、安全プロファイルをカスタマイズしましょう。',
+    welcomeDescription:
+      '新しい料理を探索する際に安全を保つために、安全プロファイルをカスタマイズしましょう。',
     selectAllergies: 'アレルギーを選択',
     dietaryPreferences: '食事の好み',
     continueButton: 'SafeMealsを始める',
@@ -680,7 +700,8 @@ export const translations = {
     eatFearlessly: '安全に、どこでも',
     active: '有効',
     readyToScan: 'スキャン準備完了',
-    scanDescription: 'メニューにカメラを向けると、翻訳と安全アラートが即座に表示されます',
+    scanDescription:
+      'メニューにカメラを向けると、翻訳と安全アラートが即座に表示されます',
     scanMenu: 'メニューをスキャン',
     safeNearby: '近くの安全な店',
     viewAll: 'すべて表示',
@@ -742,7 +763,8 @@ export const translations = {
     editAllergies: 'アレルギーの編集',
     noDietsAdded: 'まだ食事が追加されていません',
     editDietaryPreferences: '食事の好みの編集',
-    safetyProfileInfo: '安全プロファイルはメニューをスキャンし、安全な食品を特定するために使用されます。最高の体験を得るために最新の状態を維持してください。',
+    safetyProfileInfo:
+      '安全プロファイルはメニューをスキャンし、安全な食品を特定するために使用されます。最高の体験を得るために最新の状態を維持してください。',
     scanAlerts: 'スキャンアラート',
     scanAlertsDesc: 'スキャン結果が準備されるとアラートを受け取る',
     allergyWarnings: 'アレルギーウォーニング',
@@ -751,12 +773,15 @@ export const translations = {
     nearbyRestaurantsDesc: '近隣の安全なレストランを発見する',
     newFeatures: '新しい機能',
     newFeaturesDesc: '新しいアプリ機能のアップデート',
-    notificationsInfo: 'この設定はいつでも変更できます。重要なアレルギーウォーニングは常に有効で、安全を確保します。',
-    languageInfo: 'アプリのインターフェースとメニューの翻訳は選択した言語に更新されます。',
+    notificationsInfo:
+      'この設定はいつでも変更できます。重要なアレルギーウォーニングは常に有効で、安全を確保します。',
+    languageInfo:
+      'アプリのインターフェースとメニューの翻訳は選択した言語に更新されます。',
     protectedAccess: '保護されたアクセス',
     incorrectPin: 'PINが正しくありません。もう一度試してください。',
     unlock: 'ロック解除',
-    pinSecurityInfo: '安全カードには機密的なアレルギー情報が含まれています。PINはあなたがレストランスタッフと共有できるように保証します。',
+    pinSecurityInfo:
+      '安全カードには機密的なアレルギー情報が含まれています。PINはあなたがレストランスタッフと共有できるように保証します。',
     demoPin: 'デモ: 任意の4桁のPINを使用',
     faq: 'FAQ',
     faqDesc: 'よくある質問',
@@ -768,11 +793,14 @@ export const translations = {
     contactSupportDesc: 'チームから助けを受ける',
     commonQuestions: 'よくある質問',
     faqQuestion1: 'OCRスキャンの正確さはどの程度ですか？',
-    faqAnswer1: 'サポートされている言語の印刷されたメニューに対して95%以上の正確さを持つOCR技術を使用します。',
+    faqAnswer1:
+      'サポートされている言語の印刷されたメニューに対して95%以上の正確さを持つOCR技術を使用します。',
     faqQuestion2: 'このアプリをオフラインで使用できますか？',
-    faqAnswer2: 'メニューのスキャンにはインターネット接続が必要ですが、保存された安全プロファイルはオフラインで動作します。',
+    faqAnswer2:
+      'メニューのスキャンにはインターネット接続が必要ですが、保存された安全プロファイルはオフラインで動作します。',
     faqQuestion3: 'アレルギーをどのように更新しますか？',
-    faqAnswer3: 'マイプロフィール > 安全プロファイル > アレルギーの編集に移動してアレルギーリストを更新してください。',
+    faqAnswer3:
+      'マイプロフィール > 安全プロファイル > アレルギーの編集に移動してアレルギーリストを更新してください。',
     needMoreHelp: 'さらに助けが必要ですか？',
     contactUsDesc: '私たちのサポートチームがお手伝いします',
     // Restaurants
@@ -910,7 +938,8 @@ export const translations = {
     garlicOnionFreeDesc: '避免大蒜和洋葱',
     // Onboarding
     welcomeTitle: '欢迎使用SafeMeals',
-    welcomeDescription: '让我们个性化您的安全配置文件，以便在探索新美食时保护您的安全。',
+    welcomeDescription:
+      '让我们个性化您的安全配置文件，以便在探索新美食时保护您的安全。',
     selectAllergies: '选择您的过敏源',
     dietaryPreferences: '饮食偏好',
     continueButton: '继续使用SafeMeals',
@@ -1008,7 +1037,8 @@ export const translations = {
     editAllergies: '编辑过敏源',
     noDietsAdded: '尚未添加饮食',
     editDietaryPreferences: '编辑饮食偏好',
-    safetyProfileInfo: '您的安全配置文件用于扫描菜单并识别安全食品。保持最新状态以获得最佳体验。',
+    safetyProfileInfo:
+      '您的安全配置文件用于扫描菜单并识别安全食品。保持最新状态以获得最佳体验。',
     scanAlerts: '扫描警报',
     scanAlertsDesc: '扫描结果准备就绪时接收警报',
     allergyWarnings: '过敏警告',
@@ -1022,7 +1052,8 @@ export const translations = {
     protectedAccess: '受保护的访问',
     incorrectPin: 'PIN不正确。请重试。',
     unlock: '解锁',
-    pinSecurityInfo: '安全卡包含敏感的过敏信息。PIN确保只有您才能与餐厅员工共享。',
+    pinSecurityInfo:
+      '安全卡包含敏感的过敏信息。PIN确保只有您才能与餐厅员工共享。',
     demoPin: '演示：使用任何4位PIN',
     faq: 'FAQ',
     faqDesc: '常见问题',
@@ -1038,7 +1069,8 @@ export const translations = {
     faqQuestion2: '我可以离线使用此应用吗？',
     faqAnswer2: '菜单扫描需要互联网连接，但保存的安全配置文件可以离线使用。',
     faqQuestion3: '如何更新我的过敏源？',
-    faqAnswer3: '前往我的个人资料 > 安全配置文件 > 编辑过敏源以更新您的过敏源列表。',
+    faqAnswer3:
+      '前往我的个人资料 > 安全配置文件 > 编辑过敏源以更新您的过敏源列表。',
     needMoreHelp: '需要更多帮助？',
     contactUsDesc: '我们的支持团队随时待命',
     // Restaurants
@@ -1105,7 +1137,8 @@ export const translations = {
     etcDesc: 'Buscar directamente',
     // Allergy Detail
     selectSpecificAllergies: 'Selecciona elementos específicos',
-    allergyDetailDesc: 'Elige alergias específicas de tus categorías seleccionadas',
+    allergyDetailDesc:
+      'Elige alergias específicas de tus categorías seleccionadas',
     shrimp: 'Camarón',
     crab: 'Cangrejo',
     lobster: 'Langosta',
@@ -1151,7 +1184,8 @@ export const translations = {
     noPreferenceDesc: 'Sin restricciones dietéticas específicas',
     // Diet Detail
     selectSpecificDiets: 'Selecciona preferencias específicas',
-    dietDetailDesc: 'Elige preferencias dietéticas específicas de tus categorías seleccionadas',
+    dietDetailDesc:
+      'Elige preferencias dietéticas específicas de tus categorías seleccionadas',
     strictVegan: 'Vegano Estricto',
     strictVeganDesc: 'Sin productos animales',
     lactoVegetarian: 'Lacto Vegetariano',
@@ -1176,7 +1210,8 @@ export const translations = {
     garlicOnionFreeDesc: 'Evita ajo y cebolla',
     // Onboarding
     welcomeTitle: 'Bienvenido a SafeMeals',
-    welcomeDescription: 'Personalicemos tu perfil de seguridad para mantenerte seguro mientras exploras nuevas cocinas.',
+    welcomeDescription:
+      'Personalicemos tu perfil de seguridad para mantenerte seguro mientras exploras nuevas cocinas.',
     selectAllergies: 'Selecciona tus Alergias',
     dietaryPreferences: 'Preferencias Dietéticas',
     continueButton: 'Continuar a SafeMeals',
@@ -1212,7 +1247,8 @@ export const translations = {
     eatFearlessly: 'Come sin miedo, en cualquier lugar',
     active: '',
     readyToScan: 'Listo para Escanear',
-    scanDescription: 'Apunta tu cámara a cualquier menú para ver traducciones y alertas de seguridad al instante',
+    scanDescription:
+      'Apunta tu cámara a cualquier menú para ver traducciones y alertas de seguridad al instante',
     scanMenu: 'Escanear Menú',
     safeNearby: 'Seguro Cerca',
     viewAll: 'Ver Todo',
@@ -1247,7 +1283,8 @@ export const translations = {
     bulgogi: 'Bulgogi',
     bulgogiDesc: 'Carne de res marinada a la parrilla en salsa de soja',
     veggieKimbap: 'Kimbap de Verduras',
-    veggieKimbapDesc: 'Rollos de arroz con pepino, zanahoria y rábano encurtido',
+    veggieKimbapDesc:
+      'Rollos de arroz con pepino, zanahoria y rábano encurtido',
     mayContainFishSauce: 'Puede contener salsa de pescado',
     containsBeefStock: 'Contiene caldo de res oculto',
     containsMeat: 'Contiene carne (res)',
@@ -1274,21 +1311,26 @@ export const translations = {
     editAllergies: 'Editar Alergias',
     noDietsAdded: 'Aún no se han agregado dietas',
     editDietaryPreferences: 'Editar Preferencias Dietéticas',
-    safetyProfileInfo: 'Tu perfil de seguridad se usa para escanear menús e identificar alimentos seguros. Manténlo actualizado para la mejor experiencia.',
+    safetyProfileInfo:
+      'Tu perfil de seguridad se usa para escanear menús e identificar alimentos seguros. Manténlo actualizado para la mejor experiencia.',
     scanAlerts: 'Alertas de Escaneo',
-    scanAlertsDesc: 'Recibir alertas cuando los resultados del escaneo estén listos',
+    scanAlertsDesc:
+      'Recibir alertas cuando los resultados del escaneo estén listos',
     allergyWarnings: 'Advertencias de Alergias',
     allergyWarningsDesc: 'Alertas importantes para alergenos detectados',
     nearbyRestaurants: 'Restaurantes Cercanos',
     nearbyRestaurantsDesc: 'Descubre restaurantes seguros cerca',
     newFeatures: 'Nuevas Funciones',
     newFeaturesDesc: 'Actualizaciones sobre nuevas funciones de la app',
-    notificationsInfo: 'Puedes cambiar esta configuración en cualquier momento. Las advertencias importantes de alergias siempre están activadas para la seguridad.',
-    languageInfo: 'La interfaz de la app y las traducciones de los menús se actualizarán al idioma que hayas seleccionado.',
+    notificationsInfo:
+      'Puedes cambiar esta configuración en cualquier momento. Las advertencias importantes de alergias siempre están activadas para la seguridad.',
+    languageInfo:
+      'La interfaz de la app y las traducciones de los menús se actualizarán al idioma que hayas seleccionado.',
     protectedAccess: 'Acceso Protegido',
     incorrectPin: 'PIN incorrecto. Por favor, inténtalo de nuevo.',
     unlock: 'Desbloquear',
-    pinSecurityInfo: 'La tarjeta de seguridad contiene información sensible sobre alergias. El PIN garantiza que solo tú puedas compartirlo con el personal del restaurante.',
+    pinSecurityInfo:
+      'La tarjeta de seguridad contiene información sensible sobre alergias. El PIN garantiza que solo tú puedas compartirlo con el personal del restaurante.',
     demoPin: 'Demo: Usa cualquier PIN de 4 dígitos',
     faq: 'FAQ',
     faqDesc: 'Preguntas Frecuentes',
@@ -1300,11 +1342,14 @@ export const translations = {
     contactSupportDesc: 'Obtener ayuda de nuestro equipo',
     commonQuestions: 'Preguntas Comunes',
     faqQuestion1: '¿Cuál es la precisión del escaneo OCR?',
-    faqAnswer1: 'Usamos tecnología OCR con una precisión superior al 95% para menús impresos en idiomas soportados.',
+    faqAnswer1:
+      'Usamos tecnología OCR con una precisión superior al 95% para menús impresos en idiomas soportados.',
     faqQuestion2: '¿Puedo usar esta app sin conexión a internet?',
-    faqAnswer2: 'El escaneo de menús requiere una conexión a internet, pero los perfiles de seguridad guardados funcionan sin conexión.',
+    faqAnswer2:
+      'El escaneo de menús requiere una conexión a internet, pero los perfiles de seguridad guardados funcionan sin conexión.',
     faqQuestion3: '¿Cómo actualizo mis alergias?',
-    faqAnswer3: 'Ve a Mi Perfil > Perfil de Seguridad > Editar Alergias para actualizar tu lista de alergias.',
+    faqAnswer3:
+      'Ve a Mi Perfil > Perfil de Seguridad > Editar Alergias para actualizar tu lista de alergias.',
     needMoreHelp: '¿Necesitas más ayuda?',
     contactUsDesc: 'Nuestro equipo de soporte está aquí para ayudarte',
     // Restaurants
@@ -1321,7 +1366,8 @@ export const translations = {
     doesThisFoodContain: '¿Contiene este alimento',
     containQuestion: '?',
     otherAllergies: 'Otras alergias:',
-    sensitiveHealthInfo: 'Esta tarjeta contiene información sensible sobre la salud',
+    sensitiveHealthInfo:
+      'Esta tarjeta contiene información sensible sobre la salud',
     // Common allergy names for card
     Shrimp: 'Camarón',
     Peanuts: 'Cacahuetes',

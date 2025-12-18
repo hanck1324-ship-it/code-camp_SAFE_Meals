@@ -65,4 +65,3 @@ export enum OnboardingStep {
   DIET_DETAIL = 'DIET_DETAIL',
   COMPLETE = 'COMPLETE',
 }
-

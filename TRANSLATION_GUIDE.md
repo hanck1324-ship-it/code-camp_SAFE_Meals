@@ -51,7 +51,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 ```tsx
 export default function MyComponent() {
   const { t } = useTranslation();
-  
+
   return <h1>{t.appName}</h1>;
 }
 ```
@@ -61,9 +61,7 @@ export default function MyComponent() {
 ```tsx
 const { t, setLanguage } = useTranslation();
 
-<button onClick={() => setLanguage('en')}>
-  English
-</button>
+<button onClick={() => setLanguage('en')}>English</button>;
 ```
 
 ---
@@ -72,12 +70,12 @@ const { t, setLanguage } = useTranslation();
 
 ### useTranslation()
 
-| 반환값 | 타입 | 설명 | 예시 |
-|--------|------|------|------|
-| `t` | `object` | 번역 객체 | `t.appName`, `t.tagline` |
-| `language` | `string` | 현재 언어 코드 | `'ko'`, `'en'`, `'ja'` |
-| `setLanguage` | `function` | 언어 변경 | `setLanguage('en')` |
-| `languageName` | `string` | 언어 표시명 | `'한국어'`, `'English'` |
+| 반환값         | 타입       | 설명           | 예시                     |
+| -------------- | ---------- | -------------- | ------------------------ |
+| `t`            | `object`   | 번역 객체      | `t.appName`, `t.tagline` |
+| `language`     | `string`   | 현재 언어 코드 | `'ko'`, `'en'`, `'ja'`   |
+| `setLanguage`  | `function` | 언어 변경      | `setLanguage('en')`      |
+| `languageName` | `string`   | 언어 표시명    | `'한국어'`, `'English'`  |
 
 ---
 
@@ -91,7 +89,7 @@ const { t } = useTranslation();
 <div>
   <h1>{t.appName}</h1>
   <p>{t.tagline}</p>
-</div>
+</div>;
 ```
 
 ### 패턴 2: 버튼 텍스트
@@ -108,11 +106,7 @@ const { t } = useTranslation();
 ```tsx
 const { t } = useTranslation();
 
-<input 
-  type="email"
-  placeholder={t.emailPlaceholder}
-  aria-label={t.email}
-/>
+<input type="email" placeholder={t.emailPlaceholder} aria-label={t.email} />;
 ```
 
 ### 패턴 4: 언어 선택기
@@ -123,7 +117,7 @@ import { LanguageSelector } from '@/components/language-selector';
 <header>
   <Logo />
   <LanguageSelector /> {/* Props 불필요! */}
-</header>
+</header>;
 ```
 
 ---
@@ -164,7 +158,7 @@ export default function ProfilePage() {
         <h1>{t.myProfile}</h1>
         <LanguageSelector />
       </header>
-      
+
       <section>
         <h2>{t.safetyProfile}</h2>
         <div>
@@ -191,14 +185,10 @@ export default function SettingsPage() {
     <div>
       <h1>{t.language}</h1>
       <p>현재: {languageName}</p>
-      
+
       <div>
-        <button onClick={() => setLanguage('ko')}>
-          한국어
-        </button>
-        <button onClick={() => setLanguage('en')}>
-          English
-        </button>
+        <button onClick={() => setLanguage('ko')}>한국어</button>
+        <button onClick={() => setLanguage('en')}>English</button>
       </div>
     </div>
   );
@@ -219,7 +209,7 @@ export default function ScanResultPage() {
     <div>
       <h1>{t.scanComplete}</h1>
       <p>{t.itemsDetected}</p>
-      
+
       <div>
         <span className="badge-safe">{t.safe}</span>
         <span className="badge-warning">{t.warning}</span>
@@ -241,15 +231,15 @@ export default function ScanResultPage() {
 export const translations = {
   ko: {
     // ... 기존 번역들
-    myNewKey: '새로운 번역',  // ✅ 추가
+    myNewKey: '새로운 번역', // ✅ 추가
   },
   en: {
     // ... 기존 번역들
-    myNewKey: 'New Translation',  // ✅ 추가
+    myNewKey: 'New Translation', // ✅ 추가
   },
   ja: {
     // ... 기존 번역들
-    myNewKey: '新しい翻訳',  // ✅ 추가
+    myNewKey: '新しい翻訳', // ✅ 추가
   },
   // zh, es도 동일하게 추가
 };
@@ -260,7 +250,7 @@ export const translations = {
 ```tsx
 const { t } = useTranslation();
 
-<div>{t.myNewKey}</div>  // ✅ 자동 완성 지원!
+<div>{t.myNewKey}</div>; // ✅ 자동 완성 지원!
 ```
 
 ---
@@ -296,14 +286,26 @@ export default function ServerComponent() {
 
 ```typescript
 // ❌ 잘못됨: 한 언어만 추가
-ko: { newKey: '번역' }
+ko: {
+  newKey: '번역';
+}
 
 // ✅ 올바름: 모든 언어에 추가
-ko: { newKey: '번역' }
-en: { newKey: 'Translation' }
-ja: { newKey: '翻訳' }
-zh: { newKey: '翻译' }
-es: { newKey: 'Traducción' }
+ko: {
+  newKey: '번역';
+}
+en: {
+  newKey: 'Translation';
+}
+ja: {
+  newKey: '翻訳';
+}
+zh: {
+  newKey: '翻译';
+}
+es: {
+  newKey: 'Traducción';
+}
 ```
 
 ---
@@ -326,10 +328,7 @@ const state = useAppStore();
 const { t } = useTranslation();
 
 // 무거운 계산이 있다면 useMemo 사용
-const formattedText = useMemo(
-  () => processText(t.someKey),
-  [t.someKey]
-);
+const formattedText = useMemo(() => processText(t.someKey), [t.someKey]);
 ```
 
 ---
@@ -344,12 +343,12 @@ const formattedText = useMemo(
 
 ## 🐛 문제 해결
 
-| 문제 | 해결 방법 |
-|------|-----------|
-| 타입 에러 발생 | `translations.ts`에 해당 키가 모든 언어에 있는지 확인 |
-| 언어가 저장 안됨 | `useAppStore`의 persist 설정 확인 |
-| 번역이 안보임 | 'use client' 지시어 추가 확인 |
-| 자동완성 안됨 | TypeScript 서버 재시작 |
+| 문제             | 해결 방법                                             |
+| ---------------- | ----------------------------------------------------- |
+| 타입 에러 발생   | `translations.ts`에 해당 키가 모든 언어에 있는지 확인 |
+| 언어가 저장 안됨 | `useAppStore`의 persist 설정 확인                     |
+| 번역이 안보임    | 'use client' 지시어 추가 확인                         |
+| 자동완성 안됨    | TypeScript 서버 재시작                                |
 
 ---
 
@@ -364,4 +363,3 @@ const formattedText = useMemo(
 ---
 
 **🎉 이제 다국어 기능을 마음껏 사용하세요!**
-

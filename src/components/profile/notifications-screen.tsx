@@ -7,9 +7,12 @@ interface NotificationsScreenProps {
   language: Language;
 }
 
-export function NotificationsScreen({ onBack, language }: NotificationsScreenProps) {
+export function NotificationsScreen({
+  onBack,
+  language,
+}: NotificationsScreenProps) {
   const t = translations[language];
-  
+
   const [notifications, setNotifications] = useState({
     scanAlerts: true,
     allergyWarnings: true,
@@ -18,7 +21,7 @@ export function NotificationsScreen({ onBack, language }: NotificationsScreenPro
   });
 
   const toggleNotification = (key: keyof typeof notifications) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const notificationItems = [
@@ -26,21 +29,24 @@ export function NotificationsScreen({ onBack, language }: NotificationsScreenPro
       key: 'scanAlerts' as const,
       icon: Bell,
       title: t.scanAlerts || 'Scan Alerts',
-      description: t.scanAlertsDesc || 'Get notified when scan results are ready',
+      description:
+        t.scanAlertsDesc || 'Get notified when scan results are ready',
       color: '#2ECC71',
     },
     {
       key: 'allergyWarnings' as const,
       icon: AlertTriangle,
       title: t.allergyWarnings || 'Allergy Warnings',
-      description: t.allergyWarningsDesc || 'Critical alerts for detected allergens',
+      description:
+        t.allergyWarningsDesc || 'Critical alerts for detected allergens',
       color: '#E74C3C',
     },
     {
       key: 'nearbyRestaurants' as const,
       icon: MapPin,
       title: t.nearbyRestaurants || 'Nearby Restaurants',
-      description: t.nearbyRestaurantsDesc || 'Discover safe dining options near you',
+      description:
+        t.nearbyRestaurantsDesc || 'Discover safe dining options near you',
       color: '#3B82F6',
     },
     {
@@ -55,17 +61,20 @@ export function NotificationsScreen({ onBack, language }: NotificationsScreenPro
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Back Button */}
-      <div className="px-6 pt-8 pb-4 bg-white border-b border-gray-200">
+      <div className="border-b border-gray-200 bg-white px-6 pb-4 pt-8">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ChevronLeft className="w-6 h-6" />
+          <button
+            onClick={onBack}
+            className="-ml-2 flex h-10 w-10 items-center justify-center"
+          >
+            <ChevronLeft className="h-6 w-6" />
           </button>
           <h2>{t.notifications}</h2>
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-6 py-6 space-y-4">
+      <div className="space-y-4 px-6 py-6">
         {notificationItems.map((item) => {
           const Icon = item.icon;
           const isEnabled = notifications[item.key];
@@ -73,32 +82,34 @@ export function NotificationsScreen({ onBack, language }: NotificationsScreenPro
           return (
             <div
               key={item.key}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"
+              className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
             >
               <div className="flex items-start gap-4">
                 {/* Icon */}
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full"
                   style={{ backgroundColor: `${item.color}15` }}
                 >
-                  <Icon className="w-6 h-6" style={{ color: item.color }} />
+                  <Icon className="h-6 w-6" style={{ color: item.color }} />
                 </div>
 
                 {/* Text Content */}
                 <div className="flex-1">
                   <h3 className="mb-1">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
                 </div>
 
                 {/* Toggle Switch */}
                 <button
                   onClick={() => toggleNotification(item.key)}
-                  className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
+                  className={`relative h-7 w-12 flex-shrink-0 rounded-full transition-colors ${
                     isEnabled ? 'bg-[#2ECC71]' : 'bg-gray-300'
                   }`}
                 >
                   <div
-                    className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${
+                    className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${
                       isEnabled ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
@@ -111,14 +122,15 @@ export function NotificationsScreen({ onBack, language }: NotificationsScreenPro
 
       {/* Info Card */}
       <div className="px-6 pb-6">
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
           <div className="flex gap-3">
-            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span className="text-white text-xs">i</span>
+            <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
+              <span className="text-xs text-white">i</span>
             </div>
             <div>
               <p className="text-sm text-blue-900">
-                {t.notificationsInfo || 'You can change these settings at any time. Critical allergy warnings are always enabled for your safety.'}
+                {t.notificationsInfo ||
+                  'You can change these settings at any time. Critical allergy warnings are always enabled for your safety.'}
               </p>
             </div>
           </div>

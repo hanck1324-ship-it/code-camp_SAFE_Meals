@@ -1,6 +1,6 @@
-"use client";
-import { HelpSupportScreen } from "@/components/profile/help-support-screen";
-import { RequireAuth } from "@/components/auth/require-auth";
+'use client';
+import { HelpSupportScreen } from '@/components/profile/help-support-screen';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function HelpPage() {
   return (
@@ -9,4 +9,3 @@ export default function HelpPage() {
     </RequireAuth>
   );
 }
-

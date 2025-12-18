@@ -15,7 +15,7 @@ export default function DietOnboardingPage() {
   const handleCategorySelect = (categories: string[]) => {
     // Store selected categories for next step
     console.log('Selected Diet Categories:', categories);
-    
+
     // If "noPreference" or no categories selected, skip to dashboard
     if (categories.includes('noPreference') || categories.length === 0) {
       completeOnboarding();
@@ -42,4 +42,3 @@ export default function DietOnboardingPage() {
     </RequireAuth>
   );
 }
-

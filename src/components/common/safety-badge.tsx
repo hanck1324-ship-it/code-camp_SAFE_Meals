@@ -43,7 +43,9 @@ export function SafetyBadge({ level, text, size = 'md' }: SafetyBadgeProps) {
   const Icon = config.icon;
 
   return (
-    <div className={`inline-flex items-center rounded-full ${config.bg} ${config.text} ${sizes[size]}`}>
+    <div
+      className={`inline-flex items-center rounded-full ${config.bg} ${config.text} ${sizes[size]}`}
+    >
       <Icon className={iconSizes[size]} />
       <span>{text}</span>
     </div>

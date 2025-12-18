@@ -15,7 +15,14 @@ export default function ProfilePage() {
     diets: [],
   };
 
-  const handleNavigate = (screen: 'safetyProfileEdit' | 'notifications' | 'languageSettings' | 'help' | 'safetyCard') => {
+  const handleNavigate = (
+    screen:
+      | 'safetyProfileEdit'
+      | 'notifications'
+      | 'languageSettings'
+      | 'help'
+      | 'safetyCard'
+  ) => {
     switch (screen) {
       case 'safetyProfileEdit':
         router.push('/profile/settings');

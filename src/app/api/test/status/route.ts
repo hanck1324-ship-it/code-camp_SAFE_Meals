@@ -4,7 +4,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 /**
  * 전체 연결 상태 확인 API
  * GET /api/test/status
- * 
+ *
  * Supabase와 API 키 모두의 상태를 한 번에 확인합니다.
  */
 export async function GET() {
@@ -82,7 +82,8 @@ export async function GET() {
       } else {
         const text = await response.text();
         results.apiKey.working = false;
-        results.apiKey.error = 'API가 JSON을 반환하지 않습니다 (인증키가 유효하지 않을 수 있습니다)';
+        results.apiKey.error =
+          'API가 JSON을 반환하지 않습니다 (인증키가 유효하지 않을 수 있습니다)';
         results.apiKey.details = {
           status: response.status,
           responseTime: `${responseTime}ms`,
@@ -116,4 +117,3 @@ export async function GET() {
     { status: statusCode }
   );
 }
-

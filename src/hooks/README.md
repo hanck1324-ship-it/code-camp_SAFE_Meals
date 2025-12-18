@@ -49,7 +49,7 @@ export default function LanguageSettings() {
     <div>
       <h1>{t.language}</h1>
       <p>현재 언어: {languageName}</p>
-      
+
       <button onClick={() => setLanguage('ko')}>한국어</button>
       <button onClick={() => setLanguage('en')}>English</button>
       <button onClick={() => setLanguage('ja')}>日本語</button>
@@ -89,17 +89,17 @@ function useTranslation(): {
   language: Language;
   setLanguage: (lang: Language) => void;
   languageName: string;
-}
+};
 ```
 
 #### 반환 값
 
-| 속성 | 타입 | 설명 |
-|------|------|------|
-| `t` | `TranslationObject` | 현재 언어의 모든 번역 텍스트 |
-| `language` | `'ko' \| 'en' \| 'ja' \| 'zh' \| 'es'` | 현재 선택된 언어 코드 |
-| `setLanguage` | `(lang: Language) => void` | 언어 변경 함수 |
-| `languageName` | `string` | 현재 언어의 표시 이름 |
+| 속성           | 타입                                   | 설명                         |
+| -------------- | -------------------------------------- | ---------------------------- |
+| `t`            | `TranslationObject`                    | 현재 언어의 모든 번역 텍스트 |
+| `language`     | `'ko' \| 'en' \| 'ja' \| 'zh' \| 'es'` | 현재 선택된 언어 코드        |
+| `setLanguage`  | `(lang: Language) => void`             | 언어 변경 함수               |
+| `languageName` | `string`                               | 현재 언어의 표시 이름        |
 
 ---
 
@@ -110,9 +110,7 @@ function useTranslation(): {
 ```tsx
 const { t, language } = useTranslation();
 
-const greeting = language === 'ko' 
-  ? '안녕하세요' 
-  : 'Hello';
+const greeting = language === 'ko' ? '안녕하세요' : 'Hello';
 ```
 
 ### 2. 유틸리티 함수
@@ -157,13 +155,8 @@ export default function HomePage() {
 // ❌ 이전 방식: Props를 계속 전달해야 함
 function ParentComponent() {
   const [language, setLanguage] = useState('ko');
-  
-  return (
-    <ChildComponent 
-      language={language} 
-      onLanguageChange={setLanguage} 
-    />
-  );
+
+  return <ChildComponent language={language} onLanguageChange={setLanguage} />;
 }
 
 function ChildComponent({ language, onLanguageChange }) {
@@ -210,9 +203,9 @@ TypeScript가 자동 완성과 타입 체크를 제공합니다:
 ```tsx
 const { t } = useTranslation();
 
-t.appName     // ✅ OK
-t.tagline     // ✅ OK
-t.wrongKey    // ❌ 타입 에러!
+t.appName; // ✅ OK
+t.tagline; // ✅ OK
+t.wrongKey; // ❌ 타입 에러!
 ```
 
 ---
@@ -243,4 +236,3 @@ A: 브라우저를 새로고침하거나 개발 서버를 재시작하세요.
 - [Zustand 공식 문서](https://docs.pmnd.rs/zustand)
 - [Next.js i18n 가이드](https://nextjs.org/docs/advanced-features/i18n-routing)
 - [프로젝트 CODING_RULES.md](/common-rules/CODING_RULES.md)
-
