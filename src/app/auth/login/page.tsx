@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/commons/components/button';
 import { Input } from '@/commons/components/input';
@@ -18,6 +18,12 @@ interface Props {
 
 export default function LoginPage({ searchParams }: Props) {
   const { user } = useAuth();
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAppStore } from '@/commons/stores/useAppStore';
+import { LanguageSelector } from '@/components/language-selector';
+import { useTranslation } from '@/hooks/useTranslation';
+
+function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,6 +47,7 @@ export default function LoginPage({ searchParams }: Props) {
     or: string;
     signup: string;
     forgot: string;
+    forgotEmail: string;
     continueWithGoogle: string;
     continueWithApple: string;
     continueWithFacebook: string;
@@ -54,6 +61,7 @@ export default function LoginPage({ searchParams }: Props) {
       or: '또는',
       signup: '회원가입',
       forgot: '비밀번호를 잊으셨나요?',
+      forgotEmail: '이메일을 잊으셨나요?',
       continueWithGoogle: 'Google로 계속하기',
       continueWithApple: 'Apple로 계속하기',
       continueWithFacebook: 'Facebook으로 계속하기',
@@ -67,6 +75,7 @@ export default function LoginPage({ searchParams }: Props) {
       or: 'or',
       signup: 'Sign Up',
       forgot: 'Forgot password?',
+      forgotEmail: 'Forgot email?',
       continueWithGoogle: 'Continue with Google',
       continueWithApple: 'Continue with Apple',
       continueWithFacebook: 'Continue with Facebook',
@@ -80,6 +89,7 @@ export default function LoginPage({ searchParams }: Props) {
       or: 'または',
       signup: '新規登録',
       forgot: 'パスワードをお忘れですか？',
+      forgotEmail: 'メールアドレスをお忘れですか？',
       continueWithGoogle: 'Googleで続ける',
       continueWithApple: 'Appleで続ける',
       continueWithFacebook: 'Facebookで続ける',
@@ -93,6 +103,7 @@ export default function LoginPage({ searchParams }: Props) {
       or: '或',
       signup: '注册',
       forgot: '忘记密码？',
+      forgotEmail: '忘记电子邮件？',
       continueWithGoogle: '使用Google继续',
       continueWithApple: '使用Apple继续',
       continueWithFacebook: '使用Facebook继续',
@@ -106,19 +117,33 @@ export default function LoginPage({ searchParams }: Props) {
       or: 'o',
       signup: 'Registrarse',
       forgot: '¿Olvidaste tu contraseña?',
+      forgotEmail: '¿Olvidaste tu correo electrónico?',
       continueWithGoogle: 'Continuar con Google',
       continueWithApple: 'Continuar con Apple',
       continueWithFacebook: 'Continuar con Facebook',
     },
   } as const;
 
-  const currentText = loginText[language];
+  const currentText = loginText[language as Language];
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const user = useAppStore((state: any) => state.user);
 
   const handleSocialLogin = (provider: string) => {
     // TODO: OAuth flow
     alert(`${provider} login is not implemented yet.`);
   };
   const { login } = useAuth();
+  const login = useAppStore((state: any) => state.login);
+
+  // 이미 로그인된 사용자는 dashboard로 리다이렉트
+  // 로그인 성공 시에도 자동으로 dashboard로 리다이렉트
+  useEffect(() => {
+    if (user) {
+      router.replace('/dashboard');
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,41 +164,45 @@ export default function LoginPage({ searchParams }: Props) {
       <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
         <div className="flex flex-col items-center mb-12">
             <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
-              <Image src={logo} alt="SafeMeals Logo" width={128} height={128} className="object-contain" />
+              <Image src="/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png" alt="SafeMeals Logo" width={128} height={128} className="object-contain" />
             </div>
           <p className="text-muted-foreground text-center">{currentText.subtitle}</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm mb-2">{currentText.email}</label>
+            <label className="flex items-center gap-2 text-sm mb-2">
+              <Mail className="w-4 h-4 text-muted-foreground" />
+              {currentText.email}
+            </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-11 rounded-xl h-12 bg-white border-gray-200"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                className="rounded-xl h-12 bg-white border-gray-200"
                 placeholder="you@example.com"
                 required
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">{currentText.password}</label>
+            <label className="flex items-center gap-2 text-sm mb-2">
+              <Lock className="w-4 h-4 text-muted-foreground" />
+              {currentText.password}
+            </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-11 pr-11 rounded-xl h-12 bg-white border-gray-200"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                className="pr-12 rounded-xl h-12 bg-white border-gray-200"
                 placeholder="••••••••"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gray-700 transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -186,12 +215,20 @@ export default function LoginPage({ searchParams }: Props) {
             {currentText.login}
           </Button>
         
-          <button
-            type="button"
-            className="text-sm text-[#2ECC71] hover:underline"
-          >
-            {currentText.forgot}
-          </button>
+          <div className="flex justify-between items-center">
+            <button
+              type="button"
+              className="text-sm text-[#2ECC71] hover:underline"
+            >
+              {currentText.forgotEmail}
+            </button>
+            <button
+              type="button"
+              className="text-sm text-[#2ECC71] hover:underline"
+            >
+              {currentText.forgot}
+            </button>
+          </div>
         </form>
 
         {/* Divider */}
@@ -226,15 +263,19 @@ export default function LoginPage({ searchParams }: Props) {
         {/* Sign Up Link */}
         <p className="text-center mt-6 text-sm text-muted-foreground">
           {currentText.signup === 'Sign Up' ? "Don't have an account? " : '계정이 없으신가요? '}
-          <button
-            type="button"
-            onClick={() => router.push('/auth/signup')}
-            className="text-[#2ECC71] hover:underline"
-          >
+          <button className="text-[#2ECC71] hover:underline">
             {currentText.signup}
           </button>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth } from '@/app/_providers/auth-provider';
 import { HomeDashboard } from '@/components/home-dashboard';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -18,5 +19,10 @@ export default function DashboardPage() {
 
   return (
     <HomeDashboard onScanMenu={() => router.push('/scan')} />
+    <RequireAuth>
+      <HomeDashboard
+        onScanMenu={() => router.push('/scan')}
+      />
+    </RequireAuth>
   );
 }

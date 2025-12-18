@@ -3,6 +3,7 @@
 import { SafetyProfileEditScreen } from '@/components/profile';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -15,12 +16,14 @@ export default function SettingsPage() {
   };
 
   return (
-    <SafetyProfileEditScreen
-      userProfile={userProfile}
-      onBack={() => router.back()}
-      onEditAllergies={() => router.push('/onboarding/allergy')}
-      onEditDiets={() => router.push('/onboarding/diet')}
-      language={language}
-    />
+    <RequireAuth>
+      <SafetyProfileEditScreen
+        userProfile={userProfile}
+        onBack={() => router.back()}
+        onEditAllergies={() => router.push('/onboarding/allergy')}
+        onEditDiets={() => router.push('/onboarding/diet')}
+        language={language}
+      />
+    </RequireAuth>
   );
 }

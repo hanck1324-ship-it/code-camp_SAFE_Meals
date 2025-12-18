@@ -2,14 +2,16 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DietDetailScreen } from '@/components/onboarding/diet/ category/diet-detail-screen';
-import { useState, Suspense } from 'react';
-import { Language } from '@/lib/translations';
+import { Suspense } from 'react';
 import { useAppStore } from '@/commons/stores/useAppStore';
+import { useLanguageStore } from '@/commons/stores/useLanguageStore';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 function DietDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [language, setLanguage] = useState<Language>('en');
+  const language = useLanguageStore((state) => state.language);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const { completeOnboarding } = useAppStore();
 
   const categoriesParam = searchParams.get('categories');
@@ -39,9 +41,11 @@ function DietDetailContent() {
 
 export default function DietDetailPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
-      <DietDetailContent />
-    </Suspense>
+    <RequireAuth>
+      <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
+        <DietDetailContent />
+      </Suspense>
+    </RequireAuth>
   );
 }
 

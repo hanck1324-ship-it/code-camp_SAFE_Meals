@@ -2,13 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { AllergyCategoryScreen } from '@/components/onboarding/allergy/allergy-category-screen';
-import { useState } from 'react';
-import { Language } from '@/lib/translations';
-import { useAppStore } from '@/commons/stores/useAppStore';
+import { useLanguageStore } from '@/commons/stores/useLanguageStore';
+import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function AllergyOnboardingPage() {
   const router = useRouter();
-  const [language, setLanguage] = useState<Language>('en');
+  const language = useLanguageStore((state) => state.language);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
 
   const handleCategorySelect = (categories: string[]) => {
     // Store selected categories for next step
@@ -33,13 +33,15 @@ export default function AllergyOnboardingPage() {
   };
 
   return (
-    <AllergyCategoryScreen
-      onCategorySelect={handleCategorySelect}
-      onBack={handleBack}
-      onEtcClick={handleEtcClick}
-      language={language}
-      onLanguageChange={setLanguage}
-    />
+    <RequireAuth>
+      <AllergyCategoryScreen
+        onCategorySelect={handleCategorySelect}
+        onBack={handleBack}
+        onEtcClick={handleEtcClick}
+        language={language}
+        onLanguageChange={setLanguage}
+      />
+    </RequireAuth>
   );
 }
 
