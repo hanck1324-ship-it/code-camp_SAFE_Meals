@@ -14,12 +14,16 @@ alwaysApply: false
 ==============================================
 
 1. CSS조건
-   - css는 cssModule만 사용할 것.
-   - css에서 예약어(키워드) ":global"는 사용하지 말 것.
-   - css에서 예약어(키워드) ":root"는 사용하지 말 것.
-   - css에서 예약어(키워드) "important"는 사용하지 말 것.
+   - Tailwind CSS를 주력으로 사용할 것.
+   - shadcn/ui 컴포넌트 시스템을 적극 활용할 것.
+   - 재사용 가능한 유틸리티 클래스를 우선 사용할 것.
+   - 복잡한 스타일이나 특수한 경우에만 CSS Module 병행 가능.
+   - !important는 최대한 사용하지 말 것.
    - globals.css는 \* [공통경로]에 제공된 [글로벌CSS]를 사용할 것.
-   - globals.css는 개별 독립적인 파일을 위해서는 변경하지 말 것.
+   - globals.css는 Tailwind 설정(@tailwind), CSS 변수(:root), 전역 리셋만 포함할 것.
+   - globals.css는 개별 컴포넌트를 위해서는 변경하지 말 것.
    - globals.css는 변경 전, 다시 한 번 전역을 위해 필요한 작업인지 확인하고, 그러한 경우에만 변경할 것.
-   - 추후 수정이 쉽도록, 부모-자식 관계를 형성하여 only flexbox 방식으로 구현할 것. (position-absolute 금지)
+   - 추후 수정이 쉽도록, 부모-자식 관계를 형성하여 Flexbox 방식으로 구현할 것.
+   - position-absolute는 모달, 드롭다운, 툴팁 등 필요한 경우에만 사용.
    - 추가적인 애니메이션 등은 넣지 말고, 있는 그대로만 완벽히 구현할 것.
+   - 반응형 디자인은 Tailwind의 브레이크포인트(sm:, md:, lg:, xl:)를 활용할 것.

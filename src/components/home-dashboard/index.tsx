@@ -1,13 +1,21 @@
-import { Star, MapPin, Clock } from 'lucide-react';
+import { Star, MapPin, Clock, ShieldCheck } from 'lucide-react';
 import { LanguageSelector } from '../language-selector';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface HomeDashboardProps {
   onScanMenu: () => void;
+  haccpList?: any[];    // 1. Props 타입 추가
+  isLoading?: boolean;  // 2. Props 타입 추가
+  error?: string | null; // 3. 에러 상태 추가
 }
 
-export function HomeDashboard({ onScanMenu }: HomeDashboardProps) {
+export function HomeDashboard({ 
+  onScanMenu, 
+  haccpList = [],     // 기본값 설정
+  isLoading = false,
+  error = null
+}: HomeDashboardProps) {
   const { t } = useTranslation();
 
   const recentScans = [
@@ -94,41 +102,55 @@ export function HomeDashboard({ onScanMenu }: HomeDashboardProps) {
         </div>
       </div>
 
-      {/* Safe Restaurants Nearby */}
+      {/* Safe Restaurants Nearby -> HACCP 인증 업소 리스트로 교체 */}
       <div className="px-6 mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2>{t.safeRestaurantsNearby}</h2>
+          <h2>{t.safeRestaurantsNearby || "HACCP 인증 업소"}</h2>
           <button className="text-sm text-[#2ECC71]">{t.viewAll}</button>
         </div>
+        
         <div className="space-y-3">
-          {restaurants.map((restaurant, index) => (
-            <div
-              key={index}
-              className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <h3>{restaurant.name}</h3>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm">{restaurant.rating}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                <span>{restaurant.cuisine}</span>
-                <span>•</span>
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
-                  <span>{restaurant.distance}</span>
-                </div>
-              </div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#2ECC71]/10 rounded-full">
-                <span className="w-2 h-2 bg-[#2ECC71] rounded-full"></span>
-                <span className="text-sm text-[#2ECC71]">
-                  {restaurant.safeItems} {t.safeItems}
-                </span>
-              </div>
+          {/* 로딩 상태 처리 */}
+          {isLoading ? (
+            <div className="text-center py-4 text-gray-400">데이터를 불러오는 중...</div>
+          ) : error ? (
+            <div className="text-center py-4">
+              <div className="text-red-500 mb-2">⚠️ {error}</div>
+              <div className="text-sm text-gray-400">API 키를 확인하거나 나중에 다시 시도해주세요.</div>
             </div>
-          ))}
+          ) : haccpList.length > 0 ? (
+            // 실제 데이터 렌더링
+            haccpList.map((item, index) => (
+              <div
+                key={index}
+                className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  {/* 업소명 (BSSH_NM: API 원본 키) */}
+                  <h3 className="font-bold text-gray-800">{item.BSSH_NM}</h3>
+                  <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-md">
+                    <ShieldCheck className="w-4 h-4 text-green-600" />
+                    <span className="text-xs font-bold text-green-700">HACCP</span>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-1 mb-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">제품</span>
+                    {/* 제품명 (PRDLST_NM: API 원본 키) */}
+                    <span className="line-clamp-1">{item.PRDLST_NM}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    {/* 주소 (ADDR: API 원본 키) */}
+                    <span className="truncate text-xs">{item.ADDR}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-4 text-gray-400">표시할 데이터가 없습니다.</div>
+          )}
         </div>
       </div>
     </div>

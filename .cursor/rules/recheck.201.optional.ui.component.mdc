@@ -1,5 +1,5 @@
 ---
-description:
+description: shadcn/ui 컴포넌트 활용도 검토
 globs:
 alwaysApply: false
 ---

@@ -139,7 +139,7 @@ function LoginContent() {
       <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
         <div className="flex flex-col items-center mb-12">
             <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
-              <Image src="/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png" alt="SafeMeals Logo" width={128} height={128} className="object-contain" />
+              <Image src="/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png" alt="SafeMeals Logo" width={160} height={160} className="object-contain" />
             </div>
           <p className="text-muted-foreground text-center">{currentText.subtitle}</p>
         </div>
