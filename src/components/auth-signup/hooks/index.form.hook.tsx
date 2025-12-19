@@ -2,6 +2,7 @@
 
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 
 interface SignupForm {
   email: string;
@@ -14,6 +15,7 @@ interface SignupForm {
 
 export function useAuthSignupForm() {
   const router = useRouter();
+  const currentLanguage = useLanguageStore((state) => state.language);
 
   const {
     control,
@@ -25,7 +27,7 @@ export function useAuthSignupForm() {
       email: '',
       password: '',
       passwordConfirm: '',
-      language: '',
+      language: currentLanguage, // 현재 전역 언어 상태로 초기화
       phone: '',
       name: '',
     },

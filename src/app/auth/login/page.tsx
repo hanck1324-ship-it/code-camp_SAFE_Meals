@@ -6,10 +6,12 @@ import { Button } from '@/commons/components/button';
 import { Input } from '@/commons/components/input';
 import { Language } from '@/lib/translations';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { LanguageSelector } from '@/components/language-selector';
 import { useTranslation } from '@/hooks/useTranslation';
+import { AUTH_URLS } from '@/commons/constants/url';
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -143,7 +145,7 @@ function LoginContent() {
         <div className="mb-12 flex flex-col items-center">
           <div className="mb-4 rounded-2xl bg-white p-6 shadow-lg">
             <Image
-              src="/assets/Logo.png"
+              src="/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png"
               alt="SafeMeals Logo"
               width={160}
               height={160}
@@ -261,9 +263,9 @@ function LoginContent() {
           {currentText.signup === 'Sign Up'
             ? "Don't have an account? "
             : '계정이 없으신가요? '}
-          <button className="text-[#2ECC71] hover:underline">
+          <Link href={AUTH_URLS.SIGNUP} className="text-[#2ECC71] hover:underline">
             {currentText.signup}
-          </button>
+          </Link>
         </p>
       </div>
     </div>
