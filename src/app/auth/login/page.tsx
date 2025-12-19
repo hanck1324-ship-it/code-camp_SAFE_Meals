@@ -143,7 +143,7 @@ function LoginContent() {
         <div className="mb-12 flex flex-col items-center">
           <div className="mb-4 rounded-2xl bg-white p-6 shadow-lg">
             <Image
-              src="/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png"
+              src="/assets/Logo.png"
               alt="SafeMeals Logo"
               width={160}
               height={160}
