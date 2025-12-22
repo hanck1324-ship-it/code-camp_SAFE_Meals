@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, Lock, ChevronLeft } from 'lucide-react';
-import { Button } from '@/commons/components/button';
+import { Button } from '@/components/ui/button-legacy';
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { translations } from '@/lib/translations';
 import { RequireAuth } from '@/components/auth/require-auth';

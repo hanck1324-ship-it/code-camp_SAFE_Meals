@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/auth/require-auth';
-import { CameraScreen } from '@/components/screens/camera-screen';
+import { CameraScreen } from '@/features/scan/components/camera-view';
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 
 export default function ScanPage() {

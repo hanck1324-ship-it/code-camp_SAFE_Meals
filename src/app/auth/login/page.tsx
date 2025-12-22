@@ -2,8 +2,8 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/commons/components/button';
-import { Input } from '@/commons/components/input';
+import { Button } from '@/components/ui/button-legacy';
+import { Input } from '@/components/ui/input-legacy';
 import { Language } from '@/lib/translations';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -206,7 +206,7 @@ function LoginContent() {
           </div>
           <Button
             type="submit"
-            className="h-12 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
+            className="h-12 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954] flex items-center justify-center"
           >
             {currentText.login}
           </Button>

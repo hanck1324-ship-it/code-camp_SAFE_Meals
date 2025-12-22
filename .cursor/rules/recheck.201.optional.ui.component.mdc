@@ -4,4 +4,38 @@ globs:
 alwaysApply: false
 ---
 
-공통컴포넌트 조건 재검토 요청
+# shadcn/ui 컴포넌트 활용도 체크리스트
+
+작업 완료 후, shadcn/ui 컴포넌트 활용도를 검토할 것.
+
+==============================================
+
+## ✅ shadcn/ui 컴포넌트 활용 검토
+
+### 1. 기본 컴포넌트 사용
+- [ ] Button은 src/components/ui/button.tsx를 사용하는가?
+- [ ] Input은 src/components/ui/input.tsx를 사용하는가?
+- [ ] Card는 src/components/ui/card.tsx를 사용하는가?
+- [ ] Dialog는 src/components/ui/dialog.tsx를 사용하는가?
+
+### 2. Legacy 컴포넌트 사용 (점진적 마이그레이션)
+- [ ] button-legacy, input-legacy는 기존 코드 호환성 유지용으로만 사용하는가?
+- [ ] 신규 개발 시에는 shadcn/ui 컴포넌트를 사용하는가?
+
+### 3. 컴포넌트 조합
+- [ ] 필요한 경우 기존 shadcn/ui 컴포넌트를 조합하여 사용하는가?
+- [ ] 새로운 UI 컴포넌트를 만들기 전에 기존 컴포넌트 조합을 고려했는가?
+
+### 4. 스타일링
+- [ ] shadcn/ui 컴포넌트의 className prop을 통해 Tailwind 클래스로 커스터마이징하는가?
+- [ ] 컴포넌트 내부를 직접 수정하지 않고 props로 제어하는가?
+
+==============================================
+
+## 📋 검토 결과 보고 형식
+
+```
+✅ 통과: [항목명]
+❌ 실패: [항목명] - [이유]
+⚠️ 주의: [항목명] - [개선 사항]
+```

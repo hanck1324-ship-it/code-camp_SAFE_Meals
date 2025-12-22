@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/auth/require-auth';
-import { ScanResultScreen } from '@/components/scan-result-screen';
+import { ScanResultScreen } from '@/features/scan/components/result-view';
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 
 export default function ScanResultPage() {

@@ -12,7 +12,7 @@ export function LanguageSelector() {
   const supportedLanguages = getSupportedLanguages();
 
   return (
-    <div className="relative inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 transition-colors hover:border-gray-300">
+    <div className="relative inline-flex items-center gap-2 rounded-full border-2 border-gray-300 bg-white px-3 py-2 transition-colors hover:border-gray-400">
       <Globe className="h-4 w-4 text-gray-600" />
       <select
         value={language}

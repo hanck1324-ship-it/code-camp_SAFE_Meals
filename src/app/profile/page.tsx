@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/commons/stores/useAppStore';
-import { ProfileScreen } from '@/components/profile';
+import { ProfileScreen } from '@/features/profile/components/settings/profile-screen';
 import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function ProfilePage() {

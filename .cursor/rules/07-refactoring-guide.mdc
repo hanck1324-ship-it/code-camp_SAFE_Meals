@@ -131,8 +131,8 @@ components/
 
 ==============================================
 
-조건-파일경로) 구현될 파일 경로: src/components/[feature-name]/index.tsx
-조건-파일경로) 훅 파일 경로: src/components/[feature-name]/hooks/use-[feature-name].tsx
+조건-파일경로) 구현될 파일 경로: src/features/[feature-name]/components/[component-name]/index.tsx
+조건-파일경로) 훅 파일 경로: src/features/[feature-name]/hooks/use-[feature-name].tsx
 
 ==============================================
 
@@ -193,7 +193,7 @@ components/
 
 ==============================================
 
-조건-대상파일) 리팩토링 대상: src/components/[feature-name]/index.tsx
+조건-대상파일) 리팩토링 대상: src/features/[feature-name]/components/[component-name]/index.tsx
 
 ==============================================
 
@@ -244,7 +244,7 @@ components/
 
 ==============================================
 
-조건-파일경로) src/components/[feature]/hooks/use-[feature].tsx
+조건-파일경로) src/features/[feature]/hooks/use-[feature].tsx
 
 ==============================================
 

@@ -17,7 +17,7 @@ alwaysApply: false
    - Tailwind CSS를 주력으로 사용할 것.
    - shadcn/ui 컴포넌트 시스템을 적극 활용할 것.
    - 재사용 가능한 유틸리티 클래스를 우선 사용할 것.
-   - 복잡한 스타일이나 특수한 경우에만 CSS Module 병행 가능.
+   - CSS Module 사용 금지 (Tailwind CSS만 사용).
    - !important는 최대한 사용하지 말 것.
    - globals.css는 \* [공통경로]에 제공된 [글로벌CSS]를 사용할 것.
    - globals.css는 Tailwind 설정(@tailwind), CSS 변수(:root), 전역 리셋만 포함할 것.

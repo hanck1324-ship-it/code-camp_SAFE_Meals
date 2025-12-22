@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { HomeDashboard } from '@/components/home-dashboard';
+import { HomeDashboard } from '@/features/dashboard/components/home-view';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useHaccp } from '@/hooks/useHaccp'; // 1. 훅 불러오기
 

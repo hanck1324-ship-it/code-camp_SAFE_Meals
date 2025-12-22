@@ -8,18 +8,6 @@ alwaysApply: true
 
 ==============================================
 
-## 📁 주요 경로
-
-```
-src/app/                        → Next.js 페이지 (App Router)
-src/components/ui/              → shadcn/ui 기본 컴포넌트
-src/components/common/          → 공통 컴포넌트
-src/commons/constants/          → 상수 (enum.ts, url.ts)
-src/hooks/                      → 커스텀 훅
-src/lib/                        → 유틸리티 및 번역
-public/assets/                  → 이미지 및 에셋
-```
-
 ## 🎨 스타일링
 
 - **주력**: Tailwind CSS

@@ -1,5 +1,5 @@
 'use client';
-import { HelpSupportScreen } from '@/components/profile/help-support-screen';
+import { HelpSupportScreen } from '@/features/profile/components/settings/help-support-screen';
 import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function HelpPage() {

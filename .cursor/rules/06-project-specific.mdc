@@ -28,9 +28,14 @@ SafeMeals 프로젝트 전용 규칙
 2. 컴포넌트 구조 조건
 
    - src/components/ui/: shadcn/ui 기본 컴포넌트 (수정 최소화)
+   - src/components/ui/button-legacy, input-legacy: Legacy 컴포넌트 (점진적 마이그레이션용, 신규 개발 시 shadcn/ui 사용)
    - src/components/common/: 프로젝트 공통 컴포넌트
-   - src/components/[feature]/: 기능별 컴포넌트
-   - src/commons/: 전역 레이아웃, 공통 로직
+   - src/features/: Feature-based Architecture - 기능별 도메인 컴포넌트
+     * src/features/auth/: 인증 관련 컴포넌트
+     * src/features/scan/: 스캔 및 분석 관련 컴포넌트
+     * src/features/dashboard/: 대시보드 관련 컴포넌트
+     * src/features/profile/: 프로필 및 설정 관련 컴포넌트
+   - src/commons/: 전역 레이아웃, 공통 로직, 상수, 스토어
    - 컴포넌트는 독립적이고 재사용 가능하게 작성할 것.
 
 3. 상태 관리 조건

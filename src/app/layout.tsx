@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from './_providers/auth-provider';
 import dynamic from 'next/dynamic';
-import Layout from '@/commons/layout';
+import Layout from '@/components/layout';
 import { ConditionalBottomNav } from '@/commons/onboarding/conditional-bottom-nav';
 
 const BottomNav = dynamic(

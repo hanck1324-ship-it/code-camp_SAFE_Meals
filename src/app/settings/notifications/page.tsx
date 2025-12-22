@@ -1,5 +1,5 @@
 'use client';
-import { NotificationsScreen } from '@/components/profile/notifications-screen';
+import { NotificationsScreen } from '@/features/profile/components/settings/notifications-screen';
 import { RequireAuth } from '@/components/auth/require-auth';
 
 export default function NotificationsSettingsPage() {

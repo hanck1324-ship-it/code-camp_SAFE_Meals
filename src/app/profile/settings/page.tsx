@@ -1,6 +1,6 @@
 'use client';
 
-import { SafetyProfileEditScreen } from '@/components/profile';
+import { SafetyProfileEditScreen } from '@/features/profile/components/settings/safety-profile-edit-screen';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { RequireAuth } from '@/components/auth/require-auth';

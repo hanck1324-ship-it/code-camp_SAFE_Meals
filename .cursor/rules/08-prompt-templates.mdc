@@ -26,7 +26,7 @@ alwaysApply: false
 
 ```markdown
 [구현 경로]
-src/components/[feature-name]/index.tsx
+src/features/[feature-name]/components/[component-name]/index.tsx
 
 ==============================================
 
@@ -178,8 +178,8 @@ export function FeatureCard({ title, status }: FeatureCardProps) {
 
 ```markdown
 [구현 경로]
-src/components/[feature-name]/index.tsx
-src/components/[feature-name]/hooks/use-[feature-name].tsx
+src/features/[feature-name]/components/[component-name]/index.tsx
+src/features/[feature-name]/hooks/use-[feature-name].tsx
 
 ==============================================
 
