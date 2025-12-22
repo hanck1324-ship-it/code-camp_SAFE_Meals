@@ -1,0 +1,93 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+SafeMeals 프로젝트 전용 규칙
+
+==============================================
+
+- [프로젝트 정보]
+  - 프로젝트명: SafeMeals
+  - 목적: 음식 안전 검사 및 알레르기 관리 모바일 앱
+  - 주요 사용자: 알레르기가 있는 사용자, 식이 제한이 있는 사용자
+
+==============================================
+
+1. 기술 스택 조건
+
+   - Next.js 14 (App Router)를 사용할 것.
+   - TypeScript를 사용하여 타입 안정성을 확보할 것.
+   - Tailwind CSS를 주력 스타일링 도구로 사용할 것.
+   - shadcn/ui + Radix UI 컴포넌트 시스템을 활용할 것.
+   - React Hook Form + Zod로 폼 관리 및 검증을 할 것.
+   - @tanstack/react-query로 서버 상태 관리를 할 것.
+   - Zustand로 클라이언트 상태 관리를 할 것.
+
+2. 컴포넌트 구조 조건
+
+   - src/components/ui/: shadcn/ui 기본 컴포넌트 (수정 최소화)
+   - src/components/common/: 프로젝트 공통 컴포넌트
+   - src/components/[feature]/: 기능별 컴포넌트
+   - src/commons/: 전역 레이아웃, 공통 로직
+   - 컴포넌트는 독립적이고 재사용 가능하게 작성할 것.
+
+3. 상태 관리 조건
+
+   - 서버 데이터: @tanstack/react-query 사용
+   - 전역 클라이언트 상태: src/commons/stores/ 의 Zustand 사용
+   - 로컬 상태: useState (최소화)
+   - 폼 상태: react-hook-form
+
+4. 다국어 조건
+
+   - src/hooks/useTranslation.ts 훅을 사용할 것.
+   - 번역 데이터는 src/lib/translations.ts에서 관리할 것.
+   - 하드코딩된 한국어/영어 텍스트를 넣지 말고, 반드시 번역 키를 사용할 것.
+   - 새로운 텍스트 추가 시 translations.ts에 모든 언어 번역을 추가할 것.
+
+5. 라우팅 조건
+
+   - Next.js App Router를 사용할 것.
+   - 페이지 이동은 src/commons/constants/url.ts의 상수를 사용할 것.
+   - Link 컴포넌트 또는 useRouter 사용 시에도 URL 상수를 사용할 것.
+
+6. 스타일링 조건
+
+   - Tailwind CSS 유틸리티 클래스를 우선 사용할 것.
+   - 색상은 globals.css의 CSS 변수 또는 Tailwind 테마 색상을 사용할 것.
+   - 프로젝트 주요 색상: 
+     * Primary (Green): #2ECC71
+     * Danger (Red): 위험 표시
+     * Caution (Yellow): 주의 표시
+   - 반응형은 모바일 우선으로 작성할 것.
+   - 브레이크포인트: sm (640px), md (768px), lg (1024px)
+
+7. 접근성 조건
+
+   - Radix UI의 접근성 기능을 최대한 활용할 것.
+   - 버튼, 링크 등 상호작용 요소에 적절한 aria-label을 추가할 것.
+   - 이미지에는 적절한 alt 텍스트를 추가할 것.
+   - 키보드 네비게이션을 고려하여 구현할 것.
+
+8. 성능 조건
+
+   - Next.js Image 컴포넌트를 사용하여 이미지 최적화를 할 것.
+   - 동적 import를 활용하여 코드 스플리팅을 할 것.
+   - useCallback, useMemo를 필요한 경우에만 사용할 것 (과도한 최적화 지양).
+   - React Query의 캐싱 전략을 활용할 것.
+
+9. 에러 처리 조건
+
+   - API 호출 실패 시 사용자에게 명확한 에러 메시지를 표시할 것.
+   - 로딩 상태를 적절히 표시할 것.
+   - 이미지 로딩 실패 시 ImageWithFallback 컴포넌트를 사용할 것.
+   - try-catch로 에러를 처리하되, 무의미한 console.log는 지양할 것.
+
+10. 파일 네이밍 조건
+
+   - 컴포넌트 파일: kebab-case (예: safety-card.tsx)
+   - 폴더명: kebab-case (예: auth-login/)
+   - 상수 파일: kebab-case (예: enum.ts, url.ts)
+   - 훅 파일: camelCase로 시작 (예: useTranslation.ts)
