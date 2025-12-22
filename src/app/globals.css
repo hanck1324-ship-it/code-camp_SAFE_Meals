@@ -146,6 +146,33 @@
   }
 }
 
+/* 📱 모바일 최적화 커스텀 유틸리티 클래스 */
+@layer utilities {
+  /* 스크롤바 숨기기 */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE 및 Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+
+  /* 터치 하이라이트 제거 */
+  .webkit-tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 수직 방향으로만 터치 스크롤 허용 */
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+
+  /* 스크롤 튕김 효과 제거 */
+  .overscroll-none {
+    overscroll-behavior: none;
+  }
+}
+
 /**
  * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
  */
