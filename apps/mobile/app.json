@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "SafeMeals",
+    "slug": "safemeals",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "safemeals",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.safemeals.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "바코드 스캔을 위해 카메라 접근이 필요합니다."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.safemeals.app",
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "바코드 스캔을 위해 카메라 접근이 필요합니다."
+        }
+      ]
+    ],
+    "extra": {
+      "webviewUrl": "http://10.0.2.2:3000"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

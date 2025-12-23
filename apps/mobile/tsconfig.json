@@ -1,0 +1,15 @@
+{
+  "extends": "./node_modules/expo/tsconfig.base.json",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "jsx": "react-native",
+    "types": ["react", "react-native", "expo-router"],
+    "paths": {
+      "@/*": ["./*"],
+      "@safemeals/shared": ["../../packages/shared/src"],
+      "@safemeals/shared/*": ["../../packages/shared/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}

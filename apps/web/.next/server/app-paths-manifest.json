@@ -1,0 +1,9 @@
+{
+  "/page": "app/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/profile/safety-card/page": "app/profile/safety-card/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/scan/page": "app/scan/page.js",
+  "/api/combined/route": "app/api/combined/route.js"
+}
