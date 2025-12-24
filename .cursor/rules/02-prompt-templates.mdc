@@ -1,0 +1,712 @@
+---
+description: 실전 프롬프트 템플릿 모음
+globs:
+alwaysApply: false
+---
+
+# SafeMeals 프로젝트 프롬프트 템플릿 모음
+
+==============================================
+
+## 📋 기본 프롬프트 구조
+
+```
+1. 헤더: 구현될 경로 명시
+2. 커서룰: 적용할 규칙 파일
+3. 기술스택: 사용할 기술/라이브러리
+4. 핵심요구사항: 구체적인 구현 내용
+5. 시나리오: 단계별 상세 구현
+6. 주의사항: 금지사항 및 제약
+7. 체크리스트: 검증 항목
+```
+
+==============================================
+
+## 🎯 템플릿 1: UI 컴포넌트 생성
+
+```markdown
+[구현 경로]
+src/features/[feature-name]/components/[component-name]/index.tsx
+
+==============================================
+
+[커서룰 적용]
+@00-quick-reference.mdc
+@02-wireframe.mdc
+@03-ui.mdc
+
+==============================================
+
+[기술스택]
+- Tailwind CSS (스타일링)
+- shadcn/ui (UI 컴포넌트)
+- lucide-react (아이콘)
+- useTranslation (다국어)
+
+==============================================
+
+[사용할 shadcn/ui 컴포넌트]
+- Button (src/components/ui/button.tsx)
+- Card (src/components/ui/card.tsx)
+- Input (src/components/ui/input.tsx)
+- Badge (src/components/ui/badge.tsx)
+
+[사용할 색상]
+- Primary: bg-[#2ECC71], text-[#2ECC71]
+- Border: border-gray-200
+- Text: text-muted-foreground
+
+[사용할 아이콘]
+- lucide-react: ShieldCheck, MapPin, Clock
+
+==============================================
+
+[핵심요구사항-1] 컴포넌트 구조
+
+1-1. Props 타입 정의
+     - interface [ComponentName]Props 작성
+     - 필수/선택 prop 구분
+
+1-2. 다국어 처리
+     - useTranslation 훅 사용
+     - const { t } = useTranslation();
+     - 모든 텍스트는 t.키 형식으로
+
+1-3. 반응형 디자인
+     - 기본: 모바일 스타일
+     - sm: 태블릿 (640px+)
+     - md: 데스크톱 (768px+)
+
+==============================================
+
+[핵심요구사항-2] 스타일링
+
+2-1. Tailwind CSS만 사용
+     - CSS Module 금지
+     - 인라인 스타일 금지
+     - !important 금지
+
+2-2. cn() 유틸리티 활용
+     - 조건부 스타일링에 사용
+     - import { cn } from '@/components/ui/utils'
+
+2-3. 일관된 간격 사용
+     - gap-2, gap-3, gap-4
+     - p-4, p-6
+     - space-y-3, space-y-4
+
+==============================================
+
+[핵심요구사항-3] 테스트 지원
+
+3-1. data-testid 추가
+     - 주요 버튼: data-testid="[feature]-button"
+     - 입력 필드: data-testid="[feature]-input"
+     - 컨테이너: data-testid="[feature]-container"
+
+==============================================
+
+[핵심요구사항-4] 접근성
+
+4-1. aria-label 추가 (아이콘 버튼)
+4-2. alt 텍스트 (이미지)
+4-3. 키보드 네비게이션 고려
+
+==============================================
+
+[주의사항]
+❌ CSS Module 파일 생성 금지
+❌ public/icons/, public/images/ 사용 금지
+❌ position: absolute 남용 금지
+❌ 하드코딩된 텍스트 사용 금지
+
+✅ Tailwind 유틸리티 클래스 사용
+✅ lucide-react 아이콘 사용
+✅ public/assets/ 이미지 사용
+✅ flexbox 레이아웃 사용
+
+==============================================
+
+[구현 예시]
+
+```typescript
+import { ShieldCheck } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/hooks/useTranslation';
+
+interface FeatureCardProps {
+  title: string;
+  status: 'safe' | 'danger';
+}
+
+export function FeatureCard({ title, status }: FeatureCardProps) {
+  const { t } = useTranslation();
+  
+  return (
+    <Card 
+      className="p-4 hover:shadow-md transition-shadow"
+      data-testid="feature-card"
+    >
+      <div className="flex items-center gap-3">
+        <ShieldCheck className="w-5 h-5 text-[#2ECC71]" />
+        <h3 className="font-medium">{title}</h3>
+        <Badge variant={status === 'safe' ? 'default' : 'destructive'}>
+          {t[status]}
+        </Badge>
+      </div>
+    </Card>
+  );
+}
+```
+
+==============================================
+
+[체크리스트]
+- [ ] Tailwind CSS만 사용
+- [ ] shadcn/ui 컴포넌트 활용
+- [ ] lucide-react 아이콘 사용
+- [ ] useTranslation으로 다국어 처리
+- [ ] data-testid 추가
+- [ ] 반응형 디자인 적용
+- [ ] TypeScript 타입 에러 없음
+```
+
+==============================================
+
+## 🎯 템플릿 2: 비즈니스 로직 포함 컴포넌트
+
+```markdown
+[구현 경로]
+src/features/[feature-name]/components/[component-name]/index.tsx
+src/features/[feature-name]/hooks/use-[feature-name].tsx
+
+==============================================
+
+[커서룰 적용]
+@00-quick-reference.mdc
+@04-func.mdc
+
+==============================================
+
+[기술스택]
+- React Query (@tanstack/react-query)
+- Zustand (전역 상태 - 필요시)
+- React Hook Form (폼 처리 - 필요시)
+- Zod (검증 - 필요시)
+
+==============================================
+
+[핵심요구사항-1] 훅 구현 (use-[feature-name].tsx)
+
+1-1. 데이터 fetching (React Query)
+```typescript
+const { data, isLoading, error } = useQuery({
+  queryKey: ['feature', id],
+  queryFn: () => fetchFeature(id),
+});
+```
+
+1-2. 상태 관리
+```typescript
+const [state, setState] = useState<StateType>(initialState);
+```
+
+1-3. 이벤트 핸들러
+```typescript
+const handleAction = useCallback(() => {
+  // 로직
+}, [dependencies]);
+```
+
+1-4. 반환값 구조화
+```typescript
+return {
+  // 데이터
+  data,
+  isLoading,
+  error,
+  
+  // 상태
+  state,
+  
+  // 액션
+  handleAction,
+};
+```
+
+==============================================
+
+[핵심요구사항-2] 컴포넌트 구현 (index.tsx)
+
+2-1. 훅 호출
+```typescript
+const { data, isLoading, handleAction } = useFeature(id);
+```
+
+2-2. 로딩/에러 처리
+```typescript
+if (isLoading) return <LoadingSpinner />;
+if (error) return <ErrorMessage error={error} />;
+```
+
+2-3. UI 렌더링
+```typescript
+return (
+  <div className="space-y-4">
+    {/* UI 구현 */}
+  </div>
+);
+```
+
+==============================================
+
+[핵심요구사항-3] API 호출
+
+3-1. Next.js API Route 사용
+```typescript
+const response = await fetch('/api/feature');
+const data = await response.json();
+```
+
+3-2. 에러 처리
+```typescript
+if (!response.ok) {
+  throw new Error('Failed to fetch');
+}
+```
+
+==============================================
+
+[구현 예시]
+
+**hooks/use-scan-result.tsx**
+```typescript
+import { useQuery } from '@tanstack/react-query';
+
+export function useScanResult(scanId: string) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['scan-result', scanId],
+    queryFn: async () => {
+      const res = await fetch(`/api/scan/${scanId}`);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+  });
+  
+  return { result: data, isLoading, error };
+}
+```
+
+**index.tsx**
+```typescript
+import { useScanResult } from './hooks/use-scan-result';
+import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/useTranslation';
+
+interface ScanResultProps {
+  scanId: string;
+}
+
+export function ScanResult({ scanId }: ScanResultProps) {
+  const { t } = useTranslation();
+  const { result, isLoading, error } = useScanResult(scanId);
+  
+  if (isLoading) return <div>{t.loading}</div>;
+  if (error) return <div>{t.error}</div>;
+  
+  return (
+    <div className="space-y-4" data-testid="scan-result">
+      <h2 className="text-2xl font-bold">{t.scanResult}</h2>
+      {result?.items.map(item => (
+        <Card key={item.id} className="p-4">
+          {item.name}
+        </Card>
+      ))}
+    </div>
+  );
+}
+```
+
+==============================================
+
+[체크리스트]
+- [ ] 로직이 훅으로 분리됨
+- [ ] React Query 사용 (API 호출)
+- [ ] 로딩/에러 상태 처리
+- [ ] TypeScript 타입 정의
+- [ ] data-testid 추가
+```
+
+==============================================
+
+## 🎯 템플릿 3: API Route 구현
+
+```markdown
+[구현 경로]
+src/app/api/[feature]/route.ts
+
+==============================================
+
+[커서룰 적용]
+@04-func.mdc
+
+==============================================
+
+[핵심요구사항-1] API 메서드
+
+1-1. GET (조회)
+```typescript
+export async function GET(request: Request) {
+  // 구현
+}
+```
+
+1-2. POST (생성)
+```typescript
+export async function POST(request: Request) {
+  const body = await request.json();
+  // 구현
+}
+```
+
+1-3. PUT (수정)
+```typescript
+export async function PUT(request: Request) {
+  const body = await request.json();
+  // 구현
+}
+```
+
+1-4. DELETE (삭제)
+```typescript
+export async function DELETE(request: Request) {
+  // 구현
+}
+```
+
+==============================================
+
+[핵심요구사항-2] 응답 형식
+
+2-1. 성공 응답
+```typescript
+return NextResponse.json({
+  success: true,
+  data: result,
+}, { status: 200 });
+```
+
+2-2. 에러 응답
+```typescript
+return NextResponse.json({
+  success: false,
+  error: '에러 메시지',
+}, { status: 400 });
+```
+
+==============================================
+
+[핵심요구사항-3] Supabase 연동
+
+3-1. Supabase 클라이언트 사용
+```typescript
+import { getSupabaseClient } from '@/lib/supabase';
+
+const supabase = getSupabaseClient();
+```
+
+3-2. 데이터 조회
+```typescript
+const { data, error } = await supabase
+  .from('table_name')
+  .select('*')
+  .eq('id', id);
+```
+
+3-3. 데이터 생성
+```typescript
+const { data, error } = await supabase
+  .from('table_name')
+  .insert(values);
+```
+
+==============================================
+
+[핵심요구사항-4] 에러 처리
+
+4-1. try-catch 사용
+```typescript
+try {
+  // 로직
+} catch (error) {
+  console.error(error);
+  return NextResponse.json(
+    { error: '서버 오류' },
+    { status: 500 }
+  );
+}
+```
+
+==============================================
+
+[구현 예시]
+
+```typescript
+import { NextResponse } from 'next/server';
+import { getSupabaseClient } from '@/lib/supabase';
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'userId is required' },
+        { status: 400 }
+      );
+    }
+    
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('user_allergies')
+      .select('*')
+      .eq('user_id', userId);
+    
+    if (error) throw error;
+    
+    return NextResponse.json({
+      success: true,
+      data,
+    });
+    
+  } catch (error) {
+    console.error('API Error:', error);
+    return NextResponse.json(
+      { error: '서버 내부 오류' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { userId, allergyId } = body;
+    
+    // 검증
+    if (!userId || !allergyId) {
+      return NextResponse.json(
+        { error: '필수 필드가 누락됨' },
+        { status: 400 }
+      );
+    }
+    
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('user_allergies')
+      .insert({ user_id: userId, allergy_id: allergyId });
+    
+    if (error) throw error;
+    
+    return NextResponse.json({
+      success: true,
+      data,
+    }, { status: 201 });
+    
+  } catch (error) {
+    console.error('API Error:', error);
+    return NextResponse.json(
+      { error: '서버 내부 오류' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+==============================================
+
+[체크리스트]
+- [ ] HTTP 메서드 구현
+- [ ] 요청 검증
+- [ ] Supabase 연동
+- [ ] 에러 처리
+- [ ] 적절한 HTTP 상태 코드
+- [ ] TypeScript 타입 정의
+```
+
+==============================================
+
+## 🎯 템플릿 4: Playwright 테스트 작성
+
+```markdown
+[구현 경로]
+tests/[feature]/[feature].spec.ts
+
+==============================================
+
+[커서룰 적용]
+@04-func.mdc (TEST 조건)
+
+==============================================
+
+[핵심요구사항-1] 테스트 구조
+
+1-1. describe로 그룹화
+```typescript
+test.describe('기능명 테스트', () => {
+  // 테스트 케이스들
+});
+```
+
+1-2. beforeEach 설정
+```typescript
+test.beforeEach(async ({ page }) => {
+  await page.goto('/feature');
+});
+```
+
+==============================================
+
+[핵심요구사항-2] 테스트 케이스
+
+2-1. 페이지 로드 확인
+```typescript
+test('페이지가 정상적으로 로드됨', async ({ page }) => {
+  await expect(page.getByTestId('feature-container')).toBeVisible();
+});
+```
+
+2-2. 사용자 상호작용
+```typescript
+test('버튼 클릭 시 동작', async ({ page }) => {
+  await page.getByTestId('feature-button').click();
+  await expect(page.getByTestId('result')).toBeVisible();
+});
+```
+
+2-3. 폼 입력 및 제출
+```typescript
+test('폼 제출', async ({ page }) => {
+  await page.getByTestId('input-email').fill('test@example.com');
+  await page.getByTestId('button-submit').click();
+  await expect(page).toHaveURL('/success');
+});
+```
+
+==============================================
+
+[핵심요구사항-3] data-testid 사용
+
+3-1. 선택자 우선순위
+     1. data-testid (최우선)
+     2. role + name
+     3. text (최후의 수단)
+
+3-2. 명명 규칙
+     - 컨테이너: [feature]-container
+     - 버튼: [feature]-button
+     - 입력: [feature]-input
+     - 리스트: [feature]-list
+
+==============================================
+
+[핵심요구사항-4] 주의사항
+
+4-1. timeout 최소화
+     - 2000ms 미만으로 설정
+     - 가능하면 waitFor 대신 expect 사용
+
+4-2. 실제 데이터 사용
+     - mock 데이터 사용 금지
+     - API 실제 호출
+
+4-3. baseURL 제외
+     - page.goto('/feature')
+     - page.goto('http://localhost:3000/feature') ❌
+
+==============================================
+
+[구현 예시]
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('스캔 결과 페이지', () => {
+  test.beforeEach(async ({ page }) => {
+    // 로그인 (필요시)
+    await page.goto('/auth/login');
+    await page.getByTestId('input-email').fill('test@example.com');
+    await page.getByTestId('input-password').fill('password123');
+    await page.getByTestId('button-login').click();
+    
+    // 스캔 결과 페이지로 이동
+    await page.goto('/scan/result');
+  });
+
+  test('페이지가 정상적으로 로드됨', async ({ page }) => {
+    await expect(page.getByTestId('scan-result')).toBeVisible();
+  });
+
+  test('필터 버튼이 작동함', async ({ page }) => {
+    // 전체 보기
+    await page.getByTestId('filter-all').click();
+    await expect(page.getByTestId('allergen-card')).toBeVisible();
+    
+    // 안전만 보기
+    await page.getByTestId('filter-safe').click();
+    const safeCards = page.getByTestId('allergen-card').filter({ hasText: 'Safe' });
+    await expect(safeCards.first()).toBeVisible();
+  });
+
+  test('결과 카드 클릭 시 상세 정보 표시', async ({ page }) => {
+    await page.getByTestId('allergen-card').first().click();
+    await expect(page.getByTestId('allergen-detail')).toBeVisible();
+  });
+});
+```
+
+==============================================
+
+[체크리스트]
+- [ ] data-testid로 요소 선택
+- [ ] timeout 2000ms 미만
+- [ ] 실제 API 호출
+- [ ] baseURL 제외한 경로
+- [ ] 모든 주요 시나리오 테스트
+```
+
+==============================================
+
+## 📝 빠른 체크리스트
+
+### 컴포넌트 작성 후
+- [ ] Tailwind CSS만 사용 (CSS Module 없음)
+- [ ] shadcn/ui 컴포넌트 활용
+- [ ] lucide-react 아이콘 사용
+- [ ] useTranslation으로 다국어
+- [ ] data-testid 추가
+- [ ] 반응형 (sm:, md:)
+- [ ] TypeScript 타입 정의
+- [ ] npm run build 성공
+
+### 로직 분리 후
+- [ ] hooks/ 폴더에 커스텀 훅
+- [ ] React Query 사용 (API)
+- [ ] useState 최소화
+- [ ] useCallback/useMemo (필요시만)
+- [ ] 명확한 반환 타입
+
+### API Route 작성 후
+- [ ] 요청 검증
+- [ ] Supabase 연동
+- [ ] 에러 처리
+- [ ] 적절한 HTTP 상태 코드
+- [ ] TypeScript 타입
+
+### 테스트 작성 후
+- [ ] data-testid 사용
+- [ ] timeout 최소화
+- [ ] 실제 데이터
+- [ ] 주요 시나리오 커버

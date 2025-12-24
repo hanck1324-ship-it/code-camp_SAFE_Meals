@@ -1,0 +1,25 @@
+{
+  "name": "safemeals-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @safemeals/web dev",
+    "dev:web": "pnpm --filter @safemeals/web dev",
+    "dev:mobile": "pnpm --filter @safemeals/mobile start",
+    "build": "pnpm --filter @safemeals/web build",
+    "build:web": "pnpm --filter @safemeals/web build",
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "test": "pnpm -r test",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
+    "install:all": "pnpm install"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

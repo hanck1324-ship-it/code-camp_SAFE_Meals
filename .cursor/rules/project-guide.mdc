@@ -1,0 +1,262 @@
+---
+description: SafeMeals 프로젝트 메인 가이드 (프로젝트 구조, 기술 스택, 핵심 규칙)
+globs:
+alwaysApply: true
+---
+
+# SafeMeals 프로젝트 가이드
+
+## 🏗️ 프로젝트 구조 (모노레포)
+
+### 전체 구조
+```
+safemeals-monorepo/
+├── apps/
+│   ├── web/                    # Next.js 웹앱 (웹뷰용)
+│   │   ├── src/
+│   │   │   ├── app/            # Next.js App Router
+│   │   │   ├── features/       # 기능별 모듈
+│   │   │   ├── components/     # 공통 컴포넌트
+│   │   │   ├── commons/        # 전역 레이아웃, 상수, 스토어
+│   │   │   ├── lib/            # 유틸리티
+│   │   │   └── hooks/          # 커스텀 훅
+│   │   ├── public/
+│   │   └── package.json
+│   │
+│   └── mobile/                 # React Native 네이티브 앱
+│       ├── app/                # Expo Router 파일 기반 라우팅
+│       ├── components/         # 네이티브 컴포넌트 (WebViewScreen 등)
+│       ├── android/
+│       ├── ios/
+│       └── package.json
+│
+└── packages/
+    └── shared/                 # 공유 패키지
+        └── src/
+            ├── bridge-protocol/# 웹뷰-네이티브 통신
+            ├── types/          # 공통 타입
+            └── constants/      # 공통 상수
+```
+
+### 패키지 설명
+- **apps/web**: Next.js 14 웹 앱 (웹뷰로 사용)
+- **apps/mobile**: React Native 네이티브 앱 (Expo Router)
+- **packages/shared**: 공유 타입 및 브릿지 프로토콜
+
+## 📦 기술 스택
+
+### 웹 앱
+- Next.js 14, TypeScript, Tailwind CSS
+- shadcn/ui + Radix UI
+- Zustand + React Query
+- React Hook Form + Zod
+- lucide-react 아이콘
+
+### 모바일 앱
+- Expo ~52.0, Expo Router ~4.0
+- React Native, react-native-webview
+- @safemeals/shared 브릿지 프로토콜
+
+## 🔑 핵심 규칙
+
+### 웹 앱
+- ❌ CSS Module → ✓ Tailwind CSS
+- ❌ URL 하드코딩 → ✓ `src/commons/constants/url.ts`
+- ❌ 텍스트 하드코딩 → ✓ `useTranslation` 훅
+- ✓ Radix UI Dialog (모달/다이얼로그)
+- ✓ data-testid 지정 (테스트)
+- ✓ `isNativeApp()` 체크, `nativeBridge` 사용 (브릿지)
+
+### 모바일 앱
+- ✓ `@safemeals/shared/bridge-protocol` 사용
+- ✓ `nativeBridge` 유틸리티 사용
+- ✓ Expo Router 파일 기반 라우팅
+- ✓ StyleSheet.create (Tailwind 사용 안 함)
+
+## 🚫 금지 사항
+- CSS Module, react-portal 직접 구현
+- position: absolute 남용, !important 사용
+- 명시되지 않은 라이브러리 설치 (JEST 등)
+
+## 📁 컴포넌트 구조
+
+### 웹 앱
+- `src/components/ui/`: shadcn/ui 기본 컴포넌트 (수정 최소화)
+- `src/components/ui/button-legacy, input-legacy`: Legacy (신규는 shadcn/ui 사용)
+- `src/components/common/`: 프로젝트 공통 컴포넌트
+- `src/features/`: Feature-based Architecture (auth, scan, dashboard, profile)
+- `src/commons/`: 전역 레이아웃, 공통 로직, 상수, 스토어
+
+### 모바일 앱
+- `app/`: Expo Router 파일 기반 라우팅
+- `components/`: 네이티브 컴포넌트 (WebViewScreen 등)
+- 네이티브 화면: app/ 디렉토리에 직접 구현
+- 웹뷰 화면: `app/webview/[...path].tsx` 사용
+
+## 🔄 상태 관리
+
+### 웹 앱
+- 서버 데이터: @tanstack/react-query
+- 전역 클라이언트: `src/commons/stores/` Zustand
+- 로컬: useState (최소화)
+- 폼: react-hook-form
+
+### 모바일 앱
+- 네이티브: React Native 기본 (useState, useReducer)
+- 전역: 필요시 Context API 또는 Zustand
+- 웹뷰: 웹뷰 내부에서 관리
+
+## 🌉 브릿지 프로토콜
+
+### 기본 사용법
+
+웹뷰 ↔ 네이티브 통신은 `packages/shared/src/bridge-protocol` 사용
+
+**웹에서 네이티브 호출:**
+```typescript
+import { nativeBridge, isNativeApp } from '@safemeals/shared/bridge-protocol';
+
+// 네이티브 앱인지 확인
+if (isNativeApp()) {
+  // 바코드 스캔 요청
+  nativeBridge.scanBarcode();
+  
+  // 네이티브 화면으로 이동
+  nativeBridge.navigate('Camera');
+  
+  // 네이티브 알럿 표시
+  nativeBridge.showAlert('알림', '처리되었습니다');
+  
+  // 햅틱 피드백
+  nativeBridge.haptic('medium');
+  
+  // 공유
+  nativeBridge.share('제목', '내용', 'https://...');
+}
+```
+
+**네이티브에서 웹뷰로 메시지 전송:**
+- WebViewScreen의 handleMessage 사용
+- `packages/shared/src/bridge-protocol/types.ts`의 타입 정의 준수
+
+### 브릿지 메시지 추가 방법
+
+1. `packages/shared/src/bridge-protocol/types.ts`에 타입 추가
+2. 웹에서 사용시 `web-bridge.ts`에 편의 함수 추가
+3. 네이티브에서 `WebViewScreen.tsx`에 핸들러 추가
+
+## 🌐 다국어
+
+### 웹 앱
+- `src/hooks/useTranslation.ts` 훅 사용
+- 번역 데이터: `src/lib/translations.ts`
+- 하드코딩 금지, 번역 키 사용
+- 새 텍스트 추가 시 모든 언어 번역 추가
+
+### 모바일 앱
+- 웹뷰 화면: 웹 앱의 다국어 시스템 사용
+- 네이티브 화면: 필요시 별도 구현
+
+## 🎨 스타일링
+
+### 웹 앱
+- Tailwind CSS 유틸리티 클래스 우선
+- 색상: globals.css CSS 변수 또는 Tailwind 테마
+- 주요 색상: Primary (#2ECC71), Danger, Caution
+- 반응형: 모바일 우선 (sm: 640px, md: 768px, lg: 1024px)
+
+### 모바일 앱
+- React Native StyleSheet.create
+- Tailwind CSS 사용 안 함 (웹뷰 내부는 Tailwind 사용)
+- Platform.select (플랫폼별 스타일)
+- SafeAreaView (안전 영역)
+
+## 📝 파일 네이밍
+
+### 웹 앱
+- 컴포넌트: kebab-case (safety-card.tsx)
+- 폴더: kebab-case (auth-login/)
+- 상수: kebab-case (enum.ts, url.ts)
+- 훅: camelCase (useTranslation.ts)
+
+### 모바일 앱
+- Expo Router 파일: kebab-case (camera.tsx)
+- 컴포넌트: PascalCase (WebViewScreen.tsx)
+- 폴더: kebab-case
+
+## 🎯 화면 구현 방식
+
+### 화면별 구현 전략
+
+| 화면 | 방식 | 이유 |
+|------|------|------|
+| 스플래시 | 네이티브 | 앱 시작 속도, 브랜딩 |
+| 카메라/스캔 | 네이티브 | 카메라 접근, 성능 |
+| 대시보드 | 웹뷰 | 복잡한 UI, 빠른 업데이트 |
+| 온보딩 | 웹뷰 | 복잡한 폼, A/B 테스트 |
+| 프로필 | 웹뷰 | 자주 변경되는 기능 |
+| 스캔 결과 | 웹뷰 | 복잡한 UI, 데이터 표시 |
+| 설정 | 네이티브 | 권한 관리, 시스템 연동 |
+
+### 선택 기준
+- **네이티브 화면**: 네이티브 기능 필요 (카메라, 권한 등)
+- **웹뷰 화면**: 복잡한 UI, 자주 업데이트되는 기능
+- **선택 기준**: 네이티브 기능 필요 여부, 업데이트 빈도, UI 복잡도
+
+## 🚀 시작하기
+
+### 개발 환경 설정
+
+```bash
+# 1. 패키지 매니저 설치
+npm install -g pnpm
+
+# 2. 의존성 설치
+pnpm install
+
+# 3. 웹 개발 서버 실행
+pnpm dev:web
+# 또는
+cd apps/web && pnpm dev
+
+# 4. 모바일 앱 실행
+# iOS
+cd apps/mobile
+npx pod-install
+pnpm ios
+
+# Android
+cd apps/mobile
+pnpm android
+```
+
+## 🛠️ 개발 가이드
+
+### 새로운 네이티브 화면 추가
+
+1. `apps/mobile/app/` 디렉토리에 화면 파일 생성 (예: `camera.tsx`)
+2. Expo Router 파일 기반 라우팅 자동 인식
+3. 필요시 브릿지 메시지 타입 추가
+
+### 새로운 웹뷰 화면 추가
+
+1. `apps/web/src/app/` 에 페이지 생성 (예: `app/new-page/page.tsx`)
+2. `apps/mobile/app/webview/[...path].tsx`가 자동으로 라우팅 처리
+3. 필요시 `packages/shared/src/bridge-protocol/types.ts`의 `WEBVIEW_ROUTES`에 매핑 추가
+
+### 브릿지 메시지 추가
+
+1. `packages/shared/src/bridge-protocol/types.ts`에 타입 추가
+2. 웹에서 사용시 `web-bridge.ts`에 편의 함수 추가
+3. 네이티브에서 `WebViewScreen.tsx`의 handleMessage에 핸들러 추가
+
+## 🎯 작업 순서
+
+1. 피그마/요구사항 분석
+2. 네이티브 vs 웹뷰 결정 (화면별)
+3. package.json 확인
+4. 폴더/라우터 구조 파악
+5. 브릿지 프로토콜 확인 (필요 시)
+6. 구현 (웹: shadcn/ui, 모바일: 네이티브 vs 웹뷰 결정)
+7. 테스트 작성 (data-testid)
+8. 전체 검토 및 빌드 확인

@@ -1,0 +1,112 @@
+---
+description: Next.js 14 마이그레이션 가이드 (참고용)
+globs:
+alwaysApply: false
+---
+
+# Next.js 14 마이그레이션 가이드
+
+> **참고**: 이 프로젝트는 Vite + React에서 Next.js 14 (App Router)로 마이그레이션되었습니다.  
+> 현재는 모노레포 하이브리드 구조로 발전했습니다.
+
+## 주요 변경사항
+
+### 1. 폴더 구조 변경
+
+**이전 구조 (Vite):**
+```
+src/
+  ├── App.tsx
+  ├── main.tsx
+  ├── components/
+  ├── lib/
+  └── styles/
+```
+
+**현재 구조 (Next.js 14 모노레포):**
+```
+apps/web/src/
+  ├── app/              # Next.js App Router
+  ├── features/         # 기능별 모듈
+  ├── components/       # 공통 컴포넌트
+  ├── commons/          # 전역 레이아웃, 상수, 스토어
+  ├── lib/              # 유틸리티
+  └── hooks/            # 커스텀 훅
+```
+
+### 2. Import 경로 변경
+
+모든 상대 경로를 절대 경로(`@/`)로 변경:
+
+```typescript
+// 이전
+import { translations } from '../lib/translations';
+import { Button } from './button';
+
+// 이후
+import { translations } from '@/lib/translations';
+import { Button } from '@/components/ui/button';
+```
+
+### 3. 이미지 경로 변경
+
+```typescript
+// 이전 (Vite)
+import logo from 'figma:asset/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
+
+// 이후 (Next.js)
+const logo = '/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
+```
+
+### 4. 라우팅 변경
+
+**이전 (SPA - 상태 기반):**
+- `App.tsx`에서 `currentScreen` 상태로 화면 전환
+
+**이후 (Next.js - 파일 기반 라우팅):**
+- `app/page.tsx`가 홈 페이지
+- 각 화면을 별도 라우트로 분리:
+  - `app/login/page.tsx`
+  - `app/signup/page.tsx`
+  - `app/dashboard/page.tsx`
+
+### 5. 설정 파일 변경
+
+- `vite.config.ts` → `next.config.js`
+- `index.html` → `app/layout.tsx`
+- `tsconfig.json` 업데이트 (Next.js 경로 별칭 추가)
+- `tailwind.config.ts` 업데이트
+- `postcss.config.js` 추가
+
+### 6. 패키지 변경
+
+**추가된 패키지:**
+- `next`: Next.js 프레임워크
+- `eslint-config-next`: Next.js ESLint 설정
+- `autoprefixer`, `postcss`: Tailwind CSS를 위한 PostCSS 플러그인
+
+**제거된 패키지:**
+- `vite`: 더 이상 사용하지 않음
+- `@vitejs/plugin-react-swc`: 더 이상 사용하지 않음
+
+### 7. 스크립트 변경
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",        // 이전: "vite"
+    "build": "next build",    // 이전: "vite build"
+    "start": "next start",    // 새로 추가
+    "lint": "next lint"       // 새로 추가
+  }
+}
+```
+
+## 현재 상태
+
+현재 프로젝트는 **모노레포 하이브리드 구조**로 발전했습니다:
+- `apps/web`: Next.js 14 웹 앱 (웹뷰로 사용)
+- `apps/mobile`: React Native 네이티브 앱 (Expo Router)
+- `packages/shared`: 공유 타입 및 브릿지 프로토콜
+
+자세한 내용은 `project-guide.mdc`를 참조하세요.

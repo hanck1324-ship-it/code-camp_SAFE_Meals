@@ -1,0 +1,466 @@
+---
+description: Tailwind CSS 기반 프로젝트 리팩토링 가이드
+globs:
+alwaysApply: false
+---
+
+# SafeMeals 프로젝트 리팩토링 가이드
+
+==============================================
+
+## 📁 파일 구조 패턴
+
+### ✅ 현재 방식 (Tailwind CSS)
+```
+components/
+└── feature-name/
+    ├── index.tsx              # 메인 컴포넌트 (UI + Tailwind)
+    ├── hooks/
+    │   └── use-feature.tsx    # 비즈니스 로직 훅
+    ├── components/            # 하위 컴포넌트 (필요시)
+    │   ├── feature-item.tsx
+    │   └── feature-card.tsx
+    └── types.ts               # 타입 정의 (복잡한 경우)
+```
+
+==============================================
+
+## 🎯 컴포넌트 분리 원칙
+
+### 1. 단순 컴포넌트 (Small Component)
+```
+components/
+└── simple-button/
+    └── index.tsx              # 단일 파일로 충분
+```
+
+**특징**:
+- 로직 없음 또는 매우 단순
+- Tailwind CSS만 사용
+- Props 타입만 정의
+
+### 2. 중간 컴포넌트 (Medium Component)
+```
+components/
+└── user-card/
+    ├── index.tsx              # 메인 컴포넌트
+    └── hooks/
+        └── use-user-card.tsx  # 로직 분리
+
+**특징**:
+- 여러 하위 컴포넌트
+- 여러 훅 (데이터, 액션 분리)
+- 타입과 상수 파일 분리
+
+==============================================
+
+## 🔄 리팩토링 체크리스트
+
+### Phase 1: 구조 분석
+- [ ] 컴포넌트 크기 확인 (줄 수)
+- [ ] 비즈니스 로직 파악
+- [ ] 하위 컴포넌트 필요성 판단
+- [ ] 재사용 가능한 부분 식별
+
+### Phase 2: 파일 분리
+- [ ] hooks/ 폴더에 로직 분리
+- [ ] components/ 폴더에 하위 컴포넌트 분리
+- [ ] types.ts에 복잡한 타입 분리
+- [ ] constants.ts에 상수 분리
+
+### Phase 3: Tailwind 최적화
+- [ ] 중복 클래스 제거
+- [ ] cn() 유틸리티 활용
+- [ ] 반응형 클래스 정리 (sm:, md:, lg:)
+- [ ] CSS 변수 활용 확인
+
+### Phase 4: 테스트 추가
+- [ ] data-testid 추가
+- [ ] Playwright 테스트 작성
+- [ ] 엣지 케이스 확인
+
+==============================================
+
+## 📝 프롬프트 작성 템플릿
+
+### 템플릿 1: 새 컴포넌트 생성
+
+```markdown
+아래의 조건을 모두 적용하여, 요구사항을 구현할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용할 것.
+            - @00-quick-reference.mdc
+            - @02-wireframe.mdc
+            - @03-ui.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 구현될 파일 경로: src/features/[feature-name]/components/[component-name]/index.tsx
+조건-파일경로) 훅 파일 경로: src/features/[feature-name]/hooks/use-[feature-name].tsx
+
+==============================================
+
+조건-기술스택) Tailwind CSS를 사용할 것.
+조건-기술스택) shadcn/ui 컴포넌트를 최대한 활용할 것.
+조건-기술스택) lucide-react 아이콘을 사용할 것.
+조건-기술스택) useTranslation 훅으로 다국어 처리할 것.
+
+==============================================
+
+조건-컴포넌트) 사용할 shadcn/ui 컴포넌트 목록
+            - Button, Card, Input, Dialog 등
+
+조건-컴포넌트) 색상은 Tailwind 테마 또는 CSS 변수를 사용할 것.
+            - Primary: bg-[#2ECC71]
+            - text-muted-foreground
+            - border-gray-200
+
+==============================================
+
+핵심요구사항-1) [기능 설명]을 구현할 것.
+
+핵심요구사항-2) 컴포넌트는 다음 구조로 작성할 것:
+            1. Props 타입 정의
+            2. 커스텀 훅 호출 (데이터, 로직)
+            3. 핸들러 함수
+            4. JSX 반환 (Tailwind 클래스 사용)
+
+핵심요구사항-3) 다국어 지원:
+            - useTranslation 훅 사용
+            - 하드코딩된 텍스트 금지
+
+핵심요구사항-4) 테스트 지원:
+            - 주요 요소에 data-testid 추가
+            - data-testid="feature-name-button" 형식
+
+핵심요구사항-5) 반응형 디자인:
+            - 모바일 우선 (기본)
+            - sm: 태블릿
+            - md: 데스크톱
+
+==============================================
+
+주의사항) CSS Module 사용 금지
+주의사항) position: absolute 최소화
+주의사항) !important 사용 금지
+주의사항) 인라인 스타일 금지
+```
+
+### 템플릿 2: 기존 컴포넌트 리팩토링
+
+```markdown
+아래의 조건을 모두 적용하여, 기존 컴포넌트를 리팩토링할 것.
+
+==============================================
+
+조건-커서룰) @00-quick-reference.mdc, @02-wireframe.mdc 적용
+
+==============================================
+
+조건-대상파일) 리팩토링 대상: src/features/[feature-name]/components/[component-name]/index.tsx
+
+==============================================
+
+리팩토링-목표-1) 비즈니스 로직을 hooks/use-[feature-name].tsx로 분리
+                - useState, useEffect, API 호출 로직
+                - 복잡한 계산 로직
+                - 이벤트 핸들러
+
+리팩토링-목표-2) 하위 컴포넌트 분리 (필요시)
+                - 반복되는 UI 패턴
+                - 100줄 이상의 JSX 블록
+                - 재사용 가능한 부분
+
+리팩토링-목표-3) Tailwind CSS 최적화
+                - 중복 클래스 제거
+                - cn() 유틸리티 활용
+                - 조건부 스타일링 개선
+
+리팩토링-목표-4) 타입 안정성 강화
+                - Props 타입 명확히 정의
+                - any 타입 제거
+                - 필요시 types.ts 분리
+
+리팩토링-목표-5) 접근성 개선
+                - aria-label 추가
+                - data-testid 추가
+                - 키보드 네비게이션 지원
+
+==============================================
+
+체크리스트) 리팩토링 후 다음을 확인할 것:
+        - [ ] 컴포넌트 파일 200줄 이하
+        - [ ] 로직이 훅으로 분리됨
+        - [ ] Tailwind CSS만 사용
+        - [ ] 타입 에러 없음
+        - [ ] data-testid 추가됨
+        - [ ] 빌드 성공 (npm run build)
+```
+
+### 템플릿 3: 훅 생성
+
+```markdown
+아래의 조건을 모두 적용하여, 커스텀 훅을 구현할 것.
+
+==============================================
+
+조건-커서룰) @04-func.mdc 적용
+
+==============================================
+
+조건-파일경로) src/features/[feature]/hooks/use-[feature].tsx
+
+==============================================
+
+훅-요구사항-1) 다음 로직을 포함할 것:
+            - 상태 관리 (useState)
+            - API 호출 (React Query)
+            - 부수 효과 (useEffect)
+            - 이벤트 핸들러
+
+훅-요구사항-2) 반환값 구조:
+            ```typescript
+            return {
+              // 상태
+              data,
+              isLoading,
+              error,
+              
+              // 액션
+              handleSubmit,
+              handleReset,
+            };
+            ```
+
+훅-요구사항-3) React Query 사용 (API 호출 시):
+            - useQuery: 데이터 조회
+            - useMutation: 데이터 변경
+
+훅-요구사항-4) 타입 안정성:
+            - 제네릭 타입 활용
+            - 반환 타입 명시
+
+==============================================
+
+예시)
+```typescript
+export function useFeature() {
+  const [state, setState] = useState();
+  const { data, isLoading } = useQuery(...);
+  
+  const handleAction = () => {
+    // 로직
+  };
+  
+  return { data, isLoading, handleAction };
+}
+```
+```
+
+==============================================
+
+## 💡 실전 예시
+
+### 예시 1: 간단한 카드 컴포넌트
+
+```typescript
+// src/components/allergen-card/index.tsx
+
+import { ShieldAlert } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/components/ui/utils';
+import { useTranslation } from '@/hooks/useTranslation';
+
+interface AllergenCardProps {
+  name: string;
+  severity: 'high' | 'medium' | 'low';
+  className?: string;
+}
+
+export function AllergenCard({ name, severity, className }: AllergenCardProps) {
+  const { t } = useTranslation();
+  
+  const severityColors = {
+    high: 'bg-red-100 text-red-800 border-red-200',
+    medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    low: 'bg-green-100 text-green-800 border-green-200',
+  };
+
+  return (
+    <Card 
+      className={cn('p-4', className)}
+      data-testid="allergen-card"
+    >
+      <CardContent className="flex items-center gap-3">
+        <ShieldAlert className="w-5 h-5 text-muted-foreground" />
+        <div className="flex-1">
+          <h3 className="font-medium">{name}</h3>
+          <Badge className={severityColors[severity]}>
+            {t.severity[severity]}
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### 예시 2: 로직이 있는 컴포넌트 (훅 분리)
+
+```typescript
+// src/components/scan-result/hooks/use-scan-result.tsx
+
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+
+export function useScanResult(scanId: string) {
+  const [filter, setFilter] = useState<'all' | 'safe' | 'danger'>('all');
+  
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['scan-result', scanId],
+    queryFn: () => fetchScanResult(scanId),
+  });
+  
+  const filteredAllergens = data?.allergens.filter(item => {
+    if (filter === 'all') return true;
+    return item.isSafe === (filter === 'safe');
+  });
+  
+  const handleFilterChange = (newFilter: typeof filter) => {
+    setFilter(newFilter);
+  };
+  
+  return {
+    allergens: filteredAllergens,
+    isLoading,
+    error,
+    filter,
+    handleFilterChange,
+  };
+}
+
+async function fetchScanResult(id: string) {
+  const res = await fetch(`/api/scan/${id}`);
+  return res.json();
+}
+```
+
+```typescript
+// src/components/scan-result/index.tsx
+
+import { useScanResult } from './hooks/use-scan-result';
+import { AllergenCard } from '@/components/allergen-card';
+import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
+
+interface ScanResultProps {
+  scanId: string;
+}
+
+export function ScanResult({ scanId }: ScanResultProps) {
+  const { t } = useTranslation();
+  const { allergens, isLoading, filter, handleFilterChange } = useScanResult(scanId);
+  
+  if (isLoading) return <div>Loading...</div>;
+  
+  return (
+    <div className="space-y-4" data-testid="scan-result">
+      {/* 필터 버튼 */}
+      <div className="flex gap-2">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => handleFilterChange('all')}
+          data-testid="filter-all"
+        >
+          {t.all}
+        </Button>
+        <Button
+          variant={filter === 'safe' ? 'default' : 'outline'}
+          onClick={() => handleFilterChange('safe')}
+          data-testid="filter-safe"
+        >
+          {t.safe}
+        </Button>
+        <Button
+          variant={filter === 'danger' ? 'default' : 'outline'}
+          onClick={() => handleFilterChange('danger')}
+          data-testid="filter-danger"
+        >
+          {t.danger}
+        </Button>
+      </div>
+      
+      {/* 결과 리스트 */}
+      <div className="grid gap-3">
+        {allergens?.map(item => (
+          <AllergenCard
+            key={item.id}
+            name={item.name}
+            severity={item.severity}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+==============================================
+
+## 🎨 Tailwind CSS 패턴
+
+### 조건부 스타일링
+```typescript
+// ❌ 나쁜 예
+<div className={isActive ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800'}>
+
+// ✅ 좋은 예
+<div className={cn(
+  'px-4 py-2 rounded',
+  isActive ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800'
+)}>
+```
+
+### 반응형 디자인
+```typescript
+// 모바일 우선
+<div className="
+  flex flex-col gap-2          /* 모바일 */
+  sm:flex-row sm:gap-4         /* 태블릿 */
+  md:gap-6                     /* 데스크톱 */
+">
+```
+
+### 재사용 가능한 스타일
+```typescript
+// constants.ts
+export const CARD_STYLES = {
+  base: 'rounded-xl border shadow-sm p-4',
+  hover: 'hover:shadow-md transition-shadow',
+  active: 'ring-2 ring-[#2ECC71]',
+};
+
+// 컴포넌트에서
+<div className={cn(CARD_STYLES.base, CARD_STYLES.hover)}>
+```
+
+==============================================
+
+## ✅ 최종 체크리스트
+
+리팩토링 또는 새 컴포넌트 작성 후:
+
+- [ ] Tailwind CSS만 사용 (CSS Module 없음)
+- [ ] 로직이 훅으로 분리됨
+- [ ] shadcn/ui 컴포넌트 활용
+- [ ] lucide-react 아이콘 사용
+- [ ] useTranslation으로 다국어 처리
+- [ ] data-testid 추가
+- [ ] 반응형 디자인 적용
+- [ ] 타입 에러 없음
+- [ ] npm run build 성공
+- [ ] Playwright 테스트 작성 (주요 기능)
