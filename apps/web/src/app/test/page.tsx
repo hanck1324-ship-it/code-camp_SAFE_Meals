@@ -12,11 +12,17 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface TestResult {
-  success: boolean;
+  success?: boolean;
   message?: string;
   error?: string;
   details?: any;
   timestamp?: string;
+  summary?: {
+    allGood: boolean;
+    message: string;
+  };
+  supabase?: any;
+  apiKey?: any;
 }
 
 export default function TestPage() {

@@ -1,6 +1,6 @@
 'use client';
 
-import { HelpSupportScreen } from '@/components/profile';
+import { HelpSupportScreen } from '@/features/profile/components/settings/help-support-screen';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { RequireAuth } from '@/components/auth/require-auth';

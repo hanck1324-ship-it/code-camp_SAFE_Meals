@@ -1,6 +1,6 @@
 'use client';
 
-import { LanguageSettingsScreen } from '@/components/profile';
+import { LanguageSettingsScreen } from '@/features/profile/components/settings/language-settings-screen';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { RequireAuth } from '@/components/auth/require-auth';
