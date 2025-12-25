@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   email: string;
@@ -8,8 +9,10 @@ interface User {
 
 interface AppState {
   user: User | null;
+  supabaseUser: SupabaseUser | null;
   onboardingDone: boolean;
   login: (user: User) => void;
+  setUser: (user: SupabaseUser | null) => void;
   logout: () => void;
   completeOnboarding: () => void;
 }
@@ -31,9 +34,20 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       user: null,
+      supabaseUser: null,
       onboardingDone: false,
       login: (user) => set({ user }),
-      logout: () => set({ user: null }),
+      setUser: (supabaseUser) =>
+        set({
+          supabaseUser,
+          user: supabaseUser
+            ? {
+                email: supabaseUser.email || '',
+                name: supabaseUser.user_metadata?.name,
+              }
+            : null,
+        }),
+      logout: () => set({ user: null, supabaseUser: null }),
       completeOnboarding: () => set({ onboardingDone: true }),
     }),
     {

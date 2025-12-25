@@ -1,0 +1,264 @@
+로그인 기능 구현 프롬프트 (Supabase Auth + Playwright TDD)
+
+아래의 조건을 모두 적용하여 로그인 기능을 구현할 것.
+구현 완료 후, 적용 결과를 체크리스트 형태로 반환할 것.
+
+==============================================
+1. Cursor Rules 적용 조건 (필수)
+==============================================
+
+아래의 Cursor Rule을 반드시 적용하여 작업할 것.
+
+@01-common.mdc
+
+@04-func.mdc
+
+작업 종료 시,
+각 rule이 어떻게 적용되었는지 체크리스트로 명시할 것.
+
+==============================================
+2. 구현 대상 경로
+==============================================
+
+참고 PAGE
+apps/web/src/app/auth/login/page.tsx
+apps/web/src/features/auth/components/login-form/index.tsx(page.tsx 에서 임포트하여 사용중)
+구현할 HOOK
+구현될 HOOK 경로:
+apps/web/src/features/auth/components/login-form/hooks/index.form.hook.tsx
+기존의 apps/web/src/features/auth/components/login-form/hooks/index.form.hook.tsx 파일을 수정할 것
+
+==============================================
+3. 테스트 전략 (Playwright 기반 TDD)
+==============================================
+3-1. 테스트 프레임워크 제한
+
+❌ jest 사용 금지
+
+❌ @testing-library/react 사용 금지
+
+✅ Playwright만 사용
+
+3-2. 테스트 조건
+
+timeout은 설정하지 않거나 500ms 미만
+
+페이지가 완전히 로드된 후 테스트할 것
+
+페이지 로드 식별 방법 (필수)
+
+data-testid 기반 고정 식별자 대기
+
+🚫 금지사항
+
+networkidle 대기 방식 사용 금지
+
+3-3. 테스트 환경
+
+Supabase 테스트 전용 계정을 사용한다.
+
+아래 환경변수를 통해 계정 정보를 주입한다.
+
+TEST_USER_EMAIL=
+TEST_USER_PASSWORD=
+
+==============================================
+4. Supabase Auth 로그인 기능 구현
+==============================================
+공통 조건
+
+Supabase Client는
+lib/supabase.ts의 getSupabaseClient()를 사용한다.
+
+Zustand Store는 useAppStore를 사용한다.
+
+useAppStore에는 다음 액션이 존재한다고 가정한다.
+
+setUser(user: User | null): void
+
+4-1. 이메일 로그인 시나리오
+4-1-1. 로그인 요청
+
+인증 방식
+supabase.auth.signInWithPassword()
+
+전달 데이터
+
+email: string
+
+필수
+
+이메일 형식 검증
+
+password: string
+
+필수
+
+최소 6자 이상
+
+유효성 검증은 useLogin 훅 내부에서 수행할 것
+
+검증 실패 시 API 요청을 차단할 것
+
+4-1-2. 로그인 성공 시 처리
+
+Supabase User 객체를 useAppStore에 저장
+
+화면에 알림 메시지 표시
+→ "로그인에 성공하였습니다."
+
+/dashboard 페이지로 이동
+
+4-1-3. 로그인 실패 시 처리
+
+알림 메시지 표시
+→ "이메일 또는 비밀번호가 올바르지 않습니다."
+
+페이지 이동 없음
+
+4-2. 소셜 로그인 시나리오 (OAuth)
+4-2-1. OAuth 로그인 요청
+
+인증 방식
+supabase.auth.signInWithOAuth()
+
+Provider
+
+google
+
+apple
+
+facebook
+
+옵션
+
+redirectTo: window.location.origin + "/dashboard"
+
+⚠️ 중요: OAuth 성공 처리 방식
+
+OAuth 로그인은 즉시 redirect가 발생하므로
+성공 이후 로직은 auth-provider에서 처리한다.
+
+4-2-2. OAuth 로그인 성공 후 처리
+
+다음 로직은
+supabase.auth.onAuthStateChange를 통해 수행할 것.
+
+Supabase User 객체를 useAppStore에 저장
+
+화면에 알림 메시지 표시
+→ "로그인에 성공하였습니다."
+
+/dashboard 페이지 진입 상태 유지
+
+4-2-3. OAuth 로그인 실패 시 처리
+
+알림 메시지 표시
+→ "소셜 로그인에 실패하였습니다. 다시 시도해주세요."
+
+페이지 이동 없음
+
+==============================================
+5. 기존 Mock 인증 코드 제거
+==============================================
+5-1. auth-provider 수정
+
+경로:
+apps/web/src/app/_providers/auth-provider.tsx
+
+❌ in-memory fakeDB 제거
+
+❌ mock login / signup / logout 제거
+
+✅ Supabase Auth API로 대체
+
+✅ supabase.auth.onAuthStateChange로 세션 상태 동기화
+
+5-2. login page 수정
+
+경로:
+apps/web/src/app/auth/login/page.tsx
+
+❌ mock 로그인 로직 제거
+
+❌ handleSubmit 내부 fake auth 제거
+
+✅ useLogin 훅 사용하도록 변경
+
+==============================================
+6. UI / 테스트 식별자 (필수)
+==============================================
+
+아래 data-testid를 반드시 추가할 것.
+
+로그인 페이지 로드 식별자
+data-testid="login-page-container"
+
+로그인 버튼
+data-testid="login-submit-button"
+
+에러 메시지 영역
+data-testid="login-error-message"
+
+대시보드 페이지 컨테이너
+data-testid="dashboard-container"
+
+==============================================
+7. Playwright 테스트 시나리오
+==============================================
+7-1. 이메일 로그인 성공 테스트
+
+유효한 이메일 / 비밀번호 입력
+
+로그인 버튼 클릭
+
+/dashboard로 리다이렉트 확인
+
+data-testid="dashboard-container" 표시 확인
+
+7-2. 이메일 로그인 실패 테스트
+
+잘못된 비밀번호 입력
+
+에러 메시지 표시 확인
+
+페이지 이동 없음 확인
+
+7-3. 유효성 검증 테스트
+
+이메일 / 비밀번호 빈 값 입력 시 에러 표시
+
+이메일 형식 검증 실패 시 에러 표시
+
+비밀번호 6자 미만 입력 시 에러 표시
+
+==============================================
+8. useLogin 훅 인터페이스 명세
+==============================================
+
+useLogin 훅은 다음 API를 제공해야 한다.
+
+{
+  loginWithEmail: (email: string, password: string) => Promise<void>
+  loginWithOAuth: (provider: "google" | "apple" | "facebook") => Promise<void>
+  errorMessage: string | null
+  isLoading: boolean
+}
+
+==============================================
+9. 결과 제출 형식
+==============================================
+
+작업 완료 후 아래 항목을 체크리스트 형태로 반환할 것.
+
+ Cursor Rule 적용 여부 (@01-common, @04-func)
+
+ Mock 인증 코드 제거 여부
+
+ 이메일 로그인 성공/실패 처리 완료
+
+ OAuth 로그인 처리 완료
+
+ auth-provider 세션 동기화 완료
+
+ Playwright 테스트 7-1 ~ 7-3 통과 여부
