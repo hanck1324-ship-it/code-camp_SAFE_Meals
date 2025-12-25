@@ -8,10 +8,19 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input-legacy';
 import { Button } from '@/components/ui/button-legacy';
 import { useAuthLoginForm } from './hooks/index.form.hook';
+import { usePasswordReset } from './hooks/usePasswordReset';
 import { AUTH_URLS } from '@/commons/constants/url';
 import { LanguageSelector } from '@/components/language-selector';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Language } from '@/lib/translations';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export interface AuthLoginProps {
   className?: string;
@@ -27,6 +36,18 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
     errorMessage,
     isLoading,
   } = useAuthLoginForm();
+
+  const {
+    isDialogOpen,
+    email: resetEmail,
+    setEmail: setResetEmail,
+    isLoading: isResetLoading,
+    errorMessage: resetErrorMessage,
+    successMessage: resetSuccessMessage,
+    openDialog: openPasswordResetDialog,
+    closeDialog: closePasswordResetDialog,
+    sendResetEmail,
+  } = usePasswordReset();
 
   const { language } = useTranslation();
 
@@ -45,6 +66,12 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
       continueWithGoogle: string;
       continueWithApple: string;
       continueWithFacebook: string;
+      passwordResetTitle: string;
+      passwordResetDescription: string;
+      passwordResetEmailPlaceholder: string;
+      passwordResetSubmit: string;
+      passwordResetCancel: string;
+      preparing: string;
     }
   > = {
     ko: {
@@ -60,6 +87,13 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
       continueWithGoogle: 'Google로 계속하기',
       continueWithApple: 'Apple로 계속하기',
       continueWithFacebook: 'Facebook으로 계속하기',
+      passwordResetTitle: '비밀번호 재설정',
+      passwordResetDescription:
+        '가입하신 이메일 주소를 입력하시면 비밀번호 재설정 링크를 보내드립니다.',
+      passwordResetEmailPlaceholder: '이메일 주소',
+      passwordResetSubmit: '재설정 메일 발송',
+      passwordResetCancel: '취소',
+      preparing: '준비 중입니다',
     },
     en: {
       title: 'Login to SafeMeals',
@@ -74,6 +108,13 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
       continueWithGoogle: 'Continue with Google',
       continueWithApple: 'Continue with Apple',
       continueWithFacebook: 'Continue with Facebook',
+      passwordResetTitle: 'Reset Password',
+      passwordResetDescription:
+        'Enter your email address and we will send you a password reset link.',
+      passwordResetEmailPlaceholder: 'Email address',
+      passwordResetSubmit: 'Send Reset Email',
+      passwordResetCancel: 'Cancel',
+      preparing: 'Coming soon',
     },
     ja: {
       title: 'SafeMealsにログイン',
@@ -88,6 +129,13 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
       continueWithGoogle: 'Googleで続ける',
       continueWithApple: 'Appleで続ける',
       continueWithFacebook: 'Facebookで続ける',
+      passwordResetTitle: 'パスワードリセット',
+      passwordResetDescription:
+        'メールアドレスを入力してください。パスワードリセットリンクをお送りします。',
+      passwordResetEmailPlaceholder: 'メールアドレス',
+      passwordResetSubmit: 'リセットメールを送信',
+      passwordResetCancel: 'キャンセル',
+      preparing: '準備中です',
     },
     zh: {
       title: '登录SafeMeals',
@@ -102,6 +150,12 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
       continueWithGoogle: '使用Google继续',
       continueWithApple: '使用Apple继续',
       continueWithFacebook: '使用Facebook继续',
+      passwordResetTitle: '重置密码',
+      passwordResetDescription: '输入您的电子邮件地址，我们将向您发送密码重置链接。',
+      passwordResetEmailPlaceholder: '电子邮件地址',
+      passwordResetSubmit: '发送重置邮件',
+      passwordResetCancel: '取消',
+      preparing: '即将推出',
     },
     es: {
       title: 'Iniciar sesión en SafeMeals',
@@ -116,6 +170,13 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
       continueWithGoogle: 'Continuar con Google',
       continueWithApple: 'Continuar con Apple',
       continueWithFacebook: 'Continuar con Facebook',
+      passwordResetTitle: 'Restablecer contraseña',
+      passwordResetDescription:
+        'Ingrese su dirección de correo electrónico y le enviaremos un enlace para restablecer su contraseña.',
+      passwordResetEmailPlaceholder: 'Dirección de correo electrónico',
+      passwordResetSubmit: 'Enviar correo de restablecimiento',
+      passwordResetCancel: 'Cancelar',
+      preparing: 'Próximamente',
     },
   } as const;
 
@@ -210,7 +271,7 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
           {/* 회원가입 버튼 */}
           <Link
             href={AUTH_URLS.SIGNUP}
-            className="flex h-12 w-full items-center justify-center rounded-full border-2 border-[#2ECC71] text-[#2ECC71] font-medium hover:bg-[#2ECC71]/10 transition-colors"
+            className="flex h-12 w-full items-center justify-center rounded-full border-2 border-[#2ECC71] font-medium text-[#2ECC71] transition-colors hover:bg-[#2ECC71]/10"
             data-testid="signup-button"
           >
             {currentText.signup}
@@ -230,17 +291,83 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
             <button
               type="button"
               className="text-sm text-[#2ECC71] hover:underline"
+              onClick={() => alert(currentText.preparing)}
+              data-testid="forgot-email-button"
             >
               {currentText.forgotEmail}
             </button>
             <button
               type="button"
               className="text-sm text-[#2ECC71] hover:underline"
+              onClick={openPasswordResetDialog}
+              data-testid="forgot-password-button"
             >
               {currentText.forgot}
             </button>
           </div>
         </form>
+
+        {/* 비밀번호 재설정 다이얼로그 */}
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && closePasswordResetDialog()}>
+          <DialogContent data-testid="password-reset-dialog">
+            <DialogHeader>
+              <DialogTitle>{currentText.passwordResetTitle}</DialogTitle>
+              <DialogDescription>
+                {currentText.passwordResetDescription}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {currentText.email}
+                </label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder={currentText.passwordResetEmailPlaceholder}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  data-testid="password-reset-email-input"
+                />
+              </div>
+              {resetErrorMessage && (
+                <p
+                  className="text-sm text-red-500"
+                  data-testid="password-reset-error-message"
+                >
+                  {resetErrorMessage}
+                </p>
+              )}
+              {resetSuccessMessage && (
+                <p
+                  className="text-sm text-green-600"
+                  data-testid="password-reset-success-message"
+                >
+                  {resetSuccessMessage}
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={closePasswordResetDialog}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                data-testid="password-reset-cancel-button"
+              >
+                {currentText.passwordResetCancel}
+              </button>
+              <button
+                type="button"
+                onClick={sendResetEmail}
+                disabled={isResetLoading}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-[#2ECC71] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#27AE60] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                data-testid="password-reset-submit-button"
+              >
+                {isResetLoading ? '발송 중...' : currentText.passwordResetSubmit}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Divider */}
         <div className="my-6 flex items-center gap-4">
