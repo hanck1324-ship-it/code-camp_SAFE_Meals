@@ -67,7 +67,10 @@ export function HomeDashboard({
   ];
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div
+      className="min-h-screen bg-white pb-24"
+      data-testid="dashboard-container"
+    >
       {/* Header */}
       <div className="bg-white px-6 pb-6 pt-8 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
