@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const handleNavigate = (
     screen:
       | 'safetyProfileEdit'
-      | 'notifications'
+      | 'payment'
       | 'languageSettings'
       | 'help'
       | 'safetyCard'
@@ -27,8 +27,8 @@ export default function ProfilePage() {
       case 'safetyProfileEdit':
         router.push('/profile/settings');
         break;
-      case 'notifications':
-        router.push('/profile/notifications');
+      case 'payment':
+        router.push('/profile/payment');
         break;
       case 'languageSettings':
         router.push('/profile/language');

@@ -1,7 +1,7 @@
 import {
   Shield,
   Lock,
-  Bell,
+  CreditCard,
   Globe,
   HelpCircle,
   LogOut,
@@ -19,7 +19,7 @@ interface ProfileScreenProps {
   onNavigate: (
     screen:
       | 'safetyProfileEdit'
-      | 'notifications'
+      | 'payment'
       | 'languageSettings'
       | 'help'
       | 'safetyCard'
@@ -50,10 +50,10 @@ export function ProfileScreen({
       action: () => onNavigate('safetyProfileEdit'),
     },
     {
-      icon: Bell,
-      label: t.notifications,
-      subtitle: t.enabled,
-      action: () => onNavigate('notifications'),
+      icon: CreditCard,
+      label: t.payment || '결제',
+      subtitle: t.paymentSubtitle || '결제 수단 및 내역 관리',
+      action: () => onNavigate('payment'),
     },
     {
       icon: Globe,

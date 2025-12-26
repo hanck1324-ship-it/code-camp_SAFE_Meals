@@ -195,6 +195,7 @@ if (isNativeApp()) {
 | 대시보드 | 웹뷰 | 복잡한 UI, 빠른 업데이트 |
 | 온보딩 | 웹뷰 | 복잡한 폼, A/B 테스트 |
 | 프로필 | 웹뷰 | 자주 변경되는 기능 |
+| 결제 | 웹뷰 | 복잡한 UI, 결제 수단 관리, 결제 내역 |
 | 스캔 결과 | 웹뷰 | 복잡한 UI, 데이터 표시 |
 | 설정 | 네이티브 | 권한 관리, 시스템 연동 |
 
@@ -243,6 +244,8 @@ pnpm android
 1. `apps/web/src/app/` 에 페이지 생성 (예: `app/new-page/page.tsx`)
 2. `apps/mobile/app/webview/[...path].tsx`가 자동으로 라우팅 처리
 3. 필요시 `packages/shared/src/bridge-protocol/types.ts`의 `WEBVIEW_ROUTES`에 매핑 추가
+4. `src/commons/constants/url.ts`에 URL 상수 추가
+5. 번역 키는 `src/lib/translations.ts`에 모든 언어로 추가
 
 ### 브릿지 메시지 추가
 

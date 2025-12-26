@@ -48,6 +48,39 @@ alwaysApply: false
 - 테스트시 사용되는 페이지이동(page.goto)은 baseUrl(호스트와 포트)을 포함하지 않고, 경로만 추가할 것
 - 테스트시 사용되는 html,css(page.locator)는 Tailwind 클래스와의 충돌을 피하기 위해 **data-testid**를 지정하여 테스트 할 것
 
+## 💳 결제 기능 조건
+
+### 결제 화면 구조
+- **경로**: `/profile/payment` (프로필), `/settings/payment` (설정)
+- **구현 방식**: 웹뷰 (복잡한 UI, 빠른 업데이트)
+- **컴포넌트**: `src/features/profile/components/settings/payment-screen.tsx`
+- **URL 상수**: `PROFILE_URLS.PAYMENT`, `SETTINGS_URLS.PAYMENT`
+
+### 결제 기능 구성
+1. **결제 수단 관리**: 신용카드 등록, 수정, 삭제
+2. **결제 내역**: 최근 결제 내역 조회
+3. **청구서**: 청구서 다운로드 및 관리
+4. **결제 보안**: 결제 정보 보안 설정
+
+### 결제 관련 번역 키
+- `payment`: '결제'
+- `paymentSubtitle`: '결제 수단 및 내역 관리'
+- `paymentCard`: '신용카드'
+- `paymentMethods`: '결제 수단'
+- `paymentHistory`: '결제 내역'
+- `invoices`: '청구서'
+- `paymentSecurity`: '결제 보안'
+- `savedPaymentMethods`: '저장된 결제 수단'
+- `expires`: '만료'
+- `default`: '기본'
+- `paymentInfo`: 결제 정보 안내 문구
+
+### 결제 화면 개발 시 주의사항
+- 결제 정보는 민감한 데이터이므로 보안에 주의
+- 결제 수단 추가/수정/삭제 시 적절한 검증 로직 필요
+- 결제 내역은 페이지네이션 고려
+- 모든 결제 관련 텍스트는 번역 키 사용 (하드코딩 금지)
+
 ## 🔐 권한 분기 조건
 
 ### 페이지 GUARD

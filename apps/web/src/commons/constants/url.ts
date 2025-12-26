@@ -38,7 +38,7 @@ export const MAIN_URLS = {
 export const PROFILE_URLS = {
   SETTINGS: '/profile/settings',
   LANGUAGE: '/profile/language',
-  NOTIFICATIONS: '/profile/notifications',
+  PAYMENT: '/profile/payment',
   SAFETY_CARD: '/profile/safety-card',
   HELP: '/profile/help',
 } as const;
@@ -48,7 +48,7 @@ export const PROFILE_URLS = {
  */
 export const SETTINGS_URLS = {
   LANGUAGE: '/settings/language',
-  NOTIFICATIONS: '/settings/notifications',
+  PAYMENT: '/settings/payment',
   HELP: '/settings/help',
 } as const;
 
