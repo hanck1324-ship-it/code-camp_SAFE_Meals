@@ -197,8 +197,9 @@ components/feature-name/
 5. **URL 상수 사용**
 
    ```tsx
-   import { MAIN_URLS } from '@/commons/constants/url';
+   import { MAIN_URLS, PROFILE_URLS } from '@/commons/constants/url';
    router.push(MAIN_URLS.DASHBOARD);
+   router.push(PROFILE_URLS.PAYMENT);
    ```
 
 6. **data-testid 추가**

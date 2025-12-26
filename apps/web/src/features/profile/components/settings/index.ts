@@ -3,13 +3,13 @@
  *
  * @example
  * ```tsx
- * import { ProfileScreen, HelpSupportScreen } from '@/components/profile';
+ * import { ProfileScreen, HelpSupportScreen } from '@/features/profile/components/settings';
  * ```
  */
 
 export { ProfileScreen } from './profile-screen';
 export { HelpSupportScreen } from './help-support-screen';
 export { LanguageSettingsScreen } from './language-settings-screen';
-export { NotificationsScreen } from './notifications-screen';
+export { PaymentScreen } from './payment-screen';
 export { SafetyCardPinScreen } from './safety-card-pin-screen';
 export { SafetyProfileEditScreen } from './safety-profile-edit-screen';
