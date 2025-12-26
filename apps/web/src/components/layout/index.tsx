@@ -14,9 +14,16 @@ interface LayoutProps {
  */
 export default function Layout({ children }: LayoutProps) {
   return (
+<<<<<<< Updated upstream
     <NextThemesProvider>
       <div className="flex min-h-screen max-w-md mx-auto flex-col shadow-lg">
         <main className="flex-grow overflow-y-auto bg-white">{children}</main>
+=======
+    <QueryProvider>
+      <NextThemesProvider>
+        <div className="mx-auto flex min-h-screen max-w-md flex-col shadow-lg">
+          <main className="flex-grow overflow-y-auto bg-white">{children}</main>
+>>>>>>> Stashed changes
 
         <footer className="bg-gray-100 p-2 text-center text-xs">
           <p className="text-gray-500">© 2025 SAFE Meals</p>
