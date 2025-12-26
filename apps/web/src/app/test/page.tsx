@@ -11,18 +11,31 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface TestResult {
-  success: boolean;
+interface ConnectionTestResult {
+  success?: boolean;
   message?: string;
   error?: string;
   details?: any;
   timestamp?: string;
+  summary?: {
+    allGood: boolean;
+    message: string;
+  };
+  supabase?: any;
+  apiKey?: any;
 }
 
+type TestResult = ConnectionTestResult;
+
 export default function TestPage() {
-  const [supabaseResult, setSupabaseResult] = useState<TestResult | null>(null);
-  const [apiKeyResult, setApiKeyResult] = useState<TestResult | null>(null);
-  const [statusResult, setStatusResult] = useState<TestResult | null>(null);
+  const [supabaseResult, setSupabaseResult] =
+    useState<ConnectionTestResult | null>(null);
+  const [apiKeyResult, setApiKeyResult] = useState<ConnectionTestResult | null>(
+    null
+  );
+  const [statusResult, setStatusResult] = useState<ConnectionTestResult | null>(
+    null
+  );
   const [loading, setLoading] = useState({
     supabase: false,
     apiKey: false,

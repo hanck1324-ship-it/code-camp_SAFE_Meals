@@ -1,3 +1,5 @@
+'use client';
+
 import { Camera, Shield, MapPin, Star, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language, translations } from '@/lib/translations';

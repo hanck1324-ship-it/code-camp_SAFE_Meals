@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { AuthProvider } from './_providers/auth-provider';
+import { AuthProvider } from '@/commons/providers/auth-provider';
 import Layout from '@/components/layout';
 import { ConditionalBottomNav } from '@/commons/onboarding/conditional-bottom-nav';
 
