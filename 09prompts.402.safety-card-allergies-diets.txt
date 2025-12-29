@@ -9,8 +9,8 @@
 
 ==============================================
 
-조건-파일경로) 참고할 PAGE 경로: apps/web/src/app/profile/safety-card/page.tsx
-조건-파일경로) 구현될 HOOK 경로: apps/web/src/features/profile/components/safety-card/hooks/index.submit-allergies-diets.hook.ts
+조건-파일경로) 참고할 PAGE 경로: apps/web/src/features/profile/components/settings
+조건-파일경로) 구현될 HOOK 경로: apps/web/src/features/profile/components/settings/hooks/index.submit-allergies-diets.hook.ts
 조건-파일경로) 구현될 TEST 경로: apps/web/tests/safety-card-allergies-diets.spec.ts
 
 ==============================================

@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+
+// .env.local 파일에서 환경변수 로드
+dotenv.config({ path: '.env.local' });
 
 /**
  * Playwright 설정

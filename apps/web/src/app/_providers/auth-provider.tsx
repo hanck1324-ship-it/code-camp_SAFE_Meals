@@ -1,6 +1,12 @@
 /* AuthProvider (Supabase Auth) */
 'use client';
-import { createContext, useContext, useEffect, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
 import { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useAppStore } from '@/commons/stores/useAppStore';
@@ -8,6 +14,7 @@ import { useRouter } from 'next/navigation';
 
 interface AuthContextValue {
   user: User | null;
+  isAuthLoading: boolean;
   logout: () => Promise<void>;
 }
 
@@ -18,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setUser = useAppStore((state) => state.setUser);
   const storeLogout = useAppStore((state) => state.logout);
   const router = useRouter();
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -27,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         setUser(session.user);
       }
+      setIsAuthLoading(false);
     });
 
     // 세션 상태 변경 감지
@@ -56,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.replace('/auth/login');
   };
 
-  const value: AuthContextValue = { user: supabaseUser, logout };
+  const value: AuthContextValue = { user: supabaseUser, isAuthLoading, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

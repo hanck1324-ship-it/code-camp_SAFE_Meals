@@ -9,6 +9,7 @@ import { translations } from '@/lib/translations';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useSafetyCardVerify } from '@/features/profile/components/safety-card/hooks/index.submit.hook';
 import { useSafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
+import { AllergiesDietsDatabinding } from '@/features/profile/components/safety-card/allergies-diets-databinding';
 
 /**
  * 언어별 메시지 필드 매핑
@@ -214,6 +215,9 @@ export default function SafetyCardPage() {
                   </>
                 )}
               </div>
+
+              {/* 알레르기 및 식단 데이터 바인딩 */}
+              <AllergiesDietsDatabinding />
             </div>
           )
         ) : (
