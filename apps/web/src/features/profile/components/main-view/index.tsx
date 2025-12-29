@@ -75,10 +75,7 @@ export function ProfileScreen({
       <div className="bg-white px-6 pb-4 pt-8">
         <div className="flex items-center justify-between">
           <h1>{t.myProfile}</h1>
-          <LanguageSelector
-            currentLanguage={language}
-            onLanguageChange={onLanguageChange}
-          />
+          <LanguageSelector />
         </div>
       </div>
 
