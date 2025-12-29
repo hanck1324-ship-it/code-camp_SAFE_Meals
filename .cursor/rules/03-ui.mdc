@@ -1,0 +1,7 @@
+---
+description: UI 컴포넌트 조건 (common-guide.mdc로 통합됨)
+globs:
+alwaysApply: false
+---
+
+# ⚠️ 이 파일은 common-guide.mdc로 통합되었습니UI 컴포넌트 조건은 **common-guide.mdc**를 참조하세요.

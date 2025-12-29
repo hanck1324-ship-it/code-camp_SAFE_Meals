@@ -1,0 +1,63 @@
+---
+description: 공통 개발 가이드 (스타일링, UI, 공통 조건)
+globs:
+alwaysApply: false
+---
+
+# 공통 개발 가이드
+
+## 📋 공통 조건
+
+- 명시된 파일 이외에는 절대로 수정하지 말 것
+- 명시하지 않은 라이브러리를 설치하지 말 것 (JEST 등)
+- 추후 수정이 쉽도록, 독립적인 부품들의 조립 형태로 구현할 것
+- 피그마 링크가 제공되면, 작업 전 전체 구조를 먼저 분석하고 step-by-step으로 구현할 것
+- package.json을 확인하여 사용 가능한 라이브러리와 버전을 먼저 분석할 것
+- 폴더구조, 라우터구조, 레이아웃 구조를 먼저 분석할 것
+- 모든 작업이 끝나면 step-by-step으로 전체를 검토하여 빠진 부분을 채우고 디테일 수정할 것
+
+## 🎨 스타일링 조건 (웹 앱)
+
+- **Tailwind CSS**를 주력으로 사용 (CSS Module 사용 금지)
+- **shadcn/ui** 컴포넌트 시스템을 적극 활용
+- 재사용 가능한 유틸리티 클래스를 우선 사용
+- `!important`는 최대한 사용하지 말 것
+- `globals.css`는 Tailwind 설정, CSS 변수, 전역 리셋만 포함 (개별 컴포넌트를 위해 변경하지 말 것)
+- Flexbox 방식으로 구현 (position-absolute는 모달, 드롭다운, 툴팁 등 필요한 경우에만 사용)
+- 반응형 디자인은 Tailwind 브레이크포인트(sm:, md:, lg:) 활용
+- 추가적인 애니메이션 등은 넣지 말고, 있는 그대로만 완벽히 구현할 것
+
+## 🎨 스타일링 조건 (모바일 앱)
+
+- **React Native StyleSheet.create** 사용 (Tailwind CSS 사용 안 함)
+- 플랫폼별 스타일: Platform.select 사용
+- SafeAreaView로 안전 영역 처리
+
+## 🖼️ UI 컴포넌트 조건
+
+### 피그마
+- 피그마 링크가 제공되면, 제공된 디자인 그대로 구현하고 그 이상으로 추가하지 말 것
+- 모든 사이즈는 제공된 피그마와 동일하게 처리할 것
+- 피그마 구조가 잘못되었을 수 있음을 이해하고, 이미 만들어져 있는 HTML/CSS 구조 안에서 내부만 채우는 방식으로 작업할 것
+
+### 아이콘
+- **lucide-react** 라이브러리 사용
+- 예시: `import { Star, MapPin } from 'lucide-react'` → `<Star className="w-4 h-4" />`
+
+### 이미지
+- 이미지는 `public/assets/` 폴더에 저장
+- 이미지 로딩 실패를 대비한 ImageWithFallback 컴포넌트 활용
+- Next.js Image 컴포넌트 사용 시 적절한 width, height 지정
+
+### 모달/다이얼로그
+- Radix UI 기반 컴포넌트 사용 (@radix-ui/react-dialog)
+- `src/components/ui/` 폴더의 Dialog, AlertDialog, Sheet 등 활용
+- Drawer가 필요한 경우 vaul 라이브러리 기반 Drawer 컴포넌트 사용
+
+## 📁 경로 상수
+
+- [글로벌CSS]: `src/app/globals.css`
+- [ENUM]: `src/commons/constants/enum.ts`
+- [URL]: `src/commons/constants/url.ts`
+- [아이콘]: lucide-react 라이브러리
+- [이미지]: `public/assets/*`
