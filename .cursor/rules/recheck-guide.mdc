@@ -1,0 +1,90 @@
+---
+description: 작업 완료 후 검토 가이드
+globs:
+alwaysApply: false
+---
+
+# 작업 완료 후 검토 가이드
+
+작업 완료 후 아래 체크리스트를 검토할 것.
+
+## ✅ 필수 규칙 검토
+
+### 1. Tailwind CSS 사용
+- [ ] CSS Module 파일이 생성되지 않았는가?
+- [ ] 모든 스타일이 Tailwind 클래스로 작성되었는가?
+- [ ] !important가 사용되지 않았는가?
+- [ ] position: absolute가 최소화되었는가?
+- [ ] 반응형 클래스(sm:, md:, lg:)가 적용되었는가?
+- [ ] cn() 유틸리티를 사용하는가?
+- [ ] 모바일 우선 접근 방식을 사용하는가?
+
+### 2. UI 컴포넌트
+- [ ] lucide-react 아이콘을 사용하는가?
+- [ ] 이미지는 public/assets/에 있는가?
+- [ ] shadcn/ui 컴포넌트를 활용했는가?
+  - [ ] Button은 src/components/ui/button.tsx를 사용하는가?
+  - [ ] Input은 src/components/ui/input.tsx를 사용하는가?
+  - [ ] Card는 src/components/ui/card.tsx를 사용하는가?
+  - [ ] Dialog는 src/components/ui/dialog.tsx를 사용하는가?
+- [ ] button-legacy, input-legacy는 기존 코드 호환성 유지용으로만 사용하는가?
+
+### 3. 기능 구현
+- [ ] URL 상수(src/commons/constants/url.ts)를 사용하는가?
+- [ ] ENUM 상수를 활용하는가?
+- [ ] React Query를 사용하는가? (API 호출)
+- [ ] Radix UI Dialog를 사용하는가? (모달)
+- [ ] data-testid가 추가되었는가?
+
+### 4. 다국어 처리
+- [ ] useTranslation 훅을 사용하는가?
+- [ ] 하드코딩된 텍스트가 없는가?
+- [ ] 모든 사용자 노출 텍스트가 t.키 형식인가?
+- [ ] 새로운 번역 키가 translations.ts에 추가되었는가?
+
+### 5. 프로젝트 규칙
+- [ ] 명시되지 않은 라이브러리를 설치하지 않았는가?
+- [ ] TypeScript 타입 에러가 없는가?
+
+## 🧪 테스트 검토
+
+### Playwright 테스트
+- [ ] TDD 기반으로 playwright 테스트를 먼저 작성했는가?
+- [ ] playwright.config.ts 설정을 변경하지 않았는가?
+- [ ] playwright 테스트에 mock 데이터를 사용하지 않았는가?
+- [ ] timeout이 필요한 경우 2000ms 미만으로 설정했는가?
+- [ ] page.goto()에서 baseUrl을 포함하지 않고 경로만 사용했는가?
+- [ ] data-testid를 사용했는가?
+
+### 전체 테스트 실행
+- [ ] `npm run test:e2e` 명령으로 전체 테스트 실행
+- [ ] 모든 테스트가 통과했는가?
+- [ ] 주요 기능에 대한 테스트가 작성되었는가?
+
+## 📊 Mock 데이터 제거 (프로덕션 배포 전 필수)
+
+- [ ] home-dashboard의 recentScans, restaurants 배열을 실제 API로 변경
+- [ ] scan-result-screen의 menuItems 배열을 실제 API로 변경
+- [ ] 하드코딩된 배열 데이터 확인
+- [ ] 모든 데이터가 React Query + API 호출 또는 Supabase 조회인가?
+
+## 🎨 스타일 일관성
+
+- [ ] 일관된 간격 단위를 사용하는가?
+- [ ] 프로젝트 Primary 색상(#2ECC71)을 사용하는가?
+- [ ] CSS 변수 또는 Tailwind 테마 색상을 사용하는가?
+- [ ] 임의의 값(arbitrary values)을 과도하게 사용하지 않았는가?
+
+## 📋 검토 결과 보고 형식
+
+```
+✅ 통과: [항목명]
+❌ 실패: [항목명] - [이유]
+⚠️ 주의: [항목명] - [개선 사항]
+```
+
+## 🚀 최종 빌드
+
+- [ ] `npm run build` 성공 확인
+- [ ] 빌드 실패 시 문제 해결 후 재빌드
+- [ ] 빌드 성공 시 "Conventional Commits" 방식으로 한국어 커밋

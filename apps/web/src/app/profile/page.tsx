@@ -1,0 +1,62 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useAppStore } from '@/commons/stores/useAppStore';
+import { ProfileScreen } from '@/features/profile/components/settings/profile-screen';
+import { RequireAuth } from '@/components/auth/require-auth';
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const { logout } = useAppStore();
+
+  // Temporary sample data – in real app fetch from API / DB
+  const userProfile = {
+    allergies: [],
+    diets: [],
+  };
+
+  const handleNavigate = (
+    screen:
+      | 'safetyProfileEdit'
+      | 'payment'
+      | 'languageSettings'
+      | 'help'
+      | 'safetyCard'
+  ) => {
+    switch (screen) {
+      case 'safetyProfileEdit':
+        router.push('/profile/settings');
+        break;
+      case 'payment':
+        router.push('/profile/payment');
+        break;
+      case 'languageSettings':
+        router.push('/profile/language');
+        break;
+      case 'help':
+        router.push('/profile/help');
+        break;
+      case 'safetyCard':
+        router.push('/profile/safety-card');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    // 로그아웃 후 홈 화면으로 리다이렉트 (redirect 파라미터 없이)
+    router.replace('/auth/login');
+  };
+
+  return (
+    <RequireAuth>
+      <ProfileScreen
+        userProfile={userProfile}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+      />
+    </RequireAuth>
+  );
+}
