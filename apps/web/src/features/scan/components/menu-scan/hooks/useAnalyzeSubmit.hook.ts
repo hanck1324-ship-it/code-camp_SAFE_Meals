@@ -3,19 +3,13 @@
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase';
+import {
+  useAnalyzeResult,
+  type AnalysisResult,
+  type MenuAnalysisItem,
+} from '@/features/scan/context/analyze-result-context';
 
-/**
- * 메뉴 분석 결과 항목
- */
-export interface MenuAnalysisItem {
-  id: string;
-  original_name: string;
-  translated_name: string;
-  description: string;
-  safety_status: 'SAFE' | 'CAUTION' | 'DANGER';
-  reason: string;
-  ingredients: string[];
-}
+export type { MenuAnalysisItem };
 
 /**
  * API 응답 타입 (실제 API 응답 형식)
@@ -69,8 +63,6 @@ export interface UseAnalyzeSubmitReturn {
   isLoading: boolean;
   /** 에러 메시지 */
   error: string | null;
-  /** 분석 결과 */
-  analysisResult: AnalyzeResponse['analysis'] | null;
   /** 이미지 설정 */
   setImageData: (data: string | null) => void;
   /** 분석 제출 */
@@ -116,13 +108,11 @@ const ERROR_MESSAGES = {
  */
 export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
   const router = useRouter();
+  const { setAnalysisResult, clearAnalysisResult } = useAnalyzeResult();
 
   const [imageData, setImageData] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<
-    AnalyzeResponse['analysis'] | null
-  >(null);
 
   // AbortController 참조
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -256,7 +246,7 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           }
 
           // 분석 결과 변환
-          const analysis: AnalyzeResponse['analysis'] = {
+          const analysis: AnalysisResult = {
             overall_status: overallStatus,
             detected_ingredients: [...new Set(detectedIngredients)],
             warnings,
@@ -302,7 +292,7 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         setIsLoading(false);
       }
     },
-    [router, fileToBase64]
+    [router, fileToBase64, setAnalysisResult]
   );
 
   /**
@@ -319,18 +309,17 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
     setImageData(null);
     setIsLoading(false);
     setError(null);
-    setAnalysisResult(null);
+    clearAnalysisResult();
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-  }, []);
+  }, [clearAnalysisResult]);
 
   return {
     imageData,
     isLoading,
     error,
-    analysisResult,
     setImageData,
     submitAnalyze,
     clearError,
