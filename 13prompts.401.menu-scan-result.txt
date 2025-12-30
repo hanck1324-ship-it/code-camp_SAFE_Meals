@@ -1,0 +1,144 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 구현될 PAGE 경로: src/app/scan/result/page.tsx
+조건-파일경로) 구현될 TSX 파일경로: src/features/scan/components/result-view/index.tsx
+조건-파일경로) 구현될 TEST 파일경로: src/features/scan/tests/result-view.spec.ts
+
+==============================================
+
+조건-스타일) Tailwind CSS를 사용하여 스타일링할 것.
+            - globals.css에 정의된 CSS 변수를 Tailwind 클래스로 활용
+            - overall_status별 색상 매핑 (CSS 변수 활용)
+                - SAFE: bg-[var(--color-success)] 또는 bg-green-50, text-green-700 등
+                - CAUTION: bg-[var(--color-warning)] 또는 bg-yellow-50, text-yellow-700 등
+                - DANGER: bg-[var(--color-error)] 또는 bg-red-50, text-red-700 등
+            - 하드코딩된 색상값 사용 금지
+            - 반응형: sm:, md:, lg: 등 Tailwind 반응형 유틸리티 활용
+
+==============================================
+
+핵심요구사항) 다음의 기능을 playwright 테스트를 활용하여 TDD 기반으로 구현하고, 테스트에 통과할 때까지 반복할 것.
+
+1) 테스트 제외 라이브러리
+   - jest
+   - @testing-library/react
+
+2) 테스트 조건
+   - timeout은 설정하지 않거나, 500ms 미만으로 설정할 것.
+   - 페이지가 완전히 로드된 후 테스트할 것.
+       - 페이지 로드 식별 요구사항: 고정식별자 data-testid 대기 방법
+       - **중요금지사항** 페이지 로드 식별 금지사항: networkidle 대기 방법
+
+3) 테스트 데이터 조건
+   3-1) 데이터
+        - 실제 분석 결과 데이터를 사용할 것.
+        - Mock 데이터를 사용하지 말 것.
+
+   3-2) 성공 시나리오
+        - analysis 데이터가 존재하는 경우
+        - overall_status별 UI 분기 검증
+
+   3-3) 실패 시나리오
+        - analysis 데이터가 없는 경우
+        - 잘못된 데이터 구조 처리
+
+핵심요구사항) Edge Function 분석 결과를 화면에 바인딩할 것.
+
+1) 바인딩할 데이터 소스
+   - 데이터 저장소: useState 또는 Router state (이전 페이지에서 전달받음)
+   - 데이터 구조
+        ```typescript
+        interface AnalysisResult {
+          overall_status: 'SAFE' | 'CAUTION' | 'DANGER';
+          detected_ingredients: string[];
+          warnings: Array<{
+            ingredient: string;
+            allergen: string;
+            severity: 'HIGH' | 'MEDIUM' | 'LOW';
+          }>;
+          message_ko: string;
+          message_en: string;
+        }
+        ```
+
+2) 데이터 바인딩 상세내용
+   2-1) overall_status별 UI 분기 (Tailwind CSS 활용)
+        - SAFE
+            - 배경색: bg-[var(--color-success-light)] 또는 bg-green-50
+            - 텍스트 색상: text-[var(--color-success)] 또는 text-green-700
+            - 아이콘: ✓ 체크 아이콘 (초록색)
+            - 메시지: message_ko 또는 message_en (language 설정 따름)
+        - CAUTION
+            - 배경색: bg-[var(--color-warning-light)] 또는 bg-yellow-50
+            - 텍스트 색상: text-[var(--color-warning)] 또는 text-yellow-700
+            - 아이콘: ⚠ 경고 아이콘 (주황색)
+            - 메시지: message_ko 또는 message_en
+            - 경고 목록: warnings 배열을 리스트로 표시
+        - DANGER
+            - 배경색: bg-[var(--color-error-light)] 또는 bg-red-50
+            - 텍스트 색상: text-[var(--color-error)] 또는 text-red-700
+            - 아이콘: ✕ 또는 ⛔ 위험 아이콘 (빨강색)
+            - 메시지: message_ko 또는 message_en
+            - 경고 목록: warnings 배열을 리스트로 표시 (강조)
+
+   2-2) 감지된 재료 목록 표시 (Tailwind CSS 활용)
+        - detected_ingredients 배열을 태그 또는 리스트로 표시
+        - 재료명: 각 재료를 작은 태그로 표시 (px-3 py-1 rounded-full bg-gray-100 text-sm)
+        - 레이아웃: 가로로 나열하되, 줄바꿈 허용 (flex flex-wrap gap-2)
+
+   2-3) 경고 목록 표시 (CAUTION, DANGER인 경우) (Tailwind CSS 활용)
+        - warnings 배열을 카드 또는 리스트로 표시 (space-y-2)
+        - 각 경고 항목: (p-4 rounded-lg border)
+            - 재료명 (ingredient): font-semibold
+            - 알레르기 유발 물질 (allergen): text-sm text-gray-600
+            - 심각도 (severity): HIGH > MEDIUM > LOW 순으로 시각적 강조
+        - 심각도별 색상 구분 (Tailwind 클래스)
+            - HIGH: bg-red-100 border-red-300 text-red-800
+            - MEDIUM: bg-orange-100 border-orange-300 text-orange-800
+            - LOW: bg-yellow-100 border-yellow-300 text-yellow-800
+
+   2-4) 다국어 메시지 처리
+        - language 설정에 따라 message_ko 또는 message_en 표시
+        - language가 'ko'면 message_ko, 'en'이면 message_en
+        - 언어 설정은 useLanguageStore 또는 props로 전달받음
+
+3) 재촬영 버튼
+   - 버튼 클릭 시 /scan 페이지로 돌아가기
+   - 버튼 텍스트: "다시 촬영하기" (ko) / "Retake Photo" (en)
+   - 버튼 위치: 하단 고정
+
+4) 데이터 없음 처리
+   - analysis 데이터가 없는 경우
+        - 에러 메시지: "분석 결과를 불러올 수 없습니다."
+        - "다시 촬영하기" 버튼 표시
+        - 자동으로 /scan 페이지로 리다이렉트 (선택사항)
+
+5) Tailwind CSS 처리
+   - globals.css의 CSS 변수를 bg-[var(--color-name)] 형태로 활용
+   - 상태별 배경색: bg-gradient-to-br 또는 단색
+   - 카드 레이아웃: shadow-md rounded-xl p-6
+   - 반응형: 모바일 우선 (sm:, md:, lg: 활용)
+
+핵심요구사항) 테스트 파일에 다음 시나리오를 구현할 것.
+            - 테스트 파일 경로: src/features/scan/tests/result-view.spec.ts
+            - 테스트 시나리오
+                1) SAFE 상태일 때 초록색 UI 및 체크 아이콘 표시
+                2) CAUTION 상태일 때 주황색 UI 및 경고 목록 표시
+                3) DANGER 상태일 때 빨강색 UI 및 경고 목록 강조 표시
+                4) 감지된 재료 목록이 올바르게 표시되는지 확인
+                5) 다국어 메시지가 언어 설정에 따라 올바르게 표시되는지 확인
+                6) "다시 촬영하기" 버튼 클릭 시 /scan 페이지로 이동
+                7) 데이터 없음 시 에러 메시지 표시
+
+핵심요구사항) useState를 사용하여 상태 관리할 것.
+            - analysisResult: 분석 결과 데이터 (이전 페이지에서 전달받거나 Context에서 가져옴)
+            - language: 'ko' | 'en' (useLanguageStore 또는 props)

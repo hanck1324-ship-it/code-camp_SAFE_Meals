@@ -9,6 +9,7 @@ interface AllergyDetailScreenProps {
   onBack: () => void;
   language: Language;
   onLanguageChange: (language: Language) => void;
+  initialSelectedAllergies?: string[];
 }
 
 interface AllergyOption {
@@ -23,9 +24,19 @@ export function AllergyDetailScreen({
   onBack,
   language,
   onLanguageChange,
+  initialSelectedAllergies = [],
 }: AllergyDetailScreenProps) {
-  const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+  const [selectedAllergies, setSelectedAllergies] = useState<string[]>(
+    initialSelectedAllergies
+  );
   const t = translations[language];
+
+  // 초기값이 변경되면 상태 업데이트
+  useEffect(() => {
+    if (initialSelectedAllergies.length > 0) {
+      setSelectedAllergies(initialSelectedAllergies);
+    }
+  }, [initialSelectedAllergies]);
 
   // If no categories selected, skip this step
   useEffect(() => {

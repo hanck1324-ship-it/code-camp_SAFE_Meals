@@ -9,6 +9,7 @@ interface DietDetailScreenProps {
   onBack: () => void;
   language: Language;
   onLanguageChange: (language: Language) => void;
+  initialSelectedDiets?: string[];
 }
 
 interface DietOption {
@@ -24,9 +25,18 @@ export function DietDetailScreen({
   onBack,
   language,
   onLanguageChange,
+  initialSelectedDiets = [],
 }: DietDetailScreenProps) {
-  const [selectedDiets, setSelectedDiets] = useState<string[]>([]);
+  const [selectedDiets, setSelectedDiets] =
+    useState<string[]>(initialSelectedDiets);
   const t = translations[language];
+
+  // 초기값이 변경되면 상태 업데이트
+  useEffect(() => {
+    if (initialSelectedDiets.length > 0) {
+      setSelectedDiets(initialSelectedDiets);
+    }
+  }, [initialSelectedDiets]);
 
   // If "noPreference" was selected, skip to completion
   useEffect(() => {

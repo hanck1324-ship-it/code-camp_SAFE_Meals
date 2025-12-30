@@ -14,6 +14,7 @@
     "clean": "rm -rf node_modules .expo android ios"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.4",
     "@expo/vector-icons": "^14.0.0",
     "expo": "~52.0.0",
     "expo-camera": "~16.0.0",

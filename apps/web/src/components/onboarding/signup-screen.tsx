@@ -34,10 +34,7 @@ export function SignupScreen({
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <LanguageSelector
-          currentLanguage={language}
-          onLanguageChange={onLanguageChange}
-        />
+        <LanguageSelector />
       </div>
 
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">

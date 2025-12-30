@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language, translations } from '@/lib/translations';
@@ -8,6 +8,7 @@ interface DietCategoryScreenProps {
   onBack: () => void;
   language: Language;
   onLanguageChange: (language: Language) => void;
+  initialSelectedCategories?: string[];
 }
 
 interface CategoryOption {
@@ -22,9 +23,19 @@ export function DietCategoryScreen({
   onBack,
   language,
   onLanguageChange,
+  initialSelectedCategories = [],
 }: DietCategoryScreenProps) {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    initialSelectedCategories
+  );
   const t = translations[language];
+
+  // 초기값이 변경되면 상태 업데이트
+  useEffect(() => {
+    if (initialSelectedCategories.length > 0) {
+      setSelectedCategories(initialSelectedCategories);
+    }
+  }, [initialSelectedCategories]);
 
   const categories: CategoryOption[] = [
     {

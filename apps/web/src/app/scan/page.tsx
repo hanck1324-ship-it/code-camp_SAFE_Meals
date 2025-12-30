@@ -1,32 +1,20 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/auth/require-auth';
-import { CameraScreen } from '@/features/scan/components/camera-view';
-import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 
 export default function ScanPage() {
-  const router = useRouter();
-  const language = useLanguageStore((state) => state.language);
-
-  const handleCapturePhoto = () => {
-    // TODO: 실제 카메라 촬영 로직 구현
-    console.log('Photo captured');
-    // 촬영 후 결과 페이지로 이동
-    router.push('/scan/result');
-  };
-
-  const handleClose = () => {
-    router.back();
-  };
-
   return (
     <RequireAuth>
-      <CameraScreen
-        onClose={handleClose}
-        language={language}
-        onCapturePhoto={handleCapturePhoto}
-      />
+      <div className="flex items-center justify-center min-h-screen bg-[var(--color-background)]">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-4">
+            스캔 기능 준비 중
+          </h1>
+          <p className="text-[var(--color-text-secondary)]">
+            곧 만나보실 수 있습니다.
+          </p>
+        </div>
+      </div>
     </RequireAuth>
   );
 }

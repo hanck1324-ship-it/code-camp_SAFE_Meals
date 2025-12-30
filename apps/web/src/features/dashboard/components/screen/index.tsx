@@ -54,10 +54,7 @@ export function HomeScreen({
       {/* Header */}
       <div className="px-6 pb-4 pt-6">
         <div className="mb-4 flex items-center justify-between">
-          <LanguageSelector
-            currentLanguage={language}
-            onLanguageChange={onLanguageChange}
-          />
+          <LanguageSelector />
         </div>
         <div className="mb-8 flex items-center justify-between">
           <div>

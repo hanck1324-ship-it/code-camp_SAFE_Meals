@@ -17,6 +17,12 @@ interface TestResult {
   error?: string;
   details?: any;
   timestamp?: string;
+  summary?: {
+    allGood: boolean;
+    message: string;
+  };
+  supabase?: any;
+  apiKey?: any;
 }
 
 export default function TestPage() {
