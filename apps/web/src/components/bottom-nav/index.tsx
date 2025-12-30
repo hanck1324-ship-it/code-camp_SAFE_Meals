@@ -41,11 +41,23 @@ export function BottomNav({
     }
   };
 
+  const SCAN_ENABLED_WEB = false;
+
   const tabs = [
-    { id: 'home' as const, icon: Home, label: t.home },
-    { id: 'scan' as const, icon: Camera, label: t.scan },
-    { id: 'safetyCard' as const, icon: Shield, label: t.safetyCard },
-    { id: 'myPage' as const, icon: User, label: t.myPage },
+    { id: 'home' as const, icon: Home, label: t.home, disabled: false },
+    {
+      id: 'scan' as const,
+      icon: Camera,
+      label: t.scan,
+      disabled: !SCAN_ENABLED_WEB,
+    },
+    {
+      id: 'safetyCard' as const,
+      icon: Shield,
+      label: t.safetyCard,
+      disabled: false,
+    },
+    { id: 'myPage' as const, icon: User, label: t.myPage, disabled: false },
   ];
 
   return (
@@ -54,18 +66,31 @@ export function BottomNav({
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
+          const isDisabled = tab.disabled;
           return (
             <button
               key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
+              onClick={() => {
+                if (isDisabled) return;
+                handleTabChange(tab.id);
+              }}
               className={`flex flex-col items-center justify-center gap-1 px-4 py-2 transition-colors ${
                 isActive ? 'text-[#2ECC71]' : 'text-gray-400'
-              }`}
+              } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
             >
               <Icon
-                className={`h-6 w-6 ${isActive ? 'fill-[#2ECC71]/20' : ''}`}
+                className={`h-6 w-6 ${
+                  isActive ? 'fill-[#2ECC71]/20' : ''
+                } ${isDisabled ? 'stroke-gray-300' : ''}`}
               />
-              <span className="text-xs">{tab.label}</span>
+              <span className="flex items-center gap-1 text-xs">
+                {tab.label}
+                {tab.id === 'scan' && isDisabled && (
+                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] text-gray-600">
+                    준비중
+                  </span>
+                )}
+              </span>
             </button>
           );
         })}
