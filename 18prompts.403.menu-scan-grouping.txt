@@ -9,9 +9,9 @@
 
 ==============================================
 
-조건-파일경로) 구현될 HOOK 파일경로: src/app/menu-scan/hooks/useMenuGrouping.hook.ts
-조건-파일경로) 구현될 TEST 파일경로: src/app/menu-scan/tests/menu-grouping.spec.ts
-조건-파일경로) 참고할 타입 파일: src/app/menu-scan/types/menu.types.ts
+조건-파일경로) 구현될 HOOK 파일경로: /src/features/scan/components/menu-scan/hooks/useMenuGrouping.hook.ts
+조건-파일경로) 구현될 TEST 파일경로: /src/features/scan/components/menu-scan/tests/menu-grouping.spec.ts
+
 
 ==============================================
 

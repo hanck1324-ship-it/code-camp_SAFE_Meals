@@ -1,29 +1,64 @@
-import { useRef, useCallback } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Text, Platform } from 'react-native';
+import { useRef, useCallback, useEffect, useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Text,
+  Platform,
+} from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface WebViewScreenProps {
   path: string;
   showHeader?: boolean;
 }
 
-
 // 항상 이 주소를 사용 (필요시 아래 한 줄만 수정)
-const WEBVIEW_BASE_URL = "http://172.16.2.168:3000";
+const WEBVIEW_BASE_URL = 'http://172.16.2.168:3000';
 
-export default function WebViewScreen({ path, showHeader = false }: WebViewScreenProps) {
+export default function WebViewScreen({
+  path,
+  showHeader = false,
+}: WebViewScreenProps) {
   const webViewRef = useRef<WebView>(null);
   const params = useLocalSearchParams();
-  
+  const [pendingImageData, setPendingImageData] = useState<string | null>(null);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  // AsyncStorage에서 이미지 데이터 로드
+  useEffect(() => {
+    const loadPendingImage = async () => {
+      if (params.hasImage === 'true') {
+        try {
+          const imageData = await AsyncStorage.getItem('pending_analyze_image');
+          if (imageData) {
+            setPendingImageData(imageData);
+            // 사용 후 삭제
+            await AsyncStorage.removeItem('pending_analyze_image');
+          }
+        } catch (error) {
+          console.error('이미지 로드 실패:', error);
+        }
+      }
+      setIsImageLoaded(true);
+    };
+    loadPendingImage();
+  }, [params.hasImage]);
+
   // URL 쿼리 파라미터 추가
   const queryString = Object.keys(params)
-    .filter(key => key !== 'path')
-    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(String(params[key]))}`)
+    .filter((key) => key !== 'path' && key !== 'hasImage')
+    .map(
+      (key) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(String(params[key]))}`
+    )
     .join('&');
 
   const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
@@ -32,12 +67,12 @@ export default function WebViewScreen({ path, showHeader = false }: WebViewScree
   const handleMessage = useCallback((event: WebViewMessageEvent) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      
+
       switch (message.type) {
         case 'SCAN_BARCODE':
           router.push('/camera');
           break;
-          
+
         case 'NAVIGATE':
           const { screen, params: navParams } = message.payload;
           if (screen === 'Camera' || screen === 'camera') {
@@ -46,11 +81,11 @@ export default function WebViewScreen({ path, showHeader = false }: WebViewScree
             router.push(`/webview/${screen.toLowerCase()}`);
           }
           break;
-          
+
         case 'GO_BACK':
           router.back();
           break;
-          
+
         case 'HAPTIC_FEEDBACK':
           const hapticType = message.payload?.type || 'medium';
           if (hapticType === 'light') {
@@ -61,11 +96,11 @@ export default function WebViewScreen({ path, showHeader = false }: WebViewScree
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           }
           break;
-          
+
         case 'CLOSE_WEBVIEW':
           router.back();
           break;
-          
+
         default:
           console.log('Unknown message type:', message.type);
       }
@@ -99,6 +134,9 @@ export default function WebViewScreen({ path, showHeader = false }: WebViewScree
         }
       };
       
+      // 분석용 이미지 데이터 주입
+      ${pendingImageData ? `window.pendingAnalyzeImage = "${pendingImageData.replace(/"/g, '\\"')}";` : 'window.pendingAnalyzeImage = null;'}
+      
       window.isNativeApp = true;
       window.nativeAppVersion = '${Constants.expoConfig?.version || '1.0.0'}';
       window.dispatchEvent(new Event('nativeBridgeReady'));
@@ -107,11 +145,25 @@ export default function WebViewScreen({ path, showHeader = false }: WebViewScree
     })();
   `;
 
+  // 이미지 로딩 중이면 로딩 표시
+  if (!isImageLoaded) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#22c55e" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={showHeader ? ['top'] : []}>
       {showHeader && (
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Ionicons name="chevron-back" size={24} color="#1f2937" />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
@@ -120,7 +172,7 @@ export default function WebViewScreen({ path, showHeader = false }: WebViewScree
           <View style={styles.headerRight} />
         </View>
       )}
-      
+
       <WebView
         ref={webViewRef}
         source={{ uri: url }}

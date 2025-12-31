@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   ReactNode,
 } from 'react';
 import { User } from '@supabase/supabase-js';
@@ -21,19 +22,26 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const supabaseUser = useAppStore((state) => state.supabaseUser);
   const setUser = useAppStore((state) => state.setUser);
   const storeLogout = useAppStore((state) => state.logout);
   const router = useRouter();
+  const [user, setLocalUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const isLoggingOut = useRef(false);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
+    let isMounted = true;
 
     // 초기 세션 확인
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted || isLoggingOut.current) return;
       if (session?.user) {
+        setLocalUser(session.user);
         setUser(session.user);
+      } else {
+        setLocalUser(null);
+        setUser(null);
       }
       setIsAuthLoading(false);
     });
@@ -42,30 +50,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if (!isMounted) return;
+
+      if (event === 'SIGNED_IN' && session?.user && !isLoggingOut.current) {
+        setLocalUser(session.user);
         setUser(session.user);
-        // OAuth 로그인 성공 시 알림 표시
-        if (window.location.pathname === '/dashboard') {
-          alert('로그인에 성공하였습니다.');
-        }
       } else if (event === 'SIGNED_OUT') {
+        setLocalUser(null);
         setUser(null);
+        storeLogout();
       }
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
-  }, [setUser]);
+  }, [setUser, storeLogout]);
 
   const logout = async () => {
-    const supabase = getSupabaseClient();
-    await supabase.auth.signOut();
+    // 로그아웃 플래그 설정 - 세션 재확인 방지
+    isLoggingOut.current = true;
+
+    // 즉시 상태 초기화
+    setLocalUser(null);
+    setUser(null);
     storeLogout();
+
+    // Supabase 로그아웃
+    const supabase = getSupabaseClient();
+    await supabase.auth.signOut({ scope: 'local' });
+
+    // 로그인 페이지로 이동
     router.replace('/auth/login');
   };
 
-  const value: AuthContextValue = { user: supabaseUser, isAuthLoading, logout };
+  const value: AuthContextValue = { user, isAuthLoading, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

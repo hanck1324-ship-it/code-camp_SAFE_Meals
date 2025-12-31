@@ -9,8 +9,8 @@
 
 ==============================================
 
-조건-파일경로) 구현될 HOOK 파일경로: src/app/menu-scan/hooks/useImagePreprocess.hook.ts
-조건-파일경로) 구현될 TEST 파일경로: src/app/menu-scan/tests/image-preprocess.spec.ts
+조건-파일경로) 구현될 HOOK 파일경로: src/features/scan/components/menu-scan/hooks/useImagePreprocess.hook.ts
+조건-파일경로) 구현될 TEST 파일경로: src/features/scan/components/menu-scan/tests/image-preprocess.spec.ts
 
 ==============================================
 
