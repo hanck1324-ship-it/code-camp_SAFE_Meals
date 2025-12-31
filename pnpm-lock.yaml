@@ -38,6 +38,9 @@ importers:
       expo-haptics:
         specifier: ~14.0.0
         version: 14.0.1(expo@52.0.48)
+      expo-image-manipulator:
+        specifier: ~13.0.6
+        version: 13.0.6(expo@52.0.48)
       expo-image-picker:
         specifier: ~16.0.6
         version: 16.0.6(expo@52.0.48)
@@ -6764,6 +6767,15 @@ packages:
       expo: '*'
     dependencies:
       expo: 52.0.48(@babel/core@7.28.5)(@babel/preset-env@7.28.5)(react-native-webview@13.12.5)(react-native@0.76.5)(react@18.3.1)
+    dev: false
+
+  /expo-image-manipulator@13.0.6(expo@52.0.48):
+    resolution: {integrity: sha512-Rz8Kcfx1xYm0AsIDi6zfKYUDnwCP8edgYXWb00KAkzOF8bDxwzTrnvESWhCiveM4IB3fojjLpNeENME34p3bzA==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 52.0.48(@babel/core@7.28.5)(@babel/preset-env@7.28.5)(react-native-webview@13.12.5)(react-native@0.76.5)(react@18.3.1)
+      expo-image-loader: 5.0.0(expo@52.0.48)
     dev: false
 
   /expo-image-picker@16.0.6(expo@52.0.48):
