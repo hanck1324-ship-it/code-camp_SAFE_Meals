@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import FindAccountModal from '@/features/auth/components/find-account/FindAccountModal';
 
 export interface AuthLoginProps {
   className?: string;
@@ -50,6 +51,9 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
   } = usePasswordReset();
 
   const { language } = useTranslation();
+
+  // 계정 찾기 모달 상태
+  const [isFindAccountModalOpen, setIsFindAccountModalOpen] = useState(false);
 
   const loginText: Record<
     Language,
@@ -291,7 +295,7 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
             <button
               type="button"
               className="text-sm text-[#2ECC71] hover:underline"
-              onClick={() => alert(currentText.preparing)}
+              onClick={() => setIsFindAccountModalOpen(true)}
               data-testid="forgot-email-button"
             >
               {currentText.forgotEmail}
@@ -413,6 +417,11 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
           </Link>
         </p>
       </div>
+
+      {/* 계정 찾기 모달 */}
+      {isFindAccountModalOpen && (
+        <FindAccountModal onClose={() => setIsFindAccountModalOpen(false)} />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import WebViewScreen from '@/components/WebViewScreen';
 
 export default function OnboardingScreen() {
-  return <WebViewScreen path="/onboarding" />;
+  return <WebViewScreen path="/onboarding/allergy" />;
 }

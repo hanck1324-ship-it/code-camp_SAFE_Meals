@@ -21,7 +21,7 @@ interface WebViewScreenProps {
 }
 
 // 항상 이 주소를 사용 (필요시 아래 한 줄만 수정)
-const WEBVIEW_BASE_URL = 'http://172.16.2.168:3000';
+const WEBVIEW_BASE_URL = 'http://172.16.3.96:3000';
 
 export default function WebViewScreen({
   path,
@@ -63,12 +63,43 @@ export default function WebViewScreen({
 
   const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
 
+  // 디버그: URL 로깅
+  console.log('[WebViewScreen] Loading URL:', url);
+
   // 웹뷰에서 메시지 수신 처리
-  const handleMessage = useCallback((event: WebViewMessageEvent) => {
+  const handleMessage = useCallback(async (event: WebViewMessageEvent) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
 
       switch (message.type) {
+        case 'LOGIN_SUCCESS':
+          // 로그인 성공 시 토큰 저장 및 화면 이동
+          const { token, refreshToken, userId, isNewUser } = message.payload;
+          try {
+            await AsyncStorage.setItem('authToken', token);
+            if (refreshToken) {
+              await AsyncStorage.setItem('refreshToken', refreshToken);
+            }
+            if (userId) {
+              await AsyncStorage.setItem('userId', userId);
+            }
+
+            // 신규 사용자인 경우 온보딩으로, 기존 사용자는 메인으로
+            if (isNewUser) {
+              // 신규 사용자: 온보딩 필요
+              console.log('[LOGIN_SUCCESS] 신규 사용자 - 온보딩으로 이동');
+              router.replace('/(auth)/onboarding');
+            } else {
+              // 기존 사용자: 온보딩 완료로 설정하고 메인으로
+              await AsyncStorage.setItem('hasOnboarded', 'true');
+              console.log('[LOGIN_SUCCESS] 기존 사용자 - 메인 화면으로 이동');
+              router.replace('/(tabs)');
+            }
+          } catch (error) {
+            console.error('Failed to save auth token:', error);
+          }
+          break;
+
         case 'SCAN_BARCODE':
           router.push('/camera');
           break;
@@ -94,6 +125,41 @@ export default function WebViewScreen({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           } else {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }
+          break;
+
+        case 'ONBOARDING_COMPLETE':
+          // 온보딩 완료 시 플래그 설정 및 메인 화면으로 이동
+          try {
+            await AsyncStorage.setItem('hasOnboarded', 'true');
+            console.log('[ONBOARDING_COMPLETE] 온보딩 완료 - 메인 화면으로 이동');
+            router.replace('/(tabs)');
+          } catch (error) {
+            console.error('Failed to save onboarding status:', error);
+          }
+          break;
+
+        case 'LOGOUT':
+          // 로그아웃 시 모든 인증 정보 삭제 및 로그인 화면으로 이동
+          try {
+            await AsyncStorage.multiRemove([
+              'authToken',
+              'refreshToken',
+              'userId',
+              'hasOnboarded',
+            ]);
+            console.log('[LOGOUT] AsyncStorage 클리어 완료');
+
+            // WebView 새로고침 (Supabase 세션 초기화)
+            if (webViewRef.current) {
+              console.log('[LOGOUT] WebView 새로고침 - Supabase 세션 초기화');
+              webViewRef.current.reload();
+            }
+
+            console.log('[LOGOUT] 로그아웃 완료 - 로그인 화면으로 이동');
+            router.replace('/(auth)/login');
+          } catch (error) {
+            console.error('Failed to clear auth data:', error);
           }
           break;
 
@@ -178,6 +244,7 @@ export default function WebViewScreen({
         source={{ uri: url }}
         style={styles.webview}
         onMessage={handleMessage}
+        injectedJavaScriptBeforeContentLoaded={injectedJavaScript}
         injectedJavaScript={injectedJavaScript}
         javaScriptEnabled={true}
         domStorageEnabled={true}
@@ -196,10 +263,23 @@ export default function WebViewScreen({
         mixedContentMode="compatibility"
         // 에러 처리
         onError={(syntheticEvent) => {
-          console.error('WebView error:', syntheticEvent.nativeEvent);
+          const { nativeEvent } = syntheticEvent;
+          console.error('[WebView] Error:', {
+            url: nativeEvent.url,
+            code: nativeEvent.code,
+            description: nativeEvent.description,
+          });
         }}
         onHttpError={(syntheticEvent) => {
-          console.error('WebView HTTP error:', syntheticEvent.nativeEvent);
+          const { nativeEvent } = syntheticEvent;
+          console.error('[WebView] HTTP Error:', {
+            url: nativeEvent.url,
+            statusCode: nativeEvent.statusCode,
+            description: nativeEvent.description,
+          });
+        }}
+        onLoadEnd={(syntheticEvent) => {
+          console.log('[WebView] Load finished:', syntheticEvent.nativeEvent.url);
         }}
       />
     </SafeAreaView>

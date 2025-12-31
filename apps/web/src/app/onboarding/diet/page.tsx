@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DietCategoryScreen } from '@/components/onboarding/diet/ category/diet-category-screen';
-import { useAppStore } from '@/commons/stores/useAppStore';
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { getSupabaseClient } from '@/lib/supabase';
@@ -24,7 +23,6 @@ export default function DietOnboardingPage() {
   const router = useRouter();
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
-  const { completeOnboarding } = useAppStore();
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -69,10 +67,9 @@ export default function DietOnboardingPage() {
     // Store selected categories for next step
     console.log('Selected Diet Categories:', categories);
 
-    // 아무것도 선택하지 않으면 기존 데이터 유지하고 완료
+    // 아무것도 선택하지 않으면 기존 데이터 유지하고 Safety Card로
     if (categories.length === 0) {
-      completeOnboarding();
-      router.replace('/dashboard');
+      router.replace('/onboarding/safety-card');
       return;
     }
 
@@ -91,8 +88,7 @@ export default function DietOnboardingPage() {
         console.error('식단 삭제 중 에러:', err);
       }
 
-      completeOnboarding();
-      router.replace('/dashboard');
+      router.replace('/onboarding/safety-card');
     } else {
       // Navigate to detail screen with categories
       const params = new URLSearchParams({ categories: categories.join(',') });

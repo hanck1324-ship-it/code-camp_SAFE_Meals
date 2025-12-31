@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase';
-import { useAppStore } from '@/commons/stores/useAppStore';
 import { AUTH_URLS } from '@/commons/constants/url';
 
 interface SignupData {
@@ -49,7 +48,6 @@ export function useSignup(): UseSignupReturn {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const setUser = useAppStore((state) => state.setUser);
 
   /**
    * 에러 메시지 초기화
@@ -111,18 +109,23 @@ export function useSignup(): UseSignupReturn {
             return;
           }
 
-          // 세션이 있으면 자동 로그인 상태
+          // 회원가입 성공 시 - 항상 로그인 페이지로 이동
           if (authData.session) {
-            setUser(authData.user);
-            alert('회원가입에 성공하였습니다. 로그인 페이지로 이동합니다.');
+            // 세션이 자동 생성되었지만 즉시 로그아웃하여 사용자가 수동으로 로그인하도록 유도
+            const supabase = getSupabaseClient();
+            await supabase.auth.signOut();
+
+            console.log('[useSignup] 회원가입 성공 - 세션 로그아웃 후 로그인 페이지로 이동');
+
+            alert('회원가입에 성공하였습니다. 로그인 페이지에서 로그인해주세요.');
+            router.push(AUTH_URLS.LOGIN);
           } else {
             // 이메일 인증이 필요한 경우
             alert(
               '회원가입에 성공하였습니다. 이메일을 확인하여 인증을 완료해주세요.'
             );
+            router.push(AUTH_URLS.LOGIN);
           }
-
-          router.push(AUTH_URLS.LOGIN);
         }
       } catch (err) {
         setErrorMessage('회원가입에 실패하였습니다. 다시 시도해주세요.');
@@ -130,7 +133,7 @@ export function useSignup(): UseSignupReturn {
         setIsLoading(false);
       }
     },
-    [router, setUser]
+    [router]
   );
 
   /**

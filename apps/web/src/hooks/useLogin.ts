@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { MAIN_URLS } from '@/commons/constants/url';
+import { checkOnboardingStatus } from '@/lib/checkOnboardingStatus';
 
 type OAuthProvider = 'google' | 'apple' | 'facebook';
 
@@ -87,8 +88,53 @@ export function useLogin(): UseLoginReturn {
 
         if (data.user) {
           setUser(data.user);
-          alert('로그인에 성공하였습니다.');
-          router.push(MAIN_URLS.DASHBOARD);
+
+          // 네이티브 앱에서 실행 중인 경우 토큰 저장 메시지 전송
+          if (typeof window !== 'undefined' && (window as any).SafeMealsBridge) {
+            const session = data.session;
+            if (session?.access_token) {
+              // DB에서 온보딩 완료 여부 확인
+              const isNewUser = await checkOnboardingStatus(data.user.id);
+
+              console.log('[useLogin] 사용자 정보:', {
+                userId: data.user.id,
+                isNewUser,
+              });
+
+              (window as any).SafeMealsBridge.postMessage({
+                type: 'LOGIN_SUCCESS',
+                payload: {
+                  token: session.access_token,
+                  refreshToken: session.refresh_token,
+                  userId: data.user.id,
+                  isNewUser, // 신규 사용자 여부 전달 (온보딩 필요 여부)
+                },
+              });
+            }
+          }
+
+          // 네이티브 앱 감지: ReactNativeWebView 또는 isNativeApp 플래그 확인
+          const isNativeApp = typeof window !== 'undefined' && (
+            (window as any).ReactNativeWebView !== undefined ||
+            (window as any).isNativeApp === true
+          );
+
+          console.log('[useLogin] 환경 감지:', {
+            hasWindow: typeof window !== 'undefined',
+            hasReactNativeWebView: typeof window !== 'undefined' && (window as any).ReactNativeWebView !== undefined,
+            hasIsNativeAppFlag: typeof window !== 'undefined' && (window as any).isNativeApp === true,
+            hasSafeMealsBridge: typeof window !== 'undefined' && (window as any).SafeMealsBridge !== undefined,
+            isNativeApp
+          });
+
+          if (!isNativeApp) {
+            console.log('[useLogin] 웹 환경 - dashboard로 이동');
+            alert('로그인에 성공하였습니다.');
+            router.push(MAIN_URLS.DASHBOARD);
+          } else {
+            console.log('[useLogin] 네이티브 환경 - LOGIN_SUCCESS 메시지로 라우팅 처리, router.push 호출하지 않음');
+            // 네이티브에서는 LOGIN_SUCCESS 메시지가 이미 전송되었으므로 라우팅은 네이티브가 처리
+          }
         }
       } catch (err) {
         setErrorMessage('이메일 또는 비밀번호가 올바르지 않습니다.');

@@ -52,10 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
 
+      console.log('[AuthProvider] Auth state changed:', event, '- User:', !!session?.user);
+
       if (event === 'SIGNED_IN' && session?.user && !isLoggingOut.current) {
+        console.log('[AuthProvider] SIGNED_IN - 사용자 상태 설정');
         setLocalUser(session.user);
         setUser(session.user);
       } else if (event === 'SIGNED_OUT') {
+        console.log('[AuthProvider] SIGNED_OUT - 사용자 상태 초기화');
         setLocalUser(null);
         setUser(null);
         storeLogout();
@@ -69,6 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [setUser, storeLogout]);
 
   const logout = async () => {
+    console.log('[AuthProvider] 로그아웃 시작...');
+
     // 로그아웃 플래그 설정 - 세션 재확인 방지
     isLoggingOut.current = true;
 
@@ -76,13 +82,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLocalUser(null);
     setUser(null);
     storeLogout();
+    console.log('[AuthProvider] ✅ 상태 초기화 완료');
 
-    // Supabase 로그아웃
+    // Supabase 로그아웃 (전역)
     const supabase = getSupabaseClient();
-    await supabase.auth.signOut({ scope: 'local' });
+    await supabase.auth.signOut({ scope: 'global' });
+    console.log('[AuthProvider] ✅ Supabase 로그아웃 완료');
 
-    // 로그인 페이지로 이동
-    router.replace('/auth/login');
+    // localStorage 완전 삭제 (Supabase 세션 제거)
+    if (typeof window !== 'undefined') {
+      try {
+        // Supabase 관련 모든 localStorage 항목 삭제
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.includes('supabase')) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        console.log('[AuthProvider] ✅ localStorage 클리어 완료:', keysToRemove.length, '개 항목');
+      } catch (e) {
+        console.error('[AuthProvider] localStorage 클리어 실패:', e);
+      }
+    }
+
+    // 네이티브 앱에 로그아웃 메시지 전송
+    if (typeof window !== 'undefined' && (window as any).SafeMealsBridge) {
+      console.log('[AuthProvider] 네이티브 앱에 LOGOUT 메시지 전송');
+      (window as any).SafeMealsBridge.postMessage({
+        type: 'LOGOUT',
+      });
+    } else {
+      // 웹 환경에서만 라우팅
+      console.log('[AuthProvider] 웹 환경 - 로그인 페이지로 이동');
+      router.replace('/auth/login');
+    }
   };
 
   const value: AuthContextValue = { user, isAuthLoading, logout };

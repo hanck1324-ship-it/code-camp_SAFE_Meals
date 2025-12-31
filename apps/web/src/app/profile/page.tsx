@@ -44,8 +44,8 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     // 로그아웃 후 홈 화면으로 리다이렉트 (redirect 파라미터 없이)
     router.replace('/auth/login');
   };
