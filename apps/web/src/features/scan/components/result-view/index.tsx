@@ -382,6 +382,87 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                       ))}
                     </div>
                   )}
+
+                  {/* Allergy & Diet Risk Details */}
+                  <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                    {/* Allergy Risk */}
+                    {item.allergy_risk && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-xs font-medium text-gray-500">
+                          {language === 'ko' ? '알레르기:' : 'Allergy:'}
+                        </span>
+                        <div className="flex flex-1 flex-wrap items-center gap-1">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              item.allergy_risk.status === 'DANGER'
+                                ? 'bg-red-100 text-red-700'
+                                : item.allergy_risk.status === 'CAUTION'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-green-100 text-green-700'
+                            }`}
+                          >
+                            {item.allergy_risk.status === 'DANGER'
+                              ? language === 'ko'
+                                ? '위험'
+                                : 'Danger'
+                              : item.allergy_risk.status === 'CAUTION'
+                                ? language === 'ko'
+                                  ? '주의'
+                                  : 'Caution'
+                                : language === 'ko'
+                                  ? '안전'
+                                  : 'Safe'}
+                          </span>
+                          {item.allergy_risk.matched_allergens &&
+                            item.allergy_risk.matched_allergens.length > 0 && (
+                              <span className="text-xs text-gray-600">
+                                (
+                                {item.allergy_risk.matched_allergens.join(', ')}
+                                )
+                              </span>
+                            )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Diet Risk */}
+                    {item.diet_risk && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-xs font-medium text-gray-500">
+                          {language === 'ko' ? '식단:' : 'Diet:'}
+                        </span>
+                        <div className="flex flex-1 flex-wrap items-center gap-1">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              item.diet_risk.status === 'DANGER'
+                                ? 'bg-red-100 text-red-700'
+                                : item.diet_risk.status === 'CAUTION'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-green-100 text-green-700'
+                            }`}
+                          >
+                            {item.diet_risk.status === 'DANGER'
+                              ? language === 'ko'
+                                ? '부적합'
+                                : 'Not Suitable'
+                              : item.diet_risk.status === 'CAUTION'
+                                ? language === 'ko'
+                                  ? '주의'
+                                  : 'Caution'
+                                : language === 'ko'
+                                  ? '적합'
+                                  : 'Suitable'}
+                          </span>
+                          {item.diet_risk.violations &&
+                            item.diet_risk.violations.length > 0 && (
+                              <span className="text-xs text-gray-600">
+                                ({item.diet_risk.violations.join(', ')})
+                              </span>
+                            )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

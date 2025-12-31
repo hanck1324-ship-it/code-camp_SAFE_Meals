@@ -9,7 +9,7 @@
 
 ==============================================
 
-조건-파일경로) 참고할 스키마 문서: /Users/gharam12/Desktop/team/code-camp_SAFE_Meals/docs/schema.md
+조건-파일경로) 참고할 스키마 문서: code-camp_SAFE_Meals/docs/schema.md
 조건-파일경로) 수정될 HOOK 파일경로: src/features/scan/components/menu-scan/hooks/useAnalyzeSubmit.hook.ts
 
 ==============================================

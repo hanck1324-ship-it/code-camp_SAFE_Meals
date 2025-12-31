@@ -12,9 +12,39 @@ import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+
+/**
+ * 이미지 압축 및 리사이즈 함수
+ * Android AsyncStorage의 CursorWindow 제한(~2MB)을 피하기 위해
+ * 이미지를 최대 1200px로 리사이즈하고 품질을 낮춤
+ */
+async function compressImage(uri: string): Promise<string> {
+  try {
+    // 이미지 리사이즈 (최대 1200px, 품질 0.6)
+    const manipulatedImage = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1200 } }],
+      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+    );
+
+    // Base64로 변환
+    const base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    // 임시 파일 삭제
+    await FileSystem.deleteAsync(manipulatedImage.uri, { idempotent: true });
+
+    return `data:image/jpeg;base64,${base64}`;
+  } catch (error) {
+    console.error('이미지 압축 실패:', error);
+    throw error;
+  }
+}
 
 export default function ScanTab() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -71,16 +101,17 @@ export default function ScanTab() {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      // 이미지를 Base64로 변환
-      const base64 = await FileSystem.readAsStringAsync(capturedImage, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // 이미지 압축 및 Base64 변환 (CursorWindow 제한 회피)
+      const compressedBase64 = await compressImage(capturedImage);
+
+      console.log(
+        '📸 압축된 이미지 크기:',
+        Math.round(compressedBase64.length / 1024),
+        'KB'
+      );
 
       // Base64 데이터를 AsyncStorage에 임시 저장
-      await AsyncStorage.setItem(
-        'pending_analyze_image',
-        `data:image/jpeg;base64,${base64}`
-      );
+      await AsyncStorage.setItem('pending_analyze_image', compressedBase64);
 
       // 웹뷰로 이동 (이미지 없이, 플래그만 전달)
       router.push('/webview/scan/analyze?hasImage=true');

@@ -31,6 +31,16 @@ export interface MenuAnalysisItem {
   reason: string;
   /** 감지된 재료 목록 */
   ingredients: string[];
+  /** 알레르기 위험 평가 */
+  allergy_risk: {
+    status: 'SAFE' | 'CAUTION' | 'DANGER';
+    matched_allergens: string[];
+  };
+  /** 식단 위험 평가 */
+  diet_risk: {
+    status: 'SAFE' | 'CAUTION' | 'DANGER';
+    violations: string[];
+  };
 }
 
 /**

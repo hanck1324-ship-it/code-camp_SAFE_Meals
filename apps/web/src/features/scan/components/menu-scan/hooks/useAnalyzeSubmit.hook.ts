@@ -12,6 +12,14 @@ import {
 export type { MenuAnalysisItem };
 
 /**
+ * 사용자 컨텍스트 타입 (알레르기/식단 정보)
+ */
+export interface UserContext {
+  allergies: string[];
+  diets: string[];
+}
+
+/**
  * API 응답 타입 (실제 API 응답 형식)
  */
 export interface AnalyzeAPIResponse {
@@ -22,6 +30,7 @@ export interface AnalyzeAPIResponse {
     allergies: string[];
     diet: string;
   };
+  overall_status?: 'SAFE' | 'CAUTION' | 'DANGER';
   results?: MenuAnalysisItem[];
 }
 
@@ -74,9 +83,10 @@ export interface UseAnalyzeSubmitReturn {
 }
 
 /**
- * 타임아웃 시간 (60초) - gemini-2.5-flash는 이미지 분석에 시간이 걸림
+ * 타임아웃 시간 (90초) - gemini-2.5-flash는 이미지 분석에 시간이 걸림
+ * 복잡한 메뉴판의 경우 더 오래 걸릴 수 있음
  */
-const TIMEOUT_MS = 60000;
+const TIMEOUT_MS = 90000;
 
 /**
  * 에러 메시지 정의
@@ -96,6 +106,58 @@ const ERROR_MESSAGES = {
     qualityDefault: 'Photo quality is poor. Please retake the photo.',
   },
 };
+
+/**
+ * 사용자 알레르기/식단 정보 조회 헬퍼 함수
+ *
+ * Supabase에서 로그인한 사용자의 user_allergies, user_diets 테이블을 조회하여
+ * allergy_code, diet_code 배열을 반환합니다.
+ *
+ * @returns {Promise<UserContext>} 사용자 알레르기/식단 정보
+ *
+ * 동작:
+ * - 로그인한 사용자의 경우: 해당 사용자의 알레르기/식단 코드 배열 반환
+ * - 미로그인 또는 조회 실패 시: 빈 배열([])로 기본값 반환
+ * - 에러 발생 시에도 API 요청을 막지 않음
+ */
+async function fetchUserAllergyDietContext(): Promise<UserContext> {
+  const defaultContext: UserContext = { allergies: [], diets: [] };
+
+  try {
+    const supabase = getSupabaseClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    // 미로그인 상태 시 빈 배열 반환
+    if (!userId) {
+      return defaultContext;
+    }
+
+    // 병렬로 알레르기/식단 정보 조회
+    const [allergiesResult, dietsResult] = await Promise.all([
+      supabase
+        .from('user_allergies')
+        .select('allergy_code')
+        .eq('user_id', userId),
+      supabase.from('user_diets').select('diet_code').eq('user_id', userId),
+    ]);
+
+    // 알레르기 코드 배열 추출 (에러 시 빈 배열)
+    const allergies: string[] = allergiesResult.error
+      ? []
+      : (allergiesResult.data?.map((item) => item.allergy_code) ?? []);
+
+    // 식단 코드 배열 추출 (에러 시 빈 배열)
+    const diets: string[] = dietsResult.error
+      ? []
+      : (dietsResult.data?.map((item) => item.diet_code) ?? []);
+
+    return { allergies, diets };
+  } catch {
+    // 에러 발생 시 빈 배열 반환 (API 요청은 계속 진행)
+    return defaultContext;
+  }
+}
 
 /**
  * 이미지 분석 제출 커스텀 훅
@@ -158,10 +220,16 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         // 이미지 데이터 저장
         setImageData(base64Image);
 
+        // 사용자 알레르기/식단 정보 조회 (병렬로 실행 가능)
+        const userContextPromise = fetchUserAllergyDietContext();
+
         // Supabase 세션에서 토큰 가져오기
         const supabase = getSupabaseClient();
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token;
+
+        // 사용자 컨텍스트 대기
+        const userContext = await userContextPromise;
 
         // 타임아웃 설정
         const timeoutId = setTimeout(() => {
@@ -193,6 +261,7 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
                   ? navigator.userAgent
                   : 'unknown',
             },
+            user_context: userContext,
           }),
           signal,
         });
@@ -211,8 +280,8 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
 
         // 분석 결과가 있는 경우
         if (data.results && data.results.length > 0) {
-          // 전체 상태 계산 (DANGER > CAUTION > SAFE)
-          let overallStatus: 'SAFE' | 'CAUTION' | 'DANGER' = 'SAFE';
+          // 백엔드에서 받은 overall_status 사용 (없으면 SAFE 기본값)
+          const overallStatus = data.overall_status || 'SAFE';
           const detectedIngredients: string[] = [];
           const warnings: Array<{
             ingredient: string;
@@ -224,19 +293,14 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
             // 재료 수집
             detectedIngredients.push(...item.ingredients);
 
-            // 상태 업데이트
+            // warnings 생성 (DANGER, CAUTION 항목만)
             if (item.safety_status === 'DANGER') {
-              overallStatus = 'DANGER';
               warnings.push({
                 ingredient: item.original_name,
                 allergen: item.reason,
                 severity: 'HIGH',
               });
-            } else if (
-              item.safety_status === 'CAUTION' &&
-              overallStatus !== 'DANGER'
-            ) {
-              overallStatus = 'CAUTION';
+            } else if (item.safety_status === 'CAUTION') {
               warnings.push({
                 ingredient: item.original_name,
                 allergen: item.reason,
