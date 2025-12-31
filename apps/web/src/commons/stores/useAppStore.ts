@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/lib/supabase';
 
 interface User {
   email: string;
@@ -13,7 +14,7 @@ interface AppState {
   onboardingDone: boolean;
   login: (user: User) => void;
   setUser: (user: SupabaseUser | null) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   completeOnboarding: () => void;
 }
 
@@ -47,7 +48,24 @@ export const useAppStore = create<AppState>()(
               }
             : null,
         }),
-      logout: () => set({ user: null, supabaseUser: null }),
+      logout: async () => {
+        try {
+          const supabase = getSupabaseClient();
+          await supabase.auth.signOut();
+
+          // 네이티브 앱에 로그아웃 메시지 전송
+          if (typeof window !== 'undefined' && (window as any).SafeMealsBridge) {
+            (window as any).SafeMealsBridge.postMessage({
+              type: 'LOGOUT',
+            });
+          }
+        } catch (error) {
+          console.error('로그아웃 에러:', error);
+        } finally {
+          // 상태 초기화는 항상 실행
+          set({ user: null, supabaseUser: null });
+        }
+      },
       completeOnboarding: () => set({ onboardingDone: true }),
     }),
     {

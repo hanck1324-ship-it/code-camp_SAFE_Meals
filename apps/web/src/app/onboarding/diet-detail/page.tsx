@@ -139,8 +139,9 @@ function DietDetailContent() {
       console.error('식단 저장 중 에러:', err);
     } finally {
       setIsSaving(false);
-      completeOnboarding();
-      router.replace('/dashboard');
+      // 온보딩 완료는 Safety Card 설정 후에 처리
+      // Safety Card 설정 페이지로 이동
+      router.replace('/onboarding/safety-card');
     }
   };
 
