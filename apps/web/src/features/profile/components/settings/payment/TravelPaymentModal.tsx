@@ -10,6 +10,7 @@ import {
   formatCurrency,
 } from '@/lib/portone';
 import { getSupabaseClient } from '@/lib/supabase';
+import { showToast } from '@/components/ui/toast';
 
 interface TravelPaymentModalProps {
   onClose: () => void;
@@ -60,7 +61,7 @@ export function TravelPaymentModal({
 
   const handlePurchase = async () => {
     if (!startDate || !endDate || calculatedDays === 0) {
-      alert(t.selectTravelDates || '여행 시작일과 종료일을 선택해주세요.');
+      showToast('warning', t.selectTravelDates || '여행 시작일과 종료일을 선택해주세요.');
       return;
     }
 
@@ -68,6 +69,9 @@ export function TravelPaymentModal({
 
     try {
       setIsProcessing(true);
+
+      // 결제 시작 알림
+      showToast('info', t.paymentStarting || '결제를 진행합니다...');
 
       // 1. 사용자 정보 가져오기
       const supabase = getSupabaseClient();
@@ -77,7 +81,7 @@ export function TravelPaymentModal({
       } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        alert(t.loginRequired || '로그인이 필요합니다.');
+        showToast('error', t.loginRequired || '로그인이 필요합니다.');
         return;
       }
 
@@ -93,6 +97,9 @@ export function TravelPaymentModal({
 
       // 4. 결제 성공 처리
       if (response && response.code === 'PAID') {
+        // 결제 검증 중 알림
+        showToast('info', t.verifyingPayment || '결제를 검증하는 중입니다...');
+
         // 서버에 결제 검증 요청
         const verifyResponse = await fetch('/api/payment/verify', {
           method: 'POST',
@@ -115,21 +122,30 @@ export function TravelPaymentModal({
 
         const verifyData = await verifyResponse.json();
 
-        alert(
-          t.paymentSuccess ||
-            `결제가 완료되었습니다.\n여행 기간: ${calculatedDays}일\n금액: ${formatCurrency(calculatedAmount)}`
+        // 결제 완료 알림
+        showToast(
+          'success',
+          t.paymentCompleted ||
+            `결제가 완료되었습니다! (${calculatedDays}일, ${formatCurrency(calculatedAmount)})`
         );
 
         // 모달 닫기 및 페이지 새로고침
-        onClose();
-        window.location.reload();
+        setTimeout(() => {
+          onClose();
+          window.location.reload();
+        }, 1500);
+      } else if (response && response.code === 'PAYMENT_CANCELLED') {
+        // 결제 취소
+        showToast('info', t.paymentCancelled || '결제가 취소되었습니다.');
       } else {
-        // 결제 취소 또는 실패
-        console.log('[Payment] Cancelled or failed:', response);
+        // 결제 실패
+        showToast('error', t.paymentFailed || '결제에 실패했습니다.');
+        console.log('[Payment] Failed:', response);
       }
     } catch (error) {
       console.error('[Payment] Error:', error);
-      alert(
+      showToast(
+        'error',
         t.paymentError || '결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
       );
     } finally {
