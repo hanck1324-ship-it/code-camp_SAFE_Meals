@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from './_providers/auth-provider';
+import { AnalyzeResultProvider } from '@/features/scan/context/analyze-result-context';
 import Layout from '@/components/layout';
 import { ToastContainer } from '@/components/ui/toast';
 
@@ -31,12 +32,14 @@ export default function RootLayout({
         className="webkit-tap-highlight-transparent size-full touch-pan-y select-none overscroll-none bg-white antialiased"
       >
         <AuthProvider>
-          <Layout>
-            <div className="no-scrollbar flex-grow overflow-y-auto">
-              {children}
-            </div>
-          </Layout>
-          <ToastContainer />
+          <AnalyzeResultProvider>
+            <Layout>
+              <div className="no-scrollbar flex-grow overflow-y-auto">
+                {children}
+              </div>
+            </Layout>
+            <ToastContainer />
+          </AnalyzeResultProvider>
         </AuthProvider>
       </body>
     </html>

@@ -31,6 +31,16 @@ export interface MenuAnalysisItem {
   reason: string;
   /** 감지된 재료 목록 */
   ingredients: string[];
+  /** 알레르기 위험 평가 */
+  allergy_risk: {
+    status: 'SAFE' | 'CAUTION' | 'DANGER';
+    matched_allergens: string[];
+  };
+  /** 식단 위험 평가 */
+  diet_risk: {
+    status: 'SAFE' | 'CAUTION' | 'DANGER';
+    violations: string[];
+  };
 }
 
 /**
@@ -99,12 +109,9 @@ export function AnalyzeResultProvider({
    * 분석 결과 설정 함수
    * - 새로운 분석 결과를 저장
    */
-  const setAnalysisResult = useCallback(
-    (result: AnalysisResult | null) => {
-      setAnalysisResultState(result);
-    },
-    []
-  );
+  const setAnalysisResult = useCallback((result: AnalysisResult | null) => {
+    setAnalysisResultState(result);
+  }, []);
 
   /**
    * 분석 결과 초기화 함수

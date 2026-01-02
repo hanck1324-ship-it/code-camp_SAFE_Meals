@@ -1,0 +1,152 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 참고할 스키마 문서: code-camp_SAFE_Meals/docs/schema.md
+조건-파일경로) 수정될 HOOK 파일경로: src/features/scan/components/menu-scan/hooks/useAnalyzeSubmit.hook.ts
+
+==============================================
+
+핵심요구사항) 다음의 기능을 playwright 테스트를 활용하여 TDD 기반으로 구현하고, 테스트에 통과할 때까지 반복할 것.
+
+1) 테스트 제외 라이브러리
+   - jest
+   - @testing-library/react
+
+2) 테스트 조건
+   - timeout은 설정하지 않거나, 500ms 미만으로 설정할 것.
+   - 페이지가 완전히 로드된 후 테스트할 것.
+       - 페이지 로드 식별 요구사항: 고정식별자 data-testid 대기 방법
+       - **중요금지사항** 페이지 로드 식별 금지사항: networkidle 대기 방법
+
+3) 테스트 시나리오
+   3-1) Supabase 데이터 조회
+       - 로그인한 사용자의 알레르기 정보 조회 성공
+       - 로그인한 사용자의 식단 정보 조회 성공
+       - 조회된 데이터가 API 요청 body에 포함되는지 검증
+
+   3-2) API 요청 payload 검증
+       - user_context.allergies 배열에 allergy_code 값들이 포함되는지 검증
+       - user_context.diets 배열에 diet_code 값들이 포함되는지 검증
+       - 기존 필드(image, language, device_info)가 유지되는지 검증
+
+==============================================
+
+핵심요구사항) 기존 submitAnalyze 함수를 리팩토링하여 다음의 기능을 step-by-step 으로 구현하고, 적용 결과를 체크리스트로 반환할 것.
+
+1. 사용자 알레르기/식단 정보 조회 기능 추가
+   1-1) Supabase에서 로그인한 사용자의 데이터를 조회할 것
+        - 접속키: supabase.auth.getSession()을 통해 획득한 사용자 ID
+        - 조회 테이블 1: user_allergies
+            - 필터 조건: user_id = 로그인한 사용자 ID
+            - 선택 필드: allergy_code
+            - 결과 형식: allergy_code 배열 (예: ['eggs', 'milk'])
+        - 조회 테이블 2: user_diets
+            - 필터 조건: user_id = 로그인한 사용자 ID
+            - 선택 필드: diet_code
+            - 결과 형식: diet_code 배열 (예: ['vegetarian', 'vegan'])
+
+   1-2) 조회 실패 시 처리
+        - 에러 발생 시: 빈 배열([])로 기본값 설정
+        - 사용자가 미로그인 상태이거나 데이터가 없는 경우: 빈 배열([])로 처리
+        - API 요청은 계속 진행할 것 (조회 실패가 분석 요청을 막지 않도록)
+
+2. API 요청 payload 확장
+   2-1) 기존 요청 body 구조 유지
+        - image: base64 인코딩된 이미지 데이터
+        - language: 'ko' | 'en'
+        - device_info: { platform, userAgent }
+
+   2-2) user_context 필드 추가
+        - user_context 구조:
+            {
+              "allergies": string[],  // allergy_code 배열
+              "diets": string[]       // diet_code 배열
+            }
+        - 예시:
+            {
+              "image": "data:image/jpeg;base64,...",
+              "language": "ko",
+              "device_info": { ... },
+              "user_context": {
+                "allergies": ["eggs", "milk", "peanuts"],
+                "diets": ["vegetarian"]
+              }
+            }
+
+3. 기존 흐름 유지
+   3-1) 분석 결과 처리 로직은 변경하지 말 것
+        - overall_status 계산
+        - detected_ingredients 수집
+        - warnings 생성
+        - Context에 결과 저장
+        - /scan/result 페이지로 이동
+
+   3-2) 에러 처리 로직은 변경하지 말 것
+        - 타임아웃 처리
+        - 네트워크 에러 처리
+        - 서버 에러 응답 처리
+
+==============================================
+
+핵심요구사항) 코드 구조 및 타입 정의를 다음과 같이 구성할 것
+
+1. 타입 정의 추가
+   - UserContext 인터페이스:
+       interface UserContext {
+         allergies: string[];
+         diets: string[];
+       }
+
+   - API 요청 payload 타입 확장 (필요 시)
+
+2. 헬퍼 함수 추가 (권장)
+   - fetchUserAllergyDietContext(): Promise<UserContext>
+       - Supabase에서 user_allergies, user_diets 조회
+       - 에러 처리 및 기본값 반환
+       - 재사용 가능한 독립 함수로 분리
+
+3. submitAnalyze 함수 수정
+   - 함수 시작 부분에서 fetchUserAllergyDietContext() 호출
+   - API 요청 body에 user_context 추가
+   - 기존 로직은 최대한 변경하지 말 것
+
+==============================================
+
+핵심요구사항) 참고사항 및 제약조건
+
+1. 스키마 문서 참고
+   - 파일 경로: /Users/gharam12/Desktop/team/code-camp_SAFE_Meals/docs/schema.md
+   - user_allergies 테이블 구조 확인
+   - user_diets 테이블 구조 확인
+   - RLS(Row Level Security) 정책 확인: auth.uid()로 본인 데이터만 조회 가능
+
+2. Supabase 쿼리 예시
+   // 알레르기 조회
+   const { data: allergies } = await supabase
+     .from('user_allergies')
+     .select('allergy_code')
+     .eq('user_id', userId);
+
+   // 식단 조회
+   const { data: diets } = await supabase
+     .from('user_diets')
+     .select('diet_code')
+     .eq('user_id', userId);
+
+3. 중요금지사항
+   - 백엔드/AI의 매칭 로직을 프론트엔드에서 구현하지 말 것
+   - 프론트엔드는 "데이터 수집 및 전달"만 담당할 것
+   - 기존 분석 결과 처리 로직을 변경하지 말 것
+   - 기존 타입 정의(AnalysisResult, MenuAnalysisItem)를 수정하지 말 것
+
+4. 성능 최적화
+   - Supabase 쿼리는 병렬로 실행할 것 (Promise.all 활용)
+   - 불필요한 필드는 조회하지 말 것 (select에 필요한 필드만 명시)
