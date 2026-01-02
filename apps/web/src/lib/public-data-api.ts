@@ -8,6 +8,7 @@
  */
 
 const PUBLIC_DATA_KEY = process.env.PUBLIC_DATA_KEY;
+// 식품안전나라 API 키 (HACCP 적용업소 지정, 조리식품 레시피 등)
 const HACCP_API_KEY = process.env.HACCP_API_KEY || PUBLIC_DATA_KEY;
 
 if (!PUBLIC_DATA_KEY && !HACCP_API_KEY) {
