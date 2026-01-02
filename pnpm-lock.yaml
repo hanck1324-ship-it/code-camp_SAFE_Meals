@@ -105,6 +105,9 @@ importers:
       '@hookform/resolvers':
         specifier: 3.9.1
         version: 3.9.1(react-hook-form@7.69.0)
+      '@portone/browser-sdk':
+        specifier: ^0.1.1
+        version: 0.1.1
       '@radix-ui/react-accordion':
         specifier: ^1.2.3
         version: 1.2.12(@types/react-dom@18.3.7)(@types/react@18.3.27)(react-dom@18.3.1)(react@18.3.1)
@@ -2590,6 +2593,10 @@ packages:
     hasBin: true
     dependencies:
       playwright: 1.57.0
+
+  /@portone/browser-sdk@0.1.1:
+    resolution: {integrity: sha512-5s3153gfgkICYqEo4KKZNIQLTfUBd7vTf0r4+Z8G1B8CQU2mwUw7VVUtdFDhnfABa1TvftErnME6FIgr2sApKQ==}
+    dev: false
 
   /@radix-ui/number@1.1.1:
     resolution: {integrity: sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g==}
