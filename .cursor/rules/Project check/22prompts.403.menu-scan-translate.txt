@@ -1,0 +1,157 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 구현될 HOOK 파일경로: src/components/menu-scan/hooks/useMenuTranslate.hook.ts
+조건-파일경로) 구현될 TEST 파일경로: src/components/menu-scan/tests/useMenuTranslate.spec.ts
+
+==============================================
+
+핵심요구사항) playwright 테스트를 활용하여 TDD 기반으로 구현하고, 테스트에 통과할 때까지 반복할 것.
+
+1) 테스트 제외 라이브러리
+   - jest
+   - @testing-library/react
+
+2) 테스트 조건
+   - timeout은 설정하지 않거나, 500ms 미만으로 설정할 것.
+   - 페이지가 완전히 로드된 후 테스트할 것.
+       - 페이지 로드 식별 요구사항: 고정식별자 data-testid 대기 방법
+       - **중요금지사항** 페이지 로드 식별 금지사항: networkidle 대기 방법
+
+3) 테스트 시나리오
+   3-1) 성공 시나리오
+        - 한국 음식명이 음식 맥락을 유지한 영어로 번역되는지 검증
+        - 고유명사(예: 김치, 불고기)가 음차 표기로 번역되는지 검증
+        - 일반명사(예: 국, 찌개)가 의미 번역으로 번역되는지 검증
+        - id가 고유하게 생성되는지 검증 (UUID 또는 nanoid)
+        - bbox 정보가 보존되는지 검증
+
+   3-2) 실패 시나리오
+        - 빈 배열 입력 시 빈 배열 반환 검증
+        - null 또는 undefined 입력 시 에러 처리 검증
+        - 번역 불가능한 텍스트는 원문 유지 검증
+
+==============================================
+
+핵심요구사항) 메뉴명 다국어 번역 커스텀 훅을 구현할 것.
+
+1) 입력 데이터 구조
+   {
+     original: string;
+     normalized: string;
+     confidence: number;
+     bbox: {
+       x: number;
+       y: number;
+       w: number;
+       h: number;
+     };
+   }[]
+
+2) 출력 데이터 구조
+   {
+     id: string;
+     original: string;
+     normalized: string;
+     translated: string;
+     bbox: {
+       x: number;
+       y: number;
+       w: number;
+       h: number;
+     };
+   }[]
+
+3) 번역 로직 상세내용
+   3-1) 번역 방식
+        - 로컬 매핑 테이블 우선 사용 (빠른 응답, 정확도 보장)
+        - 매핑 테이블에 없는 경우 외부 번역 API 활용 (Google Translate API 또는 Gemini AI)
+        - 번역 실패 시 원문(normalized) 유지
+
+   3-2) 음식 맥락 유지 원칙
+        - 고유명사 (음차 표기):
+            - "김치" → "Kimchi"
+            - "불고기" → "Bulgogi"
+            - "비빔밥" → "Bibimbap"
+            - "삼겹살" → "Samgyeopsal"
+            - "떡볶이" → "Tteokbokki"
+
+        - 일반명사 (의미 번역):
+            - "국" → "Soup"
+            - "찌개" → "Stew"
+            - "전" → "Pancake"
+            - "무침" → "Salad"
+            - "구이" → "Grilled"
+
+        - 조합형 (고유명사 + 일반명사):
+            - "김치찌개" → "Kimchi Stew"
+            - "된장국" → "Soybean Paste Soup"
+            - "부대찌개" → "Budae Stew"
+            - "삼계탕" → "Samgyetang (Ginseng Chicken Soup)"
+
+   3-3) 로컬 매핑 테이블 구축
+        - 자주 등장하는 한국 음식명 100개 이상 매핑
+        - 매핑 테이블 구조:
+            {
+              "김치찌개": "Kimchi Stew",
+              "된장찌개": "Soybean Paste Stew",
+              "부대찌개": "Budae Stew",
+              "순두부찌개": "Soft Tofu Stew",
+              "불고기": "Bulgogi",
+              "삼겹살": "Samgyeopsal (Pork Belly)",
+              "비빔밥": "Bibimbap",
+              "냉면": "Naengmyeon (Cold Noodles)",
+              ...
+            }
+
+   3-4) 외부 번역 API 연동 (로컬 매핑 실패 시)
+        - Gemini AI 활용 (프로젝트에서 이미 사용 중)
+        - 프롬프트 구조:
+            "Translate the following Korean food name to English while preserving the food context and cultural meaning. Use romanization for unique Korean dishes and meaningful translation for common terms. Korean: [메뉴명]"
+        - API 호출 실패 시 원문(normalized) 반환
+
+   3-5) ID 생성
+        - UUID 또는 nanoid를 사용하여 고유 ID 생성
+        - 형식: "menu-[uuid]" 또는 nanoid(10)
+
+4) 훅 인터페이스
+   const useMenuTranslate = () => {
+     const translateMenuNames = (normalizedResults: NormalizedResult[]) => Promise<TranslatedResult[]>;
+     return { translateMenuNames };
+   }
+
+5) 테스트 케이스 예시
+   입력:
+   [
+     { original: "김치찌개##", normalized: "김치찌개", confidence: 0.95, bbox: { x: 10, y: 20, w: 100, h: 30 } },
+     { original: "삼겹", normalized: "삼겹살", confidence: 0.90, bbox: { x: 120, y: 20, w: 80, h: 30 } },
+     { original: "비빔밥", normalized: "비빔밥", confidence: 0.93, bbox: { x: 10, y: 60, w: 100, h: 30 } }
+   ]
+
+   출력:
+   [
+     { id: "menu-abc123", original: "김치찌개##", normalized: "김치찌개", translated: "Kimchi Stew", bbox: { x: 10, y: 20, w: 100, h: 30 } },
+     { id: "menu-def456", original: "삼겹", normalized: "삼겹살", translated: "Samgyeopsal (Pork Belly)", bbox: { x: 120, y: 20, w: 80, h: 30 } },
+     { id: "menu-ghi789", original: "비빔밥", normalized: "비빔밥", translated: "Bibimbap", bbox: { x: 10, y: 60, w: 100, h: 30 } }
+   ]
+
+6) 성능 최적화
+   6-1) 배치 번역
+        - 매핑 테이블에 없는 항목들을 모아서 한 번에 API 호출
+        - Gemini AI는 여러 메뉴를 한 번에 번역 가능
+
+   6-2) 캐싱
+        - 번역 결과를 로컬스토리지 또는 메모리에 캐싱
+        - 동일한 메뉴명은 재번역하지 않음
+
+   6-3) 에러 핸들링
+        - API 호출 실패 시 원문(normalized) 반환
+        - 재시도 로직 추가 (최대 3회)
