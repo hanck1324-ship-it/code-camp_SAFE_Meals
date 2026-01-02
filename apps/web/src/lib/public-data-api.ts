@@ -8,9 +8,10 @@
  */
 
 const PUBLIC_DATA_KEY = process.env.PUBLIC_DATA_KEY;
+const HACCP_API_KEY = process.env.HACCP_API_KEY || PUBLIC_DATA_KEY;
 
-if (!PUBLIC_DATA_KEY) {
-  console.warn('[Public Data API] PUBLIC_DATA_KEY is not configured in environment variables');
+if (!PUBLIC_DATA_KEY && !HACCP_API_KEY) {
+  console.warn('[Public Data API] API keys are not configured in environment variables');
 }
 
 // ============================================
@@ -65,7 +66,7 @@ export async function getHACCPProducts({
   const baseUrl = 'http://apis.data.go.kr/B553748/CertImgListServiceV3/getCertImgListServiceV3';
 
   const params = new URLSearchParams({
-    serviceKey: PUBLIC_DATA_KEY || '',
+    serviceKey: HACCP_API_KEY || '',
     returnType: 'json',
     pageNo: pageNo.toString(),
     numOfRows: numOfRows.toString(),

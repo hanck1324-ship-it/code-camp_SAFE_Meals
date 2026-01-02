@@ -19,8 +19,17 @@ SafeMeals 프로젝트에서 사용하는 3개의 공공데이터 REST API 통�
 `.env.local` 파일에 공공데이터 인증키가 이미 추가되어 있습니다:
 
 ```bash
+# 통합 인증키 (한식진흥원, 푸드QR 공통 사용)
 PUBLIC_DATA_KEY="d7e51ef2bb9122f38d66a1144dd050fafe49a6a5fd830df54b43f389cceb57ba"
+
+# HACCP 전용 API 키 (통합키로 안되면 이 키 사용)
+HACCP_API_KEY="e2d56042ec204181973d"
 ```
+
+**키 우선순위**:
+- HACCP API: `HACCP_API_KEY` → `PUBLIC_DATA_KEY` (fallback)
+- 한식진흥원 API: `PUBLIC_DATA_KEY`
+- 푸드QR API: `PUBLIC_DATA_KEY`
 
 ### 2. 라이브러리 임포트
 
