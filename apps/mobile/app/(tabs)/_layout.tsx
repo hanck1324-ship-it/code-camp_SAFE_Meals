@@ -58,6 +58,18 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null, // 탭 바에서 숨김 (프로필에서 접근)
+        }}
+      />
+      <Tabs.Screen
+        name="payment"
+        options={{
+          href: null, // 탭 바에서 숨김 (필요 시 접근)
+        }}
+      />
     </Tabs>
   );
 }
