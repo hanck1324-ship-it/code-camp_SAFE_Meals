@@ -325,6 +325,16 @@ export const translations = {
     maxDaysNotice: '최대 365일까지 선택 가능합니다.',
     paymentSuccess: '결제가 완료되었습니다',
     paymentError: '결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+    // Common UI Text
+    loading: '로딩 중...',
+    goBack: '뒤로 가기',
+    // Scan Page
+    scanFeatureComingSoon: '스캔 기능 준비 중',
+    comingSoon: '곧 만나보실 수 있습니다.',
+    // Safety Card Page
+    loadingSafetyCardInfo: '안전카드 정보를 불러오는 중...',
+    failedToLoadData: '데이터를 불러올 수 없습니다. 다시 시도해주세요.',
+    noSafetyCardInfo: '안전카드 정보가 없습니다.',
   },
   en: {
     appName: 'SafeMeals',
@@ -653,6 +663,16 @@ export const translations = {
     maxDaysNotice: 'Maximum 365 days can be selected.',
     paymentSuccess: 'Payment completed successfully',
     paymentError: 'Payment processing error. Please try again.',
+    // Common UI Text
+    loading: 'Loading...',
+    goBack: 'Go Back',
+    // Scan Page
+    scanFeatureComingSoon: 'Scan feature coming soon',
+    comingSoon: 'Coming soon.',
+    // Safety Card Page
+    loadingSafetyCardInfo: 'Loading safety card information...',
+    failedToLoadData: 'Failed to load data. Please try again.',
+    noSafetyCardInfo: 'No safety card information available.',
   },
   ja: {
     appName: 'SafeMeals',
@@ -979,6 +999,16 @@ export const translations = {
     maxDaysNotice: '最大365日まで選択可能です。',
     paymentSuccess: '決済が完了しました',
     paymentError: '決済処理中にエラーが発生しました。もう一度お試しください。',
+    // Common UI Text
+    loading: '読み込み中...',
+    goBack: '戻る',
+    // Scan Page
+    scanFeatureComingSoon: 'スキャン機能準備中',
+    comingSoon: '近日公開予定',
+    // Safety Card Page
+    loadingSafetyCardInfo: '安全カード情報を読み込み中...',
+    failedToLoadData: 'データの読み込みに失敗しました。もう一度お試しください。',
+    noSafetyCardInfo: '安全カード情報がありません。',
   },
   zh: {
     appName: 'SafeMeals',
@@ -1300,6 +1330,16 @@ export const translations = {
     maxDaysNotice: '最多可选择365天。',
     paymentSuccess: '支付完成',
     paymentError: '支付处理出错，请重试。',
+    // Common UI Text
+    loading: '加载中...',
+    goBack: '返回',
+    // Scan Page
+    scanFeatureComingSoon: '扫描功能即将推出',
+    comingSoon: '即将推出',
+    // Safety Card Page
+    loadingSafetyCardInfo: '正在加载安全卡信息...',
+    failedToLoadData: '加载数据失败。请重试。',
+    noSafetyCardInfo: '没有安全卡信息。',
   },
   es: {
     appName: 'SafeMeals',
@@ -1631,6 +1671,16 @@ export const translations = {
     maxDaysNotice: 'Se pueden seleccionar hasta 365 días.',
     paymentSuccess: 'Pago completado con éxito',
     paymentError: 'Error al procesar el pago. Por favor, inténtalo de nuevo.',
+    // Common UI Text
+    loading: 'Cargando...',
+    goBack: 'Volver',
+    // Scan Page
+    scanFeatureComingSoon: 'Función de escaneo próximamente',
+    comingSoon: 'Próximamente',
+    // Safety Card Page
+    loadingSafetyCardInfo: 'Cargando información de tarjeta de seguridad...',
+    failedToLoadData: 'Error al cargar datos. Por favor, inténtalo de nuevo.',
+    noSafetyCardInfo: 'No hay información de tarjeta de seguridad disponible.',
   },
 };
 

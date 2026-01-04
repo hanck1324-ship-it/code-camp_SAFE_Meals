@@ -1,12 +1,18 @@
-import { ChevronLeft, CreditCard, Receipt, Plus, Plane, Calendar } from 'lucide-react';
+import {
+  ChevronLeft,
+  CreditCard,
+  Receipt,
+  Plus,
+  Plane,
+  Calendar,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Language, translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 import { TravelPaymentModal } from './payment/TravelPaymentModal';
 import { formatCurrency } from '@/lib/portone';
 
 interface PaymentScreenProps {
   onBack: () => void;
-  language: Language;
 }
 
 interface Payment {
@@ -29,15 +35,13 @@ interface ActiveSubscription {
   days?: number;
 }
 
-export function PaymentScreen({
-  onBack,
-  language,
-}: PaymentScreenProps) {
-  const t = translations[language];
+export function PaymentScreen({ onBack }: PaymentScreenProps) {
+  const { t, language } = useTranslation();
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [activeSubscription, setActiveSubscription] = useState<ActiveSubscription | null>(null);
+  const [activeSubscription, setActiveSubscription] =
+    useState<ActiveSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // 결제 내역 불러오기
@@ -108,7 +112,8 @@ export function PaymentScreen({
                   {t.activePackage || '활성 패키지'}
                 </h3>
                 <p className="mb-2 text-lg font-bold">
-                  {t.travelPackage || '여행 패키지'} ({activeSubscription.days || 0}
+                  {t.travelPackage || '여행 패키지'} (
+                  {activeSubscription.days || 0}
                   {t.days || '일'})
                 </p>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -169,9 +174,7 @@ export function PaymentScreen({
               1
             </div>
             <div>
-              <p className="font-medium">
-                {t.step1Title || '여행 기간 선택'}
-              </p>
+              <p className="font-medium">{t.step1Title || '여행 기간 선택'}</p>
               <p className="text-sm text-gray-600">
                 {t.step1Desc || '시작일과 종료일을 선택하세요'}
               </p>
@@ -239,7 +242,7 @@ export function PaymentScreen({
                 className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3 flex-1">
+                  <div className="flex flex-1 items-start gap-3">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#2ECC71]/10">
                       <CreditCard className="h-5 w-5 text-[#2ECC71]" />
                     </div>
@@ -305,10 +308,7 @@ export function PaymentScreen({
 
       {/* Travel Payment Modal */}
       {showPaymentModal && (
-        <TravelPaymentModal
-          onClose={() => setShowPaymentModal(false)}
-          language={language}
-        />
+        <TravelPaymentModal onClose={() => setShowPaymentModal(false)} />
       )}
     </div>
   );

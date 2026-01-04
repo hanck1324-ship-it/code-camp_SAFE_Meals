@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, Lock, ChevronLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button-legacy';
-import { useLanguageStore, Language } from '@/commons/stores/useLanguageStore';
-import { translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
+import { Language } from '@/commons/stores/useLanguageStore';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useSafetyCardVerify } from '@/features/profile/components/safety-card/hooks/index.submit.hook';
 import { useSafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
@@ -55,8 +55,7 @@ async function fetchSafetyCardFromSupabase() {
 
 export default function SafetyCardPage() {
   const router = useRouter();
-  const language = useLanguageStore((state) => state.language);
-  const t = translations[language] || translations['en'];
+  const { t, language } = useTranslation();
 
   const [pin, setPin] = useState('');
 
@@ -116,9 +115,7 @@ export default function SafetyCardPage() {
               data-testid="safety-card-loading"
             >
               <Loader2 className="h-12 w-12 animate-spin text-red-500" />
-              <p className="mt-4 text-gray-500">
-                안전카드 정보를 불러오는 중...
-              </p>
+              <p className="mt-4 text-gray-500">{t.loadingSafetyCardInfo}</p>
             </div>
           ) : isQueryError ? (
             // 데이터 로드 실패
@@ -130,14 +127,13 @@ export default function SafetyCardPage() {
                 <ShieldAlert className="h-12 w-12 text-red-500" />
               </div>
               <p className="mt-6 text-center text-lg text-red-600">
-                {queryErrorMessage ||
-                  '데이터를 불러올 수 없습니다. 다시 시도해주세요.'}
+                {queryErrorMessage || t.failedToLoadData}
               </p>
               <button
                 onClick={() => router.back()}
                 className="mt-4 rounded-xl bg-gray-200 px-6 py-2 text-gray-700"
               >
-                뒤로 가기
+                {t.goBack}
               </button>
             </div>
           ) : isQueryEmpty && !safetyCardData ? (
@@ -150,13 +146,13 @@ export default function SafetyCardPage() {
                 <ShieldAlert className="h-12 w-12 text-gray-400" />
               </div>
               <p className="mt-6 text-center text-lg text-gray-600">
-                안전카드 정보가 없습니다.
+                {t.noSafetyCardInfo}
               </p>
               <button
                 onClick={() => router.back()}
                 className="mt-4 rounded-xl bg-gray-200 px-6 py-2 text-gray-700"
               >
-                뒤로 가기
+                {t.goBack}
               </button>
             </div>
           ) : (

@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from './_providers/auth-provider';
 import { AnalyzeResultProvider } from '@/features/scan/context/analyze-result-context';
 import Layout from '@/components/layout';
+import { LanguageHydrationGuard } from '@/components/language-hydration-guard';
 
 export const metadata: Metadata = {
   title: 'SafeMeals',
@@ -31,13 +32,15 @@ export default function RootLayout({
         className="webkit-tap-highlight-transparent size-full touch-pan-y select-none overscroll-none bg-white antialiased"
       >
         <AuthProvider>
-          <AnalyzeResultProvider>
-            <Layout>
-              <div className="no-scrollbar flex-grow overflow-y-auto">
-                {children}
-              </div>
-            </Layout>
-          </AnalyzeResultProvider>
+          <LanguageHydrationGuard>
+            <AnalyzeResultProvider>
+              <Layout>
+                <div className="no-scrollbar flex-grow overflow-y-auto">
+                  {children}
+                </div>
+              </Layout>
+            </AnalyzeResultProvider>
+          </LanguageHydrationGuard>
         </AuthProvider>
       </body>
     </html>

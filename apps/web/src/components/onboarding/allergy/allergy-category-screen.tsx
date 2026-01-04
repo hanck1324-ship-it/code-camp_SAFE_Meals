@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '../../ui/button';
-import { Language, translations } from '../../../lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AllergyCategoryScreenProps {
   onCategorySelect: (categories: string[]) => void;
   onBack: () => void;
   onEtcClick: () => void;
-  language: Language;
-  onLanguageChange: (language: Language) => void;
   initialSelectedCategories?: string[];
 }
 
@@ -23,14 +21,12 @@ export function AllergyCategoryScreen({
   onCategorySelect,
   onBack,
   onEtcClick,
-  language,
-  onLanguageChange,
   initialSelectedCategories = [],
 }: AllergyCategoryScreenProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     initialSelectedCategories
   );
-  const t = translations[language];
+  const { t } = useTranslation();
 
   // 초기값이 변경되면 상태 업데이트
   useEffect(() => {

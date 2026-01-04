@@ -108,8 +108,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. 🤖 Gemini에게 분석 요청 (프롬프트 핵심!)
-    // gemini-2.5-flash: 최신 모델, 무료 티어 사용 가능
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // gemini-3-flash-preview: 최신 모델, 무료 티어 사용 가능
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
     // 알레르기 코드를 사람이 읽을 수 있는 형태로 변환
     const allergyCodeToLabel: Record<string, string> = {

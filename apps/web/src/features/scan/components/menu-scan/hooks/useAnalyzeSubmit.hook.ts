@@ -83,7 +83,7 @@ export interface UseAnalyzeSubmitReturn {
 }
 
 /**
- * 타임아웃 시간 (90초) - gemini-2.5-flash는 이미지 분석에 시간이 걸림
+ * 타임아웃 시간 (90초) -  gemini-3-flash-preview는 이미지 분석에 시간이 걸림
  * 복잡한 메뉴판의 경우 더 오래 걸릴 수 있음
  */
 const TIMEOUT_MS = 90000;

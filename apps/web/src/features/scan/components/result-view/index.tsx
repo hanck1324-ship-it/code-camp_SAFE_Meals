@@ -8,10 +8,9 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { translations } from '@/lib/translations';
 import { LanguageSelector } from '@/components/language-selector';
 import { useAnalyzeResult } from '@/features/scan/context/analyze-result-context';
-import { useLanguageStore } from '@/commons/stores/useLanguageStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { MAIN_URLS } from '@/commons/constants/url';
 
 // ============================================
@@ -150,8 +149,7 @@ function getSafetyBadge(status: SafetyStatus, t: (typeof translations)['ko']) {
  */
 export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   const router = useRouter();
-  const language = useLanguageStore((state) => state.language);
-  const t = translations[language];
+  const { t, language } = useTranslation();
 
   // Context에서 분석 결과 가져오기
   const { analysisResult, clearAnalysisResult } = useAnalyzeResult();

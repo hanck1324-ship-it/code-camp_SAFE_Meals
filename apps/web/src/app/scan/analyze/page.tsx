@@ -38,7 +38,7 @@ function AnalyzeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const language = useLanguageStore((state) => state.language);
-  const texts = TEXTS[language];
+  const texts = TEXTS[language as keyof typeof TEXTS] || TEXTS.ko;
 
   const { isLoading, error, submitAnalyze, clearError, reset } =
     useAnalyzeSubmit();

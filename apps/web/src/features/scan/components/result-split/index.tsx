@@ -1,12 +1,19 @@
 'use client';
 
-import { X, CheckCircle, AlertTriangle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { Language, translations } from '@/lib/translations';
+import {
+  X,
+  CheckCircle,
+  AlertTriangle,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { SafetyBadge, SafetyLevel } from '@/components/common/safety-badge';
 import { MenuListItem } from '@/components/common/menu-list-item';
 import { LanguageSelector } from '@/components/language-selector';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface MenuItem {
   id: string;
@@ -21,17 +28,13 @@ interface MenuItem {
 interface ScanResultSplitProps {
   onBack: () => void;
   onSelectItem: (item: MenuItem) => void;
-  language: Language;
-  onLanguageChange?: (language: Language) => void;
 }
 
-export function ScanResultSplit({ 
-  onBack, 
-  onSelectItem, 
-  language,
-  onLanguageChange 
+export function ScanResultSplit({
+  onBack,
+  onSelectItem,
 }: ScanResultSplitProps) {
-  const t = translations[language];
+  const { t } = useTranslation();
   const [highlightedItem, setHighlightedItem] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
@@ -85,7 +88,7 @@ export function ScanResultSplit({
 
   const toggleDescription = (itemId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setExpandedItems(prev => {
+    setExpandedItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
         newSet.delete(itemId);
@@ -106,7 +109,7 @@ export function ScanResultSplit({
           className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
-        
+
         {/* Close Button */}
         <button
           onClick={onBack}
@@ -118,7 +121,8 @@ export function ScanResultSplit({
         {/* Scan Info Banner */}
         <div className="absolute left-6 top-6 rounded-full bg-white/90 px-4 py-2 shadow-lg backdrop-blur-sm">
           <p className="text-sm">
-            <span className="text-[#2ECC71]">✓</span> {t.scanComplete || 'Scan Complete'}
+            <span className="text-[#2ECC71]">✓</span>{' '}
+            {t.scanComplete || 'Scan Complete'}
           </p>
         </div>
 
@@ -154,12 +158,14 @@ export function ScanResultSplit({
                     {item.koreanName}
                   </p>
                 </div>
-                <SafetyBadge 
+                <SafetyBadge
                   level={item.safetyStatus}
                   text={
-                    item.safetyStatus === 'safe' ? t.safe as string :
-                    item.safetyStatus === 'warning' ? t.caution as string :
-                    t.danger as string
+                    item.safetyStatus === 'safe'
+                      ? (t.safe as string)
+                      : item.safetyStatus === 'warning'
+                        ? (t.caution as string)
+                        : (t.danger as string)
                   }
                   size="sm"
                 />
@@ -167,7 +173,7 @@ export function ScanResultSplit({
 
               {/* Description Section */}
               {expandedItems.has(item.id) && (
-                <div className="mb-3 animate-in slide-in-from-top rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="animate-in slide-in-from-top mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <p className="text-sm text-gray-700">
                     {t[item.descKey as keyof typeof t] as string}
                   </p>
@@ -188,7 +194,9 @@ export function ScanResultSplit({
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-200"
               >
                 <span>
-                  {expandedItems.has(item.id) ? t.description : t.viewDescription}
+                  {expandedItems.has(item.id)
+                    ? t.description
+                    : t.viewDescription}
                 </span>
                 {expandedItems.has(item.id) ? (
                   <ChevronUp className="h-4 w-4" />

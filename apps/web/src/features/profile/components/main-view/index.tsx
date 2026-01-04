@@ -8,8 +8,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language, translations, languageNames } from '@/lib/translations';
 import { LanguageSelector } from '@/components/language-selector';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ProfileScreenProps {
   userProfile: {
@@ -24,19 +24,15 @@ interface ProfileScreenProps {
       | 'help'
       | 'safetyCard'
   ) => void;
-  language: Language;
-  onLanguageChange: (language: Language) => void;
   onLogout: () => void;
 }
 
 export function ProfileScreen({
   userProfile,
   onNavigate,
-  language,
-  onLanguageChange,
   onLogout,
 }: ProfileScreenProps) {
-  const t = translations[language] || translations['en'];
+  const { t, languageName } = useTranslation();
 
   const sampleAllergies = userProfile.allergies.slice(0, 2);
   const sampleDiets = userProfile.diets.slice(0, 2);
@@ -58,7 +54,7 @@ export function ProfileScreen({
     {
       icon: Globe,
       label: t.language,
-      subtitle: languageNames[language],
+      subtitle: languageName,
       action: () => onNavigate('languageSettings'),
     },
     {

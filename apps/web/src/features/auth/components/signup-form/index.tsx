@@ -177,6 +177,8 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
                       field.onChange(value);
                       // 전역 언어 상태도 즉시 업데이트하여 페이지 전체 언어 변경
                       setLanguage(value as Language);
+                      // 언어 변경 후 모든 페이지를 다시 렌더링하여 즉시 반영
+                      router.refresh();
                     }}
                   >
                     <SelectTrigger className="h-10 w-full border border-gray-300 hover:border-gray-400 focus-visible:border-[#2ECC71]">
