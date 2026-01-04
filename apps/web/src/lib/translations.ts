@@ -290,6 +290,11 @@ export const translations = {
     Eggs: '계란',
     Shellfish: '갑각류',
     Vegan: '비건',
+    safetyCardAllergyInfoTitle: '알레르기 정보',
+    safetyCardDietInfoTitle: '식단 정보',
+    safetyCardAllergyDietEmpty: '등록된 알레르기 및 식단 정보가 없습니다.',
+    safetyCardAllergyDietLoadError:
+      '알레르기 및 식단 정보를 불러올 수 없습니다.',
     // Travel Payment
     travelPackage: '여행 패키지',
     days: '일',
@@ -325,10 +330,21 @@ export const translations = {
     maxDaysNotice: '최대 365일까지 선택 가능합니다.',
     paymentSuccess: '결제가 완료되었습니다',
     paymentError: '결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+    paymentStarting: '결제를 진행합니다...',
+    verifyingPayment: '결제를 검증하는 중입니다...',
+    paymentCompleted: '결제가 완료되었습니다!',
+    paymentCancelled: '결제가 취소되었습니다.',
+    paymentFailed: '결제에 실패했습니다.',
     // Common UI Text
     loading: '로딩 중...',
     goBack: '뒤로 가기',
     // Scan Page
+    scanAnalyzeTitle: '메뉴 분석',
+    scanAnalyzing: '분석 중...',
+    scanAnalyzeButton: '분석하기',
+    scanRetakePhoto: '다시 촬영',
+    scanNoImage: '분석할 이미지가 없습니다.',
+    scanGoToCamera: '카메라로 이동',
     scanFeatureComingSoon: '스캔 기능 준비 중',
     comingSoon: '곧 만나보실 수 있습니다.',
     // Safety Card Page
@@ -628,6 +644,10 @@ export const translations = {
     Eggs: 'Eggs',
     Shellfish: 'Shellfish',
     Vegan: 'Vegan',
+    safetyCardAllergyInfoTitle: 'Allergy Info',
+    safetyCardDietInfoTitle: 'Diet Info',
+    safetyCardAllergyDietEmpty: 'No allergy or diet info has been added.',
+    safetyCardAllergyDietLoadError: 'Unable to load allergy and diet info.',
     // Travel Payment
     travelPackage: 'Travel Package',
     days: 'days',
@@ -663,10 +683,21 @@ export const translations = {
     maxDaysNotice: 'Maximum 365 days can be selected.',
     paymentSuccess: 'Payment completed successfully',
     paymentError: 'Payment processing error. Please try again.',
+    paymentStarting: 'Processing payment...',
+    verifyingPayment: 'Verifying payment...',
+    paymentCompleted: 'Payment completed!',
+    paymentCancelled: 'Payment cancelled.',
+    paymentFailed: 'Payment failed.',
     // Common UI Text
     loading: 'Loading...',
     goBack: 'Go Back',
     // Scan Page
+    scanAnalyzeTitle: 'Menu Analysis',
+    scanAnalyzing: 'Analyzing...',
+    scanAnalyzeButton: 'Analyze',
+    scanRetakePhoto: 'Retake Photo',
+    scanNoImage: 'No image to analyze.',
+    scanGoToCamera: 'Go to Camera',
     scanFeatureComingSoon: 'Scan feature coming soon',
     comingSoon: 'Coming soon.',
     // Safety Card Page
@@ -964,6 +995,11 @@ export const translations = {
     Eggs: '卵',
     Shellfish: '甲殻類',
     Vegan: 'ベジアン',
+    safetyCardAllergyInfoTitle: 'アレルギー情報',
+    safetyCardDietInfoTitle: '食事情報',
+    safetyCardAllergyDietEmpty: '登録されたアレルギーや食事情報がありません。',
+    safetyCardAllergyDietLoadError:
+      'アレルギーと食事情報を読み込めませんでした。',
     // Travel Payment
     travelPackage: '旅行パッケージ',
     days: '日',
@@ -999,10 +1035,21 @@ export const translations = {
     maxDaysNotice: '最大365日まで選択可能です。',
     paymentSuccess: '決済が完了しました',
     paymentError: '決済処理中にエラーが発生しました。もう一度お試しください。',
+    paymentStarting: '決済を進めています...',
+    verifyingPayment: '決済を検証中です...',
+    paymentCompleted: '決済が完了しました!',
+    paymentCancelled: '決済がキャンセルされました。',
+    paymentFailed: '決済に失敗しました。',
     // Common UI Text
     loading: '読み込み中...',
     goBack: '戻る',
     // Scan Page
+    scanAnalyzeTitle: 'メニュー分析',
+    scanAnalyzing: '分析中...',
+    scanAnalyzeButton: '分析する',
+    scanRetakePhoto: '再撮影',
+    scanNoImage: '分析する画像がありません。',
+    scanGoToCamera: 'カメラに戻る',
     scanFeatureComingSoon: 'スキャン機能準備中',
     comingSoon: '近日公開予定',
     // Safety Card Page
@@ -1295,6 +1342,10 @@ export const translations = {
     Eggs: '鸡蛋',
     Shellfish: '贝类',
     Vegan: '素食',
+    safetyCardAllergyInfoTitle: '过敏信息',
+    safetyCardDietInfoTitle: '饮食信息',
+    safetyCardAllergyDietEmpty: '尚未添加过敏或饮食信息。',
+    safetyCardAllergyDietLoadError: '无法加载过敏和饮食信息。',
     // Travel Payment
     travelPackage: '旅行套餐',
     days: '天',
@@ -1330,10 +1381,21 @@ export const translations = {
     maxDaysNotice: '最多可选择365天。',
     paymentSuccess: '支付完成',
     paymentError: '支付处理出错，请重试。',
+    paymentStarting: '处理支付中...',
+    verifyingPayment: '验证支付中...',
+    paymentCompleted: '支付完成！',
+    paymentCancelled: '支付已取消。',
+    paymentFailed: '支付失败。',
     // Common UI Text
     loading: '加载中...',
     goBack: '返回',
     // Scan Page
+    scanAnalyzeTitle: '菜单分析',
+    scanAnalyzing: '正在分析...',
+    scanAnalyzeButton: '开始分析',
+    scanRetakePhoto: '重新拍摄',
+    scanNoImage: '没有可分析的图片。',
+    scanGoToCamera: '返回相机',
     scanFeatureComingSoon: '扫描功能即将推出',
     comingSoon: '即将推出',
     // Safety Card Page
@@ -1636,6 +1698,12 @@ export const translations = {
     Eggs: 'Huevos',
     Shellfish: 'Mariscos',
     Vegan: 'Vegano',
+    safetyCardAllergyInfoTitle: 'Información de alergias',
+    safetyCardDietInfoTitle: 'Información de dieta',
+    safetyCardAllergyDietEmpty:
+      'No se han añadido alergias ni información de dieta.',
+    safetyCardAllergyDietLoadError:
+      'No se pudieron cargar las alergias y la dieta.',
     // Travel Payment
     travelPackage: 'Paquete de Viaje',
     days: 'días',
@@ -1671,10 +1739,21 @@ export const translations = {
     maxDaysNotice: 'Se pueden seleccionar hasta 365 días.',
     paymentSuccess: 'Pago completado con éxito',
     paymentError: 'Error al procesar el pago. Por favor, inténtalo de nuevo.',
+    paymentStarting: 'Procesando pago...',
+    verifyingPayment: 'Verificando pago...',
+    paymentCompleted: '¡Pago completado!',
+    paymentCancelled: 'Pago cancelado.',
+    paymentFailed: 'Pago fallido.',
     // Common UI Text
     loading: 'Cargando...',
     goBack: 'Volver',
     // Scan Page
+    scanAnalyzeTitle: 'Análisis del menú',
+    scanAnalyzing: 'Analizando...',
+    scanAnalyzeButton: 'Analizar',
+    scanRetakePhoto: 'Volver a tomar',
+    scanNoImage: 'No hay imagen para analizar.',
+    scanGoToCamera: 'Ir a la cámara',
     scanFeatureComingSoon: 'Función de escaneo próximamente',
     comingSoon: 'Próximamente',
     // Safety Card Page

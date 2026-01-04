@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Text,
   Platform,
+  BackHandler,
 } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -32,6 +33,18 @@ export default function WebViewScreen({
   const [pendingImageData, setPendingImageData] = useState<string | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [savedLanguage, setSavedLanguage] = useState<string | null>(null);
+  const [canGoBack, setCanGoBack] = useState(false);
+
+  // URL 쿼리 파라미터 추가
+  const queryString = Object.keys(params)
+    .filter((key) => key !== 'path' && key !== 'hasImage')
+    .map(
+      (key) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(String(params[key]))}`
+    )
+    .join('&');
+
+  const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
 
   // AsyncStorage에서 저장된 언어 로드
   useEffect(() => {
@@ -67,16 +80,26 @@ export default function WebViewScreen({
     loadPendingImage();
   }, [params.hasImage]);
 
-  // URL 쿼리 파라미터 추가
-  const queryString = Object.keys(params)
-    .filter((key) => key !== 'path' && key !== 'hasImage')
-    .map(
-      (key) =>
-        `${encodeURIComponent(key)}=${encodeURIComponent(String(params[key]))}`
-    )
-    .join('&');
+  useEffect(() => {
+    setCanGoBack(false);
+  }, [url]);
 
-  const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        if (canGoBack && webViewRef.current) {
+          webViewRef.current.goBack();
+          return true; // 웹뷰 내에서 처리
+        }
+        return false;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [canGoBack]);
 
   // 디버그: URL 로깅
   console.log('[WebViewScreen] Loading URL:', url);
@@ -365,6 +388,9 @@ export default function WebViewScreen({
             syntheticEvent.nativeEvent.url
           );
         }}
+        onNavigationStateChange={(navState) =>
+          setCanGoBack(navState.canGoBack)
+        }
       />
     </SafeAreaView>
   );

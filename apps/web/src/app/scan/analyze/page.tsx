@@ -4,32 +4,8 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle, Camera, ArrowLeft } from 'lucide-react';
 import { useAnalyzeSubmit } from '@/features/scan/components/menu-scan/hooks/useAnalyzeSubmit.hook';
-import { useLanguageStore } from '@/commons/stores/useLanguageStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
-
-/**
- * 번역 텍스트
- */
-const TEXTS = {
-  ko: {
-    title: '메뉴 분석',
-    analyzing: '분석 중...',
-    analyzeButton: '분석하기',
-    retakeButton: '다시 촬영',
-    backButton: '뒤로',
-    noImage: '분석할 이미지가 없습니다.',
-    goToCamera: '카메라로 이동',
-  },
-  en: {
-    title: 'Menu Analysis',
-    analyzing: 'Analyzing...',
-    analyzeButton: 'Analyze',
-    retakeButton: 'Retake Photo',
-    backButton: 'Back',
-    noImage: 'No image to analyze.',
-    goToCamera: 'Go to Camera',
-  },
-};
 
 /**
  * 분석 페이지 컨텐츠 컴포넌트
@@ -37,8 +13,7 @@ const TEXTS = {
 function AnalyzeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const language = useLanguageStore((state) => state.language);
-  const texts = TEXTS[language as keyof typeof TEXTS] || TEXTS.ko;
+  const { t, language } = useTranslation();
 
   const { isLoading, error, submitAnalyze, clearError, reset } =
     useAnalyzeSubmit();
@@ -129,7 +104,7 @@ function AnalyzeContent() {
             data-testid="no-image-message"
             className="mb-6 text-lg text-[var(--color-text-secondary)]"
           >
-            {texts.noImage}
+            {t.scanNoImage}
           </p>
           <Button
             data-testid="go-to-camera-button"
@@ -137,7 +112,7 @@ function AnalyzeContent() {
             className="bg-[var(--color-primary)] text-white"
           >
             <Camera className="mr-2 h-4 w-4" />
-            {texts.goToCamera}
+            {t.scanGoToCamera}
           </Button>
         </div>
       </div>
@@ -159,7 +134,7 @@ function AnalyzeContent() {
           <ArrowLeft className="h-5 w-5 text-[var(--color-text-primary)]" />
         </button>
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          {texts.title}
+          {t.scanAnalyzeTitle}
         </h1>
       </header>
 
@@ -188,7 +163,7 @@ function AnalyzeContent() {
                 data-testid="loading-text"
                 className="text-lg font-medium text-white"
               >
-                {texts.analyzing}
+                {t.scanAnalyzing}
               </p>
             </div>
           )}
@@ -220,7 +195,7 @@ function AnalyzeContent() {
                 onClick={handleRetake}
               >
                 <Camera className="mr-2 h-4 w-4" />
-                {texts.retakeButton}
+                {t.scanRetakePhoto}
               </Button>
               <Button
                 data-testid="retry-button"
@@ -231,7 +206,7 @@ function AnalyzeContent() {
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {texts.analyzeButton}
+                {t.scanAnalyzeButton}
               </Button>
             </>
           ) : (
@@ -244,10 +219,10 @@ function AnalyzeContent() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {texts.analyzing}
+                  {t.scanAnalyzing}
                 </>
               ) : (
-                texts.analyzeButton
+                t.scanAnalyzeButton
               )}
             </Button>
           )}

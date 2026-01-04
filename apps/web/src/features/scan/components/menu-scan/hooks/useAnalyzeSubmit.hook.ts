@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase';
+import type { Language } from '@/commons/stores/useLanguageStore';
 import {
   useAnalyzeResult,
   type AnalysisResult,
@@ -75,7 +76,7 @@ export interface UseAnalyzeSubmitReturn {
   /** 이미지 설정 */
   setImageData: (data: string | null) => void;
   /** 분석 제출 */
-  submitAnalyze: (image: File | string, language: 'ko' | 'en') => Promise<void>;
+  submitAnalyze: (image: File | string, language: Language) => Promise<void>;
   /** 에러 초기화 */
   clearError: () => void;
   /** 상태 리셋 */
@@ -106,6 +107,10 @@ const ERROR_MESSAGES = {
     qualityDefault: 'Photo quality is poor. Please retake the photo.',
   },
 };
+
+const normalizeLanguageForAnalysis = (
+  language: Language
+): 'ko' | 'en' => (language === 'ko' ? 'ko' : 'en');
 
 /**
  * 사용자 알레르기/식단 정보 조회 헬퍼 함수
@@ -195,7 +200,9 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
    * 분석 제출
    */
   const submitAnalyze = useCallback(
-    async (image: File | string, language: 'ko' | 'en'): Promise<void> => {
+    async (image: File | string, language: Language): Promise<void> => {
+      const analysisLanguage = normalizeLanguageForAnalysis(language);
+
       // 이전 요청 취소
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -250,7 +257,7 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           headers,
           body: JSON.stringify({
             image: base64Image,
-            language,
+            language: analysisLanguage,
             device_info: {
               platform:
                 typeof navigator !== 'undefined'
@@ -273,7 +280,8 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
 
         // API 에러 응답 처리
         if (!response.ok || !data.success) {
-          const errorMessage = data.message || ERROR_MESSAGES[language].server;
+          const errorMessage =
+            data.message || ERROR_MESSAGES[analysisLanguage].server;
           setError(errorMessage);
           return;
         }
@@ -335,7 +343,7 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         } else {
           // 결과가 없는 경우
           setError(
-            language === 'ko'
+            analysisLanguage === 'ko'
               ? '메뉴를 인식할 수 없습니다. 다시 촬영해주세요.'
               : 'Could not recognize menu. Please retake the photo.'
           );
@@ -343,14 +351,14 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
       } catch (err) {
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
-            setError(ERROR_MESSAGES[language].timeout);
+            setError(ERROR_MESSAGES[analysisLanguage].timeout);
           } else if (err.message === 'server') {
-            setError(ERROR_MESSAGES[language].server);
+            setError(ERROR_MESSAGES[analysisLanguage].server);
           } else {
-            setError(ERROR_MESSAGES[language].network);
+            setError(ERROR_MESSAGES[analysisLanguage].network);
           }
         } else {
-          setError(ERROR_MESSAGES[language].network);
+          setError(ERROR_MESSAGES[analysisLanguage].network);
         }
       } finally {
         setIsLoading(false);

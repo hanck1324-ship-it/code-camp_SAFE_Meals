@@ -4,6 +4,7 @@ import { AuthProvider } from './_providers/auth-provider';
 import { AnalyzeResultProvider } from '@/features/scan/context/analyze-result-context';
 import Layout from '@/components/layout';
 import { LanguageHydrationGuard } from '@/components/language-hydration-guard';
+import { ToastContainer } from '@/components/ui/toast';
 
 export const metadata: Metadata = {
   title: 'SafeMeals',
@@ -39,6 +40,7 @@ export default function RootLayout({
                   {children}
                 </div>
               </Layout>
+              <ToastContainer />
             </AnalyzeResultProvider>
           </LanguageHydrationGuard>
         </AuthProvider>
