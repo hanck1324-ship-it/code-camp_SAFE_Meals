@@ -1,0 +1,141 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 수정될 HOOK 파일경로: apps/web/src/commons/stores/useLanguageStore.ts
+조건-파일경로) 구현될 TEST 파일경로: apps/web/src/commons/stores/tests/useLanguageStore.spec.ts
+
+==============================================
+
+핵심요구사항) playwright 테스트를 활용하여 TDD 기반으로 구현하고, 테스트에 통과할 때까지 반복할 것.
+
+1) 테스트 제외 라이브러리
+   - jest
+   - @testing-library/react
+
+2) 테스트 조건
+   - timeout은 설정하지 않거나, 500ms 미만으로 설정할 것.
+   - 페이지가 완전히 로드된 후 테스트할 것.
+       - 페이지 로드 식별 요구사항: 고정식별자 data-testid 대기 방법
+       - **중요금지사항** 페이지 로드 식별 금지사항: networkidle 대기 방법
+
+3) 테스트 시나리오
+   3-1) 성공 시나리오
+        - localStorage에 persist 포맷으로 'en' 저장:
+          localStorage.setItem('safemeals-language-storage', JSON.stringify({
+            state: { language: 'en' },
+            version: 0
+          }))
+        - 페이지 로드 후 해당 언어로 로드되는지 검증
+        - hydrated 상태가 true인지 검증 (hydration 완료 후)
+        - 언어 변경(setLanguage) 시 localStorage가 업데이트되는지 검증
+        - 페이지에서 useTranslation 훅 사용 시 hydration 완료 후 올바른 번역이 표시되는지 검증
+
+   3-2) 실패/엣지 시나리오
+        - localStorage가 비어있을 때 기본 언어(ko)로 시작하는지 검증
+        - localStorage에 잘못된 포맷이 저장된 경우 기본 언어(ko)로 fallback하는지 검증
+        - 코드상 hydrated 초기값이 false인지 확인 (런타임 false 관측은 매우 빠른 hydration으로 인해 불안정)
+
+==============================================
+
+핵심요구사항) useLanguageStore에 zustand persist hydration 완료 상태를 추가할 것.
+
+1) 파일 최상단에 'use client' 지시어 추가 (Next.js SSR 대응)
+
+2) 추가할 상태 및 함수
+   interface LanguageState {
+     language: Language;
+     setLanguage: (lang: Language) => void;
+     hydrated: boolean; // 추가
+   }
+
+3) hydration 완료 감지 구현
+   3-1) zustand persist의 onRehydrateStorage 콜백 사용
+   3-2) persist 미들웨어 설정에 다음 추가:
+        {
+          name: 'safemeals-language-storage',
+          storage: createJSONStorage(() => localStorage),
+          partialize: (state) => ({ language: state.language }), // 🔥 hydrated는 persist 제외
+          onRehydrateStorage: () => (state) => {
+            // 🔥 hydration 완료 시 setState로 hydrated를 true로 설정
+            useLanguageStore.setState({ hydrated: true });
+          }
+        }
+
+4) 초기 상태 설정
+   4-1) hydrated 초기값: false
+   4-2) localStorage에 저장된 언어가 유효하지 않으면 기본값('ko') 사용
+
+5) **중요금지사항**: state.hydrated = true 같은 직접 mutation 금지
+   - 반드시 useLanguageStore.setState({ hydrated: true }) 사용
+
+6) 컴포넌트에서 사용 예시
+   const { language, hydrated } = useLanguageStore();
+
+   if (!hydrated) {
+     return <div>Loading...</div>; // hydration 대기
+   }
+
+   // hydration 완료 후 렌더링
+   return <div>{t.someText}</div>;
+
+7) 유효성 검증
+   7-1) language 값이 Language 타입('ko' | 'en' | 'ja' | 'zh' | 'es')에 속하는지 확인
+   7-2) 유효하지 않으면 'ko'로 설정
+
+8) 테스트 케이스 예시
+   8-1) 성공 케이스
+        - localStorage에 persist 포맷으로 저장:
+          localStorage.setItem('safemeals-language-storage', JSON.stringify({
+            state: { language: 'en' },
+            version: 0
+          }))
+        - 페이지 로드 후 language === 'en', hydrated === true 확인
+        - setLanguage('ja') 호출 → localStorage 업데이트 및 language === 'ja' 확인
+
+   8-2) 실패/엣지 케이스
+        - localStorage 비어있음 → language === 'ko', hydrated === true
+        - localStorage에 잘못된 포맷 저장 → language === 'ko', hydrated === true (fallback)
+        - 코드상 초기값 확인: hydrated 초기값이 false인지 검증 (런타임 관측은 불안정)
+
+==============================================
+
+핵심요구사항) 수정된 useLanguageStore를 사용하는 페이지들이 hydration 대기 로직을 구현할 수 있도록 문서화할 것.
+
+1) 사용 가이드 (주석 또는 README)
+   /**
+    * useLanguageStore - zustand persist 기반 언어 상태 관리
+    *
+    * @property {Language} language - 현재 선택된 언어 ('ko' | 'en' | 'ja' | 'zh' | 'es')
+    * @property {boolean} hydrated - localStorage hydration 완료 여부
+    * @property {Function} setLanguage - 언어 변경 함수
+    *
+    * @example
+    * // 페이지에서 hydration 대기
+    * const { language, hydrated } = useLanguageStore();
+    * const { t } = useTranslation();
+    *
+    * if (!hydrated) {
+    *   return <div>Loading...</div>;
+    * }
+    *
+    * return <div>{t.title}</div>;
+    */
+
+2) 적용 대상 페이지
+   - apps/web/src/app/scan/page.tsx
+   - apps/web/src/app/profile/settings/page.tsx
+   - apps/web/src/app/profile/safety-card/page.tsx
+   - (기타 useTranslation을 사용하는 모든 페이지)
+
+3) 적용 패턴
+   3-1) hydrated 상태 확인
+   3-2) hydrated === false일 때 로딩 UI 표시
+   3-3) hydrated === true일 때 정상 렌더링

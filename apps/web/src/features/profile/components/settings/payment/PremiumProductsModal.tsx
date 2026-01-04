@@ -1,19 +1,15 @@
 import { X, Zap, Check } from 'lucide-react';
 import { useState } from 'react';
-import { Language, translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 import { PREMIUM_PRODUCTS, requestPayment } from '@/lib/portone';
 import { getSupabaseClient } from '@/lib/supabase';
 
 interface PremiumProductsModalProps {
   onClose: () => void;
-  language: Language;
 }
 
-export function PremiumProductsModal({
-  onClose,
-  language,
-}: PremiumProductsModalProps) {
-  const t = translations[language];
+export function PremiumProductsModal({ onClose }: PremiumProductsModalProps) {
+  const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
@@ -83,7 +79,8 @@ export function PremiumProductsModal({
         productName: product.name,
         amount: product.amount,
         buyerEmail: user.email || '',
-        buyerName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        buyerName:
+          user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
       });
 
       // 3. 결제 성공 처리
@@ -132,7 +129,7 @@ export function PremiumProductsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 border-b border-gray-200 bg-white px-6 py-4">
           <div className="flex items-center justify-between">

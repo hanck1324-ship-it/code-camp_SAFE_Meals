@@ -1,20 +1,18 @@
 import { ChevronLeft, Lock, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Language, translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SafetyCardPinScreenProps {
   onBack: () => void;
   onPinCorrect: () => void;
-  language: Language;
 }
 
 export function SafetyCardPinScreen({
   onBack,
   onPinCorrect,
-  language,
 }: SafetyCardPinScreenProps) {
-  const t = translations[language];
+  const { t } = useTranslation();
   const [pin, setPin] = useState(['', '', '', '']);
   const [error, setError] = useState(false);
 

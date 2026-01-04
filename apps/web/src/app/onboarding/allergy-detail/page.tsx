@@ -198,8 +198,6 @@ function AllergyDetailContent() {
       categories={categories}
       onAllergySelect={handleAllergySelect}
       onBack={handleBack}
-      language={language}
-      onLanguageChange={setLanguage}
       initialSelectedAllergies={initialAllergies}
     />
   );

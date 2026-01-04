@@ -7,18 +7,14 @@ import {
   Shield,
   MessageCircle,
 } from 'lucide-react';
-import { Language, translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface HelpSupportScreenProps {
   onBack: () => void;
-  language: Language;
 }
 
-export function HelpSupportScreen({
-  onBack,
-  language,
-}: HelpSupportScreenProps) {
-  const t = translations[language];
+export function HelpSupportScreen({ onBack }: HelpSupportScreenProps) {
+  const { t } = useTranslation();
 
   const helpItems = [
     {

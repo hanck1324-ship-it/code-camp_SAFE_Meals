@@ -1,6 +1,6 @@
 import { X, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
-import { Language, translations } from '@/lib/translations';
 import { SafetyBadge, SafetyLevel } from '@/components/common/safety-badge';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface MenuItem {
   id: string;
@@ -14,15 +14,10 @@ interface MenuItem {
 interface MenuDetailModalProps {
   item: MenuItem;
   onClose: () => void;
-  language: Language;
 }
 
-export function MenuDetailModal({
-  item,
-  onClose,
-  language,
-}: MenuDetailModalProps) {
-  const t = translations[language];
+export function MenuDetailModal({ item, onClose }: MenuDetailModalProps) {
+  const { t } = useTranslation();
 
   // Sample ingredients data
   const ingredients = [

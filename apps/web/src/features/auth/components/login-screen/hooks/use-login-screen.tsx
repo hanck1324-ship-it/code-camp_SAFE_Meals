@@ -1,16 +1,13 @@
 import { useState } from 'react';
-import { Language } from '@/lib/translations';
 import { useTranslation } from '@/hooks/useTranslation';
 import { LOGIN_TEXT } from '../constants';
 
 interface UseLoginScreenProps {
-  propLanguage?: Language;
   onLogin: () => void;
   onSocialLogin: () => void;
 }
 
 export function useLoginScreen({
-  propLanguage,
   onLogin,
   onSocialLogin,
 }: UseLoginScreenProps) {
@@ -18,8 +15,7 @@ export function useLoginScreen({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { language } = useTranslation();
-  const currentLanguage = propLanguage || language;
-  const currentText = LOGIN_TEXT[currentLanguage];
+  const currentText = LOGIN_TEXT[language];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,4 +44,3 @@ export function useLoginScreen({
     togglePasswordVisibility,
   };
 }
-

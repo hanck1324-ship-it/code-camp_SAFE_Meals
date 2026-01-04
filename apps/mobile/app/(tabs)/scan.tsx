@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   Linking,
   Image,
   Alert,
+  BackHandler,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -16,6 +17,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { useNativeTranslation } from '@/hooks/useNativeTranslation';
 
 /**
  * 이미지 압축 및 리사이즈 함수
@@ -51,6 +53,30 @@ export default function ScanTab() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const { t, refreshLanguage } = useNativeTranslation();
+
+  // 탭 전환 시 언어 새로고침
+  useFocusEffect(
+    useCallback(() => {
+      refreshLanguage();
+    }, [refreshLanguage])
+  );
+
+  // Android 뒤로가기 버튼 처리: 미리보기 상태면 카메라로 돌아가기
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        if (capturedImage) {
+          setCapturedImage(null);
+          return true; // 이벤트 소비 (다른 탭으로 이동 방지)
+        }
+        return false; // 기본 동작 수행
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [capturedImage]);
 
   // 사진 촬영
   const handleCapture = useCallback(async () => {
@@ -69,7 +95,7 @@ export default function ScanTab() {
       }
     } catch (error) {
       console.error('사진 촬영 실패:', error);
-      Alert.alert('오류', '사진 촬영에 실패했습니다. 다시 시도해주세요.');
+      Alert.alert(t('error'), t('photoCaptureFailed'));
     } finally {
       setIsCapturing(false);
     }
@@ -117,15 +143,15 @@ export default function ScanTab() {
       router.push('/webview/scan/analyze?hasImage=true');
     } catch (error) {
       console.error('이미지 변환 실패:', error);
-      Alert.alert('오류', '이미지 처리에 실패했습니다. 다시 시도해주세요.');
+      Alert.alert(t('error'), t('imageProcessingFailed'));
     }
-  }, [capturedImage]);
+  }, [capturedImage, t]);
 
   // 권한 확인 중
   if (!permission) {
     return (
       <View style={styles.container}>
-        <Text style={styles.loadingText}>카메라 권한 확인 중...</Text>
+        <Text style={styles.loadingText}>{t('cameraPermissionChecking')}</Text>
       </View>
     );
   }
@@ -135,18 +161,22 @@ export default function ScanTab() {
     return (
       <View style={styles.permissionContainer}>
         <Ionicons name="camera-outline" size={64} color="#9ca3af" />
-        <Text style={styles.permissionTitle}>카메라 권한 필요</Text>
+        <Text style={styles.permissionTitle}>
+          {t('cameraPermissionRequired')}
+        </Text>
         <Text style={styles.permissionText}>
-          메뉴판을 촬영하려면 카메라 권한이 필요합니다.
+          {t('cameraPermissionDescription')}
         </Text>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>권한 허용하기</Text>
+          <Text style={styles.buttonText}>{t('allowPermission')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => Linking.openSettings()}
         >
-          <Text style={styles.secondaryButtonText}>설정에서 변경하기</Text>
+          <Text style={styles.secondaryButtonText}>
+            {t('changeInSettings')}
+          </Text>
         </TouchableOpacity>
 
         {/* 권한 없어도 갤러리에서 선택 가능 */}
@@ -160,7 +190,7 @@ export default function ScanTab() {
             color="#fff"
             style={{ marginRight: 8 }}
           />
-          <Text style={styles.buttonText}>갤러리에서 선택</Text>
+          <Text style={styles.buttonText}>{t('gallery')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -170,24 +200,29 @@ export default function ScanTab() {
   if (capturedImage) {
     return (
       <View style={styles.previewContainer}>
+        {/* 뒤로가기 버튼 */}
+        <TouchableOpacity style={styles.backButton} onPress={handleRetake}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+
         <Image source={{ uri: capturedImage }} style={styles.previewImage} />
 
         <View style={styles.previewOverlay}>
-          <Text style={styles.previewTitle}>메뉴판 미리보기</Text>
+          <Text style={styles.previewTitle}>{t('menuPreview')}</Text>
           <Text style={styles.previewSubtitle}>
-            이 이미지로 분석을 진행할까요?
+            {t('proceedWithThisImage')}
           </Text>
         </View>
 
         <View style={styles.previewActions}>
           <TouchableOpacity style={styles.retakeButton} onPress={handleRetake}>
             <Ionicons name="refresh-outline" size={24} color="#fff" />
-            <Text style={styles.retakeButtonText}>다시 촬영</Text>
+            <Text style={styles.retakeButtonText}>{t('retake')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
             <Ionicons name="search-outline" size={24} color="#fff" />
-            <Text style={styles.submitButtonText}>분석하기</Text>
+            <Text style={styles.submitButtonText}>{t('analyze')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -206,10 +241,8 @@ export default function ScanTab() {
       <View style={styles.overlay}>
         {/* 상단 안내 */}
         <View style={styles.headerGuide}>
-          <Text style={styles.guideTitle}>메뉴판 촬영</Text>
-          <Text style={styles.guideSubtitle}>
-            메뉴판을 화면에 맞춰 촬영해주세요
-          </Text>
+          <Text style={styles.guideTitle}>{t('menuCapture')}</Text>
+          <Text style={styles.guideSubtitle}>{t('alignMenuToScreen')}</Text>
         </View>
 
         {/* 촬영 프레임 */}
@@ -409,6 +442,18 @@ const styles = StyleSheet.create({
   previewContainer: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 16,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   previewImage: {
     flex: 1,

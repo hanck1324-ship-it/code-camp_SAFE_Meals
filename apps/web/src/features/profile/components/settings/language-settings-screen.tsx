@@ -1,18 +1,17 @@
 import { ChevronLeft, Check } from 'lucide-react';
-import { Language, translations, languageNames } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
+import { Language } from '@/lib/translations';
+import { useRouter } from 'next/navigation';
 
 interface LanguageSettingsScreenProps {
-  currentLanguage: Language;
   onBack: () => void;
-  onLanguageChange: (language: Language) => void;
 }
 
 export function LanguageSettingsScreen({
-  currentLanguage,
   onBack,
-  onLanguageChange,
 }: LanguageSettingsScreenProps) {
-  const t = translations[currentLanguage];
+  const { t, language: currentLanguage, setLanguage } = useTranslation();
+  const router = useRouter();
 
   const languages: {
     code: Language;
@@ -27,8 +26,10 @@ export function LanguageSettingsScreen({
     { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
   ];
 
-  const handleLanguageSelect = (language: Language) => {
-    onLanguageChange(language);
+  const handleLanguageSelect = (lang: Language) => {
+    setLanguage(lang);
+    // 언어 변경 후 모든 페이지를 다시 렌더링하여 즉시 반영
+    router.refresh();
   };
 
   return (

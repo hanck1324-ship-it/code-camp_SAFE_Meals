@@ -29,6 +29,15 @@ export function MenuScanCameraButton() {
    * 카메라 버튼 클릭 핸들러
    */
   const handleCameraClick = () => {
+    // 앱 환경에서는 네이티브 카메라 호출 (셔터음 없음)
+    if (typeof window !== 'undefined' && (window as any).SafeMealsBridge) {
+      console.log('✅ 앱 환경 감지 - 네이티브 카메라 호출');
+      (window as any).SafeMealsBridge.scanMenu();
+      return;
+    }
+
+    // 웹 환경에서는 input 카메라 사용
+    console.log('⚠️ 웹 환경 - input 카메라 사용 (셔터음 발생)');
     cameraInputRef.current?.click();
   };
 

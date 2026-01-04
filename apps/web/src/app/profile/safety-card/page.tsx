@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, Lock, ChevronLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button-legacy';
-import { useLanguageStore, Language } from '@/commons/stores/useLanguageStore';
-import { translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
+import { Language } from '@/commons/stores/useLanguageStore';
+import type { SafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useSafetyCardVerify } from '@/features/profile/components/safety-card/hooks/index.submit.hook';
 import { useSafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
@@ -14,12 +15,23 @@ import { AllergiesDietsDatabinding } from '@/features/profile/components/safety-
 /**
  * 언어별 메시지 필드 매핑
  */
-const LANGUAGE_FIELD_MAP: Record<Language, string> = {
+const LANGUAGE_FIELD_MAP: Record<Language, keyof SafetyCardData> = {
   ko: 'message_ko',
   en: 'message_en',
   ja: 'message_ja',
   zh: 'message_zh',
   es: 'message_ko',
+};
+
+/**
+ * 메시지 기본값 (데이터가 없을 때 사용)
+ */
+const DEFAULT_MESSAGES: Record<Language, string> = {
+  ko: '저는 알레르기가 있습니다.\n이 음식에 알레르기 성분이 들어있나요?',
+  en: 'I have allergies.\nDoes this food contain any allergens?',
+  ja: '私はアレルギーがあります。\nこの食べ物にアレルゲンが含まれていますか?',
+  zh: '我有过敏症。\n这种食物含有过敏原吗?',
+  es: 'Tengo alergias.\n¿Este alimento contiene alérgenos?',
 };
 
 /**
@@ -55,8 +67,7 @@ async function fetchSafetyCardFromSupabase() {
 
 export default function SafetyCardPage() {
   const router = useRouter();
-  const language = useLanguageStore((state) => state.language);
-  const t = translations[language] || translations['en'];
+  const { t, language } = useTranslation();
 
   const [pin, setPin] = useState('');
 
@@ -91,18 +102,29 @@ export default function SafetyCardPage() {
 
   // 안전카드 데이터에서 메시지 가져오기
   const getCardMessage = (lang: Language): string => {
-    const data = safetyCardData || safetyCardQueryData;
-    if (!data) return '';
-
+    const data = (safetyCardData || safetyCardQueryData) as
+      | SafetyCardData
+      | null;
     const fieldName = LANGUAGE_FIELD_MAP[lang] || 'message_ko';
-    const message = data[fieldName as keyof typeof data] as string | null;
+    const message = data ? (data[fieldName] as string | null) : null;
+    const trimmedMessage = (message || '').trim();
 
-    return message || data.message_ko || '';
+    if (trimmedMessage) {
+      return trimmedMessage;
+    }
+
+    const fallbackKo = data?.message_ko?.trim();
+    if (fallbackKo) {
+      return fallbackKo;
+    }
+
+    return DEFAULT_MESSAGES[lang] || DEFAULT_MESSAGES.ko;
   };
 
-  // 메시지 표시용
-  const messageKo = getCardMessage('ko');
-  const messageEn = getCardMessage('en');
+  // 현재 언어/보조 언어 메시지
+  const messagePrimary = getCardMessage(language);
+  const secondaryLanguage: Language = language === 'en' ? 'ko' : 'en';
+  const messageSecondary = getCardMessage(secondaryLanguage);
 
   return (
     <RequireAuth>
@@ -116,9 +138,7 @@ export default function SafetyCardPage() {
               data-testid="safety-card-loading"
             >
               <Loader2 className="h-12 w-12 animate-spin text-red-500" />
-              <p className="mt-4 text-gray-500">
-                안전카드 정보를 불러오는 중...
-              </p>
+              <p className="mt-4 text-gray-500">{t.loadingSafetyCardInfo}</p>
             </div>
           ) : isQueryError ? (
             // 데이터 로드 실패
@@ -130,14 +150,13 @@ export default function SafetyCardPage() {
                 <ShieldAlert className="h-12 w-12 text-red-500" />
               </div>
               <p className="mt-6 text-center text-lg text-red-600">
-                {queryErrorMessage ||
-                  '데이터를 불러올 수 없습니다. 다시 시도해주세요.'}
+                {queryErrorMessage || t.failedToLoadData}
               </p>
               <button
                 onClick={() => router.back()}
                 className="mt-4 rounded-xl bg-gray-200 px-6 py-2 text-gray-700"
               >
-                뒤로 가기
+                {t.goBack}
               </button>
             </div>
           ) : isQueryEmpty && !safetyCardData ? (
@@ -150,13 +169,13 @@ export default function SafetyCardPage() {
                 <ShieldAlert className="h-12 w-12 text-gray-400" />
               </div>
               <p className="mt-6 text-center text-lg text-gray-600">
-                안전카드 정보가 없습니다.
+                {t.noSafetyCardInfo}
               </p>
               <button
                 onClick={() => router.back()}
                 className="mt-4 rounded-xl bg-gray-200 px-6 py-2 text-gray-700"
               >
-                뒤로 가기
+                {t.goBack}
               </button>
             </div>
           ) : (
@@ -185,36 +204,21 @@ export default function SafetyCardPage() {
                 data-testid="safety-card-message-ko"
               >
                 <p className="whitespace-pre-wrap text-xl font-medium leading-relaxed">
-                  {messageKo || (
-                    <>
-                      저는{' '}
-                      <span className="font-semibold text-red-500">
-                        알레르기
-                      </span>{' '}
-                      알레르기가 있습니다{'\n'}이 음식에{' '}
-                      <span className="font-semibold text-red-500">
-                        알레르기
-                      </span>
-                      가 들어있나요?
-                    </>
-                  )}
+                  {messagePrimary}
                 </p>
               </div>
 
-              {/* English message */}
-              <div
-                className="w-full max-w-md rounded-3xl bg-gray-50 p-4 text-center text-gray-700"
-                data-testid="safety-card-message-en"
-              >
-                {messageEn || (
-                  <>
-                    I have{' '}
-                    <span className="font-semibold text-red-500">allergy</span>{' '}
-                    allergies. Does this food contain{' '}
-                    <span className="font-semibold text-red-500">allergy</span>?
-                  </>
-                )}
-              </div>
+              {/* 보조 언어 메시지 (영어 또는 한국어) */}
+              {messageSecondary && messageSecondary !== messagePrimary && (
+                <div
+                  className="w-full max-w-md rounded-3xl bg-gray-50 p-4 text-center text-gray-700"
+                  data-testid="safety-card-message-en"
+                >
+                  <p className="whitespace-pre-wrap text-base leading-relaxed">
+                    {messageSecondary}
+                  </p>
+                </div>
+              )}
 
               {/* 알레르기 및 식단 데이터 바인딩 */}
               <AllergiesDietsDatabinding />

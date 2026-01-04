@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Text,
   Platform,
+  BackHandler,
 } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -21,7 +22,7 @@ interface WebViewScreenProps {
 }
 
 // 항상 이 주소를 사용 (필요시 아래 한 줄만 수정)
-const WEBVIEW_BASE_URL = 'http://172.16.3.96:3000';
+const WEBVIEW_BASE_URL = 'http://172.30.1.96:3000';
 
 export default function WebViewScreen({
   path,
@@ -31,6 +32,33 @@ export default function WebViewScreen({
   const params = useLocalSearchParams();
   const [pendingImageData, setPendingImageData] = useState<string | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [savedLanguage, setSavedLanguage] = useState<string | null>(null);
+  const [canGoBack, setCanGoBack] = useState(false);
+
+  // URL 쿼리 파라미터 추가
+  const queryString = Object.keys(params)
+    .filter((key) => key !== 'path' && key !== 'hasImage')
+    .map(
+      (key) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(String(params[key]))}`
+    )
+    .join('&');
+
+  const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
+
+  // AsyncStorage에서 저장된 언어 로드
+  useEffect(() => {
+    const loadSavedLanguage = async () => {
+      try {
+        const lang = await AsyncStorage.getItem('app_language');
+        setSavedLanguage(lang);
+        console.log('[WebViewScreen] 저장된 언어:', lang);
+      } catch (error) {
+        console.error('언어 로드 실패:', error);
+      }
+    };
+    loadSavedLanguage();
+  }, []);
 
   // AsyncStorage에서 이미지 데이터 로드
   useEffect(() => {
@@ -52,16 +80,26 @@ export default function WebViewScreen({
     loadPendingImage();
   }, [params.hasImage]);
 
-  // URL 쿼리 파라미터 추가
-  const queryString = Object.keys(params)
-    .filter((key) => key !== 'path' && key !== 'hasImage')
-    .map(
-      (key) =>
-        `${encodeURIComponent(key)}=${encodeURIComponent(String(params[key]))}`
-    )
-    .join('&');
+  useEffect(() => {
+    setCanGoBack(false);
+  }, [url]);
 
-  const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        if (canGoBack && webViewRef.current) {
+          webViewRef.current.goBack();
+          return true; // 웹뷰 내에서 처리
+        }
+        return false;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [canGoBack]);
 
   // 디버그: URL 로깅
   console.log('[WebViewScreen] Loading URL:', url);
@@ -104,6 +142,11 @@ export default function WebViewScreen({
           router.push('/camera');
           break;
 
+        case 'SCAN_MENU':
+          // 메뉴 스캔 화면으로 이동 (네이티브 카메라 사용)
+          router.push('/(tabs)/scan');
+          break;
+
         case 'NAVIGATE':
           const { screen, params: navParams } = message.payload;
           if (screen === 'Camera' || screen === 'camera') {
@@ -132,7 +175,9 @@ export default function WebViewScreen({
           // 온보딩 완료 시 플래그 설정 및 메인 화면으로 이동
           try {
             await AsyncStorage.setItem('hasOnboarded', 'true');
-            console.log('[ONBOARDING_COMPLETE] 온보딩 완료 - 메인 화면으로 이동');
+            console.log(
+              '[ONBOARDING_COMPLETE] 온보딩 완료 - 메인 화면으로 이동'
+            );
             router.replace('/(tabs)');
           } catch (error) {
             console.error('Failed to save onboarding status:', error);
@@ -167,6 +212,17 @@ export default function WebViewScreen({
           router.back();
           break;
 
+        case 'LANGUAGE_CHANGE':
+          // 언어 변경 시 AsyncStorage에 저장
+          try {
+            const { language } = message.payload;
+            await AsyncStorage.setItem('app_language', language);
+            console.log('[LANGUAGE_CHANGE] 언어 저장됨:', language);
+          } catch (error) {
+            console.error('Failed to save language:', error);
+          }
+          break;
+
         default:
           console.log('Unknown message type:', message.type);
       }
@@ -185,6 +241,9 @@ export default function WebViewScreen({
         },
         scanBarcode: function() {
           this.postMessage({ type: 'SCAN_BARCODE' });
+        },
+        scanMenu: function() {
+          this.postMessage({ type: 'SCAN_MENU' });
         },
         navigate: function(screen, params) {
           this.postMessage({ type: 'NAVIGATE', payload: { screen, params } });
@@ -205,6 +264,51 @@ export default function WebViewScreen({
       
       window.isNativeApp = true;
       window.nativeAppVersion = '${Constants.expoConfig?.version || '1.0.0'}';
+      
+      // 네이티브에서 저장된 언어가 있으면 localStorage에 동기화
+      (function syncLanguageFromNative() {
+        const savedLang = '${savedLanguage || ''}';
+        if (savedLang) {
+          const STORAGE_KEY = 'safemeals-language-storage';
+          const currentStorage = localStorage.getItem(STORAGE_KEY);
+          try {
+            const current = currentStorage ? JSON.parse(currentStorage) : { state: {} };
+            if (current.state.language !== savedLang) {
+              current.state.language = savedLang;
+              // 직접 원본 setItem 호출하여 무한 루프 방지
+              Object.getPrototypeOf(localStorage).setItem.call(localStorage, STORAGE_KEY, JSON.stringify(current));
+              console.log('[WebView] 언어 동기화됨:', savedLang);
+              // focus 이벤트를 트리거하여 웹 앱이 언어를 다시 읽도록 함
+              window.dispatchEvent(new Event('focus'));
+            }
+          } catch (e) {
+            console.error('[WebView] 언어 동기화 실패:', e);
+          }
+        }
+      })();
+      
+      // 언어 변경 감지 및 네이티브로 전달
+      (function setupLanguageSync() {
+        const STORAGE_KEY = 'safemeals-language-storage';
+        
+        // localStorage 변경 감지
+        const originalSetItem = localStorage.setItem;
+        localStorage.setItem = function(key, value) {
+          originalSetItem.apply(this, arguments);
+          if (key === STORAGE_KEY) {
+            try {
+              const parsed = JSON.parse(value);
+              if (parsed.state && parsed.state.language) {
+                window.SafeMealsBridge.postMessage({
+                  type: 'LANGUAGE_CHANGE',
+                  payload: { language: parsed.state.language }
+                });
+              }
+            } catch (e) {}
+          }
+        };
+      })();
+      
       window.dispatchEvent(new Event('nativeBridgeReady'));
       
       true;
@@ -279,8 +383,14 @@ export default function WebViewScreen({
           });
         }}
         onLoadEnd={(syntheticEvent) => {
-          console.log('[WebView] Load finished:', syntheticEvent.nativeEvent.url);
+          console.log(
+            '[WebView] Load finished:',
+            syntheticEvent.nativeEvent.url
+          );
         }}
+        onNavigationStateChange={(navState) =>
+          setCanGoBack(navState.canGoBack)
+        }
       />
     </SafeAreaView>
   );

@@ -115,8 +115,6 @@ export default function DietOnboardingPage() {
       <DietCategoryScreen
         onCategorySelect={handleCategorySelect}
         onBack={handleBack}
-        language={language}
-        onLanguageChange={setLanguage}
         initialSelectedCategories={initialCategories}
       />
     </RequireAuth>

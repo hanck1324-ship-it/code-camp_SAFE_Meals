@@ -2,10 +2,7 @@
  * 포트원(구 아임포트) 결제 유틸리티
  */
 
-import type {
-  PaymentRequest,
-  PaymentResponse
-} from '@portone/browser-sdk/v2';
+import type { PaymentRequest, PaymentResponse } from '@portone/browser-sdk/v2';
 
 /**
  * 결제 상품 타입
@@ -35,7 +32,10 @@ export const TRAVEL_PRICING = {
  * @param endDate 종료일
  * @returns 일수 (최소 1일)
  */
-export function calculateDaysDifference(startDate: Date, endDate: Date): number {
+export function calculateDaysDifference(
+  startDate: Date,
+  endDate: Date
+): number {
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays === 0 ? 1 : diffDays; // 당일이면 1일로 계산
@@ -86,7 +86,8 @@ export async function requestPayment(
   userId: string,
   userEmail: string
 ): Promise<PaymentResponse | undefined> {
-  const { requestPayment: portoneRequestPayment } = await import('@portone/browser-sdk/v2');
+  const { requestPayment: portoneRequestPayment } =
+    await import('@portone/browser-sdk/v2');
 
   // 주문 ID 생성 (timestamp + random)
   const merchantUid = `order_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -98,7 +99,7 @@ export async function requestPayment(
     orderName: product.name,
     totalAmount: product.amount,
     currency: 'CURRENCY_KRW',
-    payMethod: 'CARD', // 카드 결제만 우선 지원
+    payMethod: 'EASY_PAY', // 포트원 SDK v2는 EASY_PAY 사용
     customer: {
       customerId: userId,
       email: userEmail,

@@ -5,7 +5,7 @@ import { RequireAuth } from '@/components/auth/require-auth';
 export default function HelpPage() {
   return (
     <RequireAuth>
-      <HelpSupportScreen onBack={() => {}} language="ko" />
+      <HelpSupportScreen onBack={() => {}} />
     </RequireAuth>
   );
 }

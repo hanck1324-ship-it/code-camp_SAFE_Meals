@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language, translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SafetyProfileEditScreenProps {
   userProfile: {
@@ -10,7 +10,6 @@ interface SafetyProfileEditScreenProps {
   onBack: () => void;
   onEditAllergies: () => void;
   onEditDiets: () => void;
-  language: Language;
 }
 
 export function SafetyProfileEditScreen({
@@ -18,9 +17,8 @@ export function SafetyProfileEditScreen({
   onBack,
   onEditAllergies,
   onEditDiets,
-  language,
 }: SafetyProfileEditScreenProps) {
-  const t = translations[language];
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-gray-50">

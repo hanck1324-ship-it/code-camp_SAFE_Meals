@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { ChevronLeft, Check } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Language } from '../../lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AllergyDetailScreenProps {
   category: string;
   onComplete: (selected: string[]) => void;
   onBack: () => void;
-  language: Language;
 }
 
 const allergyDetails = {
@@ -99,9 +98,9 @@ export function AllergyDetailScreen({
   category,
   onComplete,
   onBack,
-  language,
 }: AllergyDetailScreenProps) {
   const [selected, setSelected] = useState<string[]>([]);
+  const { language } = useTranslation();
 
   const details = allergyDetails[category as keyof typeof allergyDetails];
 

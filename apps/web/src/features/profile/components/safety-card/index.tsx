@@ -1,24 +1,23 @@
 import { useState } from 'react';
 import { Lock, AlertTriangle } from 'lucide-react';
-import { Language, translations } from '@/lib/translations';
+import { translations } from '@/lib/translations';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SafetyCommunicationCardProps {
   userProfile: {
     allergies: string[];
     diets: string[];
   };
-  language: Language;
 }
 
 export function SafetyCommunicationCard({
   userProfile,
-  language,
 }: SafetyCommunicationCardProps) {
   const [showPinOverlay, setShowPinOverlay] = useState(true);
   const [pin, setPin] = useState('');
-  const t = translations[language];
+  const { t, language } = useTranslation();
   const tKo = translations['ko'];
 
   const handlePinSubmit = () => {

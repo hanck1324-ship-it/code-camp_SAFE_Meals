@@ -133,8 +133,6 @@ export default function AllergyOnboardingPage() {
         onCategorySelect={handleCategorySelect}
         onBack={handleBack}
         onEtcClick={handleEtcClick}
-        language={language}
-        onLanguageChange={setLanguage}
         initialSelectedCategories={initialCategories}
       />
     </RequireAuth>
