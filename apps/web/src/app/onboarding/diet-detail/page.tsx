@@ -162,8 +162,6 @@ function DietDetailContent() {
       categories={categories}
       onComplete={handleComplete}
       onBack={handleBack}
-      language={language}
-      onLanguageChange={setLanguage}
       initialSelectedDiets={initialDiets}
     />
   );

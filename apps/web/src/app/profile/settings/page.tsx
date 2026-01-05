@@ -10,7 +10,7 @@ import { Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { language } = useTranslation();
+  const { t } = useTranslation();
 
   // Supabase에서 알레르기/식단 데이터 로드
   const { loadAllergiesAndDiets, isLoading, allergies, diets } =
@@ -33,7 +33,7 @@ export default function SettingsPage() {
       <RequireAuth>
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          <p className="mt-4 text-gray-500">로딩 중...</p>
+          <p className="mt-4 text-gray-500">{t.loading}</p>
         </div>
       </RequireAuth>
     );
@@ -46,7 +46,6 @@ export default function SettingsPage() {
         onBack={() => router.back()}
         onEditAllergies={() => router.push('/onboarding/allergy')}
         onEditDiets={() => router.push('/onboarding/diet')}
-        language={language}
       />
     </RequireAuth>
   );

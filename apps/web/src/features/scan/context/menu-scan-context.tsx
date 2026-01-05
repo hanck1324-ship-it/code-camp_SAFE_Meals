@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
 } from 'react';
 
@@ -43,6 +44,18 @@ export function MenuScanProvider({ children }: MenuScanProviderProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  /**
+   * Base64 데이터 URL을 File 객체로 변환
+   */
+  const dataUrlToFile = useCallback(
+    async (dataUrl: string, filename: string): Promise<File> => {
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      return new File([blob], filename, { type: blob.type });
+    },
+    []
+  );
 
   /**
    * 파일 유효성 검사
@@ -106,6 +119,38 @@ export function MenuScanProvider({ children }: MenuScanProviderProps) {
   const clearError = useCallback(() => {
     setErrorMessage(null);
   }, []);
+
+  /**
+   * 앱에서 촬영한 이미지 로드 (네이티브 카메라 → 웹뷰)
+   */
+  useEffect(() => {
+    const loadPendingImage = async () => {
+      if (typeof window === 'undefined') return;
+
+      const pendingImage = (window as any).pendingAnalyzeImage;
+      if (pendingImage && typeof pendingImage === 'string') {
+        try {
+          // Base64 데이터 URL을 File 객체로 변환
+          const file = await dataUrlToFile(
+            pendingImage,
+            `menu-scan-${Date.now()}.jpg`
+          );
+
+          // 이미지 설정 (유효성 검사 포함)
+          handleImageSelect(file);
+
+          // 사용 후 삭제 (메모리 누수 방지)
+          delete (window as any).pendingAnalyzeImage;
+        } catch (error) {
+          console.error('앱 이미지 로드 실패:', error);
+          setErrorMessage('이미지를 불러오는데 실패했습니다.');
+        }
+      }
+    };
+
+    loadPendingImage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 마운트 시 한 번만 실행
 
   const value: MenuScanContextValue = {
     selectedImage,

@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Check } from 'lucide-react';
 import { Button } from '../../ui/button';
-import { Language, translations } from '../../../lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AllergyDetailScreenProps {
   categories: string[];
   onAllergySelect: (allergies: string[]) => void;
   onBack: () => void;
-  language: Language;
-  onLanguageChange: (language: Language) => void;
   initialSelectedAllergies?: string[];
 }
 
@@ -22,14 +20,12 @@ export function AllergyDetailScreen({
   categories,
   onAllergySelect,
   onBack,
-  language,
-  onLanguageChange,
   initialSelectedAllergies = [],
 }: AllergyDetailScreenProps) {
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>(
     initialSelectedAllergies
   );
-  const t = translations[language];
+  const { t } = useTranslation();
 
   // 초기값이 변경되면 상태 업데이트
   useEffect(() => {

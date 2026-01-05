@@ -8,8 +8,7 @@ export default function PaymentSettingsPage() {
 
   return (
     <RequireAuth>
-      <PaymentScreen onBack={() => router.back()} language="ko" />
+      <PaymentScreen onBack={() => router.back()} />
     </RequireAuth>
   );
 }
-

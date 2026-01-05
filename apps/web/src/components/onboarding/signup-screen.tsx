@@ -2,25 +2,18 @@ import { useState } from 'react';
 import { Mail, Lock, Leaf, ChevronLeft } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Language, translations } from '../../lib/translations';
 import { LanguageSelector } from '../language-selector';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SignupScreenProps {
   onComplete: () => void;
   onBack: () => void;
-  language: Language;
-  onLanguageChange: (language: Language) => void;
 }
 
-export function SignupScreen({
-  onComplete,
-  onBack,
-  language,
-  onLanguageChange,
-}: SignupScreenProps) {
+export function SignupScreen({ onComplete, onBack }: SignupScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const t = translations[language];
+  const { t } = useTranslation();
 
   const isValid = email.includes('@') && password.length >= 6;
 
