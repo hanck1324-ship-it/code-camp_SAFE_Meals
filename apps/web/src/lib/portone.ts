@@ -79,6 +79,20 @@ export function createTravelPackage(
 }
 
 /**
+ * 모바일 환경 감지
+ */
+function isMobileEnvironment(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  // 네이티브 앱 환경 체크
+  if ((window as any).isNativeApp) return true;
+
+  // User Agent 기반 모바일 체크
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /android|iphone|ipad|ipod|mobile/i.test(userAgent);
+}
+
+/**
  * 포트원 결제 요청
  */
 export async function requestPayment(
@@ -91,6 +105,9 @@ export async function requestPayment(
   // 주문 ID 생성 (timestamp + random)
   const merchantUid = `order_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
+  // 모바일 환경에서는 EASY_PAY (간편결제), 웹에서는 CARD
+  const payMethod = isMobileEnvironment() ? 'EASY_PAY' : 'CARD';
+
   const paymentRequest: PaymentRequest = {
     storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,
     channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY!,
@@ -98,7 +115,7 @@ export async function requestPayment(
     orderName: product.name,
     totalAmount: product.amount,
     currency: 'CURRENCY_KRW',
-    payMethod: 'CARD', // 카드 결제만 우선 지원
+    payMethod,
     customer: {
       customerId: userId,
       email: userEmail,
@@ -111,6 +128,8 @@ export async function requestPayment(
       endDate: product.endDate,
     },
   };
+
+  console.log('[Payment] Request:', { payMethod, isMobile: isMobileEnvironment(), merchantUid });
 
   const response = await portoneRequestPayment(paymentRequest);
   return response;
