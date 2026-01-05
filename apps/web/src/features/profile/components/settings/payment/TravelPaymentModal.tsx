@@ -223,7 +223,8 @@ export function TravelPaymentModal({
                 onChange={(e) => handleStartDateChange(e.target.value)}
                 min={today}
                 max={maxDateStr}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-[#2ECC71] focus:outline-none"
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base focus:border-[#2ECC71] focus:outline-none"
+                style={{ minHeight: '48px' }}
                 disabled={isProcessing}
               />
             </div>
@@ -241,7 +242,8 @@ export function TravelPaymentModal({
                 onChange={(e) => handleEndDateChange(e.target.value)}
                 min={startDate || today}
                 max={maxDateStr}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-[#2ECC71] focus:outline-none"
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base focus:border-[#2ECC71] focus:outline-none"
+                style={{ minHeight: '48px' }}
                 disabled={isProcessing || !startDate}
               />
             </div>
