@@ -13,6 +13,8 @@
 'use client';
 
 import { Loader2, AlertTriangle, Utensils, AlertCircle } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
+import type { Language } from '@/commons/stores/useLanguageStore';
 import { useSafetyCardAllergiesDietsLoad } from '../hooks/index.allergies-diets-load.hook';
 import {
   getAllergyTypeInfo,
@@ -27,14 +29,20 @@ interface AllergyCardProps {
   code: string;
   severity: string;
   notes?: string;
+  language: Language;
 }
 
 /**
  * 알레르기 카드 컴포넌트
  */
-function AllergyCard({ code, severity, notes }: AllergyCardProps) {
-  const allergyInfo = getAllergyTypeInfo(code);
-  const severityLabel = getSeverityLabel(severity);
+function AllergyCard({
+  code,
+  severity,
+  notes,
+  language,
+}: AllergyCardProps) {
+  const allergyInfo = getAllergyTypeInfo(code, language);
+  const severityLabel = getSeverityLabel(severity, language);
 
   return (
     <div
@@ -86,13 +94,14 @@ function AllergyCard({ code, severity, notes }: AllergyCardProps) {
 interface DietCardProps {
   code: string;
   notes?: string;
+  language: Language;
 }
 
 /**
  * 식단 카드 컴포넌트
  */
-function DietCard({ code, notes }: DietCardProps) {
-  const dietInfo = getDietTypeInfo(code);
+function DietCard({ code, notes, language }: DietCardProps) {
+  const dietInfo = getDietTypeInfo(code, language);
 
   return (
     <div
@@ -163,15 +172,15 @@ function ErrorState({ message }: { message: string }) {
  * 빈 상태 컴포넌트
  */
 function EmptyState() {
+  const { t } = useTranslation();
+
   return (
     <div
       className="flex flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-gray-50 p-6"
       data-testid="allergies-diets-empty"
     >
       <AlertTriangle className="mb-2 h-8 w-8 text-gray-400" />
-      <p className="text-center text-gray-600">
-        등록된 알레르기 및 식단 정보가 없습니다.
-      </p>
+      <p className="text-center text-gray-600">{t.safetyCardAllergyDietEmpty}</p>
     </div>
   );
 }
@@ -182,6 +191,7 @@ function EmptyState() {
 export function AllergiesDietsDatabinding() {
   const { allergies, diets, isLoading, error } =
     useSafetyCardAllergiesDietsLoad();
+  const { t, language } = useTranslation();
 
   return (
     <div
@@ -193,7 +203,9 @@ export function AllergiesDietsDatabinding() {
 
       {/* 에러 상태 */}
       {!isLoading && error && (
-        <ErrorState message="알레르기 및 식단 정보를 불러올 수 없습니다." />
+        <ErrorState
+          message={t.safetyCardAllergyDietLoadError || error}
+        />
       )}
 
       {/* 빈 상태 */}
@@ -206,7 +218,7 @@ export function AllergiesDietsDatabinding() {
         <div data-testid="allergies-section">
           <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-red-600">
             <AlertTriangle className="h-5 w-5" />
-            알레르기 정보
+            {t.safetyCardAllergyInfoTitle}
           </h3>
           <div className="space-y-3">
             {allergies.map((allergy) => (
@@ -215,6 +227,7 @@ export function AllergiesDietsDatabinding() {
                 code={allergy.allergy_code}
                 severity={allergy.severity}
                 notes={allergy.notes}
+                language={language}
               />
             ))}
           </div>
@@ -226,7 +239,7 @@ export function AllergiesDietsDatabinding() {
         <div data-testid="diets-section">
           <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-green-600">
             <Utensils className="h-5 w-5" />
-            식단 정보
+            {t.safetyCardDietInfoTitle}
           </h3>
           <div className="space-y-3">
             {diets.map((diet) => (
@@ -234,6 +247,7 @@ export function AllergiesDietsDatabinding() {
                 key={diet.diet_code}
                 code={diet.diet_code}
                 notes={diet.notes}
+                language={language}
               />
             ))}
           </div>

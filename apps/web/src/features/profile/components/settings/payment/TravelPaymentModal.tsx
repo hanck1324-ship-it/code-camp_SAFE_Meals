@@ -1,6 +1,6 @@
 import { X, Calendar, Plane, Check } from 'lucide-react';
 import { useState } from 'react';
-import { Language, translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   createTravelPackage,
   requestPayment,
@@ -16,20 +16,20 @@ import { showToast } from '@/components/ui/toast';
 
 interface TravelPaymentModalProps {
   onClose: () => void;
-  language: Language;
 }
 
-export function TravelPaymentModal({
-  onClose,
-  language,
-}: TravelPaymentModalProps) {
-  const t = translations[language];
+export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
+  const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [calculatedAmount, setCalculatedAmount] = useState(0);
   const [selectedPayMethod, setSelectedPayMethod] = useState<PayMethod>('CARD');
+
+  // 모바일 앱(WebView) 환경 감지
+  const isNativeApp =
+    typeof window !== 'undefined' && (window as any).isNativeApp === true;
 
   // 날짜 변경 시 일수 및 금액 계산
   const handleDateChange = (start: string, end: string) => {
@@ -63,6 +63,15 @@ export function TravelPaymentModal({
   };
 
   const handlePurchase = async () => {
+    // 모바일 앱에서는 결제 불가 안내
+    if (isNativeApp) {
+      alert(
+        t.paymentNotSupportedInApp ||
+          '모바일 앱에서는 결제가 지원되지 않습니다. 웹 브라우저에서 이용해주세요.'
+      );
+      return;
+    }
+
     if (!startDate || !endDate || calculatedDays === 0) {
       showToast('warning', t.selectTravelDates || '여행 시작일과 종료일을 선택해주세요.');
       return;
@@ -89,7 +98,10 @@ export function TravelPaymentModal({
       }
 
       // 2. 여행 패키지 생성
-      const product = createTravelPackage(new Date(startDate), new Date(endDate));
+      const product = createTravelPackage(
+        new Date(startDate),
+        new Date(endDate)
+      );
 
       // 3. 결제 요청 (선택한 결제 수단 사용)
       const response = await requestPayment(
@@ -98,6 +110,8 @@ export function TravelPaymentModal({
         user.email || '',
         selectedPayMethod
       );
+      // 3. 결제 요청
+      const response = await requestPayment(product, user.id, user.email || '');
 
       // 4. 결제 성공 처리
       if (response && response.code === 'PAID') {
@@ -167,6 +181,8 @@ export function TravelPaymentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
       <div className="w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 border-b border-gray-200 bg-white px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
@@ -188,9 +204,10 @@ export function TravelPaymentModal({
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="space-y-6 p-6">
           {/* 요금 안내 */}
           <div className="rounded-2xl border-2 border-[#2ECC71] bg-gradient-to-br from-[#2ECC71]/10 to-white p-4">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="mb-2 flex items-center gap-3">
               <Check className="h-5 w-5 text-[#2ECC71]" />
               <h3 className="font-semibold text-[#2ECC71]">
                 {t.dailyRate || '일일 요금'}
@@ -198,13 +215,12 @@ export function TravelPaymentModal({
             </div>
             <p className="text-2xl font-bold">
               {formatCurrency(TRAVEL_PRICING.DAILY_RATE)}
-              <span className="text-base font-normal text-gray-600 ml-2">
+              <span className="ml-2 text-base font-normal text-gray-600">
                 / {t.day || '일'}
               </span>
             </p>
-            <p className="text-sm text-gray-600 mt-2">
-              {t.dailyRateDesc ||
-                '여행 기간 동안 메뉴 OCR 번역 무제한 이용'}
+            <p className="mt-2 text-sm text-gray-600">
+              {t.dailyRateDesc || '여행 기간 동안 메뉴 OCR 번역 무제한 이용'}
             </p>
           </div>
 
@@ -296,7 +312,7 @@ export function TravelPaymentModal({
           {/* 계산 결과 */}
           {calculatedDays > 0 && (
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <span className="text-gray-700">
                   {t.travelDuration || '여행 기간'}
                 </span>
@@ -304,7 +320,7 @@ export function TravelPaymentModal({
                   {calculatedDays} {t.days || '일'}
                 </span>
               </div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <span className="text-gray-700">
                   {t.dailyRate || '일일 요금'}
                 </span>
@@ -312,9 +328,11 @@ export function TravelPaymentModal({
                   {formatCurrency(TRAVEL_PRICING.DAILY_RATE)}
                 </span>
               </div>
-              <div className="border-t border-gray-300 my-3"></div>
+              <div className="my-3 border-t border-gray-300"></div>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold">{t.totalAmount || '총 금액'}</span>
+                <span className="text-lg font-bold">
+                  {t.totalAmount || '총 금액'}
+                </span>
                 <span className="text-2xl font-bold text-[#2ECC71]">
                   {formatCurrency(calculatedAmount)}
                 </span>
@@ -342,17 +360,20 @@ export function TravelPaymentModal({
               <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
                 <span className="text-xs text-white">i</span>
               </div>
-              <div className="text-sm text-blue-900 space-y-1">
+              <div className="space-y-1 text-sm text-blue-900">
                 <p>
-                  • {t.paymentNotice1 ||
+                  •{' '}
+                  {t.paymentNotice1 ||
                     '결제는 포트원을 통해 안전하게 처리됩니다.'}
                 </p>
                 <p>
-                  • {t.travelPackageNotice ||
+                  •{' '}
+                  {t.travelPackageNotice ||
                     '선택한 기간 동안 메뉴 OCR 번역을 무제한으로 이용할 수 있습니다.'}
                 </p>
                 <p>
-                  • {t.maxDaysNotice ||
+                  •{' '}
+                  {t.maxDaysNotice ||
                     `최대 ${TRAVEL_PRICING.MAX_DAYS}일까지 선택 가능합니다.`}
                 </p>
               </div>

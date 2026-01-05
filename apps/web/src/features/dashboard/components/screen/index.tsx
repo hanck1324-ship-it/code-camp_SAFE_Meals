@@ -1,7 +1,7 @@
 import { Camera, Shield, MapPin, Star, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language, translations } from '@/lib/translations';
 import { LanguageSelector } from '@/components/language-selector';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface HomeScreenProps {
   userProfile: {
@@ -10,18 +10,14 @@ interface HomeScreenProps {
   };
   onScanMenu: () => void;
   onOpenProfile: () => void;
-  language: Language;
-  onLanguageChange: (language: Language) => void;
 }
 
 export function HomeScreen({
   userProfile,
   onScanMenu,
   onOpenProfile,
-  language,
-  onLanguageChange,
 }: HomeScreenProps) {
-  const t = translations[language];
+  const { t } = useTranslation();
 
   const restaurants = [
     {

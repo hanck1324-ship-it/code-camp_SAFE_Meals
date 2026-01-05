@@ -1,7 +1,6 @@
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Language } from '@/lib/translations';
 import { LanguageSelector } from '@/components/language-selector';
 import Image from 'next/image';
 import { useLoginScreen } from './hooks/use-login-screen';
@@ -11,16 +10,9 @@ const logo = '/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
 interface LoginScreenProps {
   onLogin: () => void;
   onSocialLogin: () => void;
-  language?: Language;
-  onLanguageChange?: (language: Language) => void;
 }
 
-export function LoginScreen({
-  onLogin,
-  onSocialLogin,
-  language: propLanguage,
-  onLanguageChange,
-}: LoginScreenProps) {
+export function LoginScreen({ onLogin, onSocialLogin }: LoginScreenProps) {
   const {
     email,
     password,
@@ -32,7 +24,6 @@ export function LoginScreen({
     handleSocialLogin,
     togglePasswordVisibility,
   } = useLoginScreen({
-    propLanguage,
     onLogin,
     onSocialLogin,
   });
@@ -61,7 +52,11 @@ export function LoginScreen({
             {currentText.subtitle}
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          data-testid="login-form"
+        >
           <div>
             <label
               className="mb-2 flex items-center gap-2 text-sm"
@@ -121,7 +116,7 @@ export function LoginScreen({
           </div>
           <Button
             type="submit"
-            className="h-12 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954] flex items-center justify-center"
+            className="flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
             data-testid="login-submit-button"
           >
             {currentText.login}
@@ -158,21 +153,21 @@ export function LoginScreen({
         <div className="space-y-3">
           <button
             onClick={() => handleSocialLogin('google')}
-            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5 transition-colors"
+            className="h-12 w-full rounded-full border-2 border-gray-200 transition-colors hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
             data-testid="login-social-google-button"
           >
             {currentText.continueWithGoogle}
           </button>
           <button
             onClick={() => handleSocialLogin('apple')}
-            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5 transition-colors"
+            className="h-12 w-full rounded-full border-2 border-gray-200 transition-colors hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
             data-testid="login-social-apple-button"
           >
             {currentText.continueWithApple}
           </button>
           <button
             onClick={() => handleSocialLogin('facebook')}
-            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5 transition-colors"
+            className="h-12 w-full rounded-full border-2 border-gray-200 transition-colors hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
             data-testid="login-social-facebook-button"
           >
             {currentText.continueWithFacebook}

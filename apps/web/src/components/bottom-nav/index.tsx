@@ -1,23 +1,18 @@
 'use client';
 import { Home, Camera, Shield, User } from 'lucide-react';
-import { Language, translations } from '@/lib/translations';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface BottomNavProps {
   activeTab?: 'home' | 'scan' | 'safetyCard' | 'myPage';
   onTabChange?: (tab: 'home' | 'scan' | 'safetyCard' | 'myPage') => void;
-  language?: Language;
 }
 
-export function BottomNav({
-  activeTab,
-  onTabChange,
-  language = 'ko',
-}: BottomNavProps) {
+export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const t = translations[language];
+  const { t } = useTranslation();
 
   // 경로에 따라 activeTab 결정
   const currentTab = useMemo(() => {

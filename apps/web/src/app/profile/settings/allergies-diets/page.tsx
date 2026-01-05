@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useLanguageStore } from '@/commons/stores/useLanguageStore';
-import { translations } from '@/lib/translations';
+import { useTranslation } from '@/hooks/useTranslation';
 import { RequireAuth } from '@/components/auth/require-auth';
 import {
   useSafetyCardAllergiesDietsSubmit,
@@ -64,8 +63,7 @@ const SEVERITY_OPTIONS: { value: AllergySeverity; label: string }[] = [
 
 export default function AllergiesDietsPage() {
   const router = useRouter();
-  const language = useLanguageStore((state) => state.language);
-  const t = translations[language];
+  const { t } = useTranslation();
 
   // 선택된 알레르기 및 식단 상태
   const [selectedAllergies, setSelectedAllergies] = useState<
