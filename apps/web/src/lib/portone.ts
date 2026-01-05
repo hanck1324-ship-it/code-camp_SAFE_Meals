@@ -110,6 +110,11 @@ export async function requestPayment(
   // 결제창에서 사용자가 다른 수단도 선택 가능
   const payMethod = isMobileEnvironment() ? 'EASY_PAY' : 'CARD';
 
+  // 리디렉션 URL 설정 (결제 완료 후 돌아올 URL)
+  const redirectUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/payment`
+    : undefined;
+
   const paymentRequest: PaymentRequest = {
     storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,
     channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY!,
@@ -129,12 +134,14 @@ export async function requestPayment(
       startDate: product.startDate,
       endDate: product.endDate,
     },
+    redirectUrl,
   };
 
   console.log('[Payment] Request:', {
     payMethod,
     isMobile: isMobileEnvironment(),
     merchantUid,
+    redirectUrl,
     storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
     channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
     amount: product.amount,
