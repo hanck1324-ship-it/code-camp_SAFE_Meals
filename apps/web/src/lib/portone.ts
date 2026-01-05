@@ -2,7 +2,12 @@
  * 포트원(구 아임포트) 결제 유틸리티
  */
 
-import type { PaymentRequest, PaymentResponse } from '@portone/browser-sdk/v2';
+import type {
+  PaymentRequest,
+  PaymentResponse,
+  IssueBillingKeyRequest,
+  IssueBillingKeyResponse
+} from '@portone/browser-sdk/v2';
 
 /**
  * 결제 상품 타입
@@ -221,6 +226,85 @@ export async function requestPayment(
   console.log('[Payment] Response:', response);
 
   return response;
+}
+
+/**
+ * 빌링키 발급 (카드 등록)
+ * 카드를 등록하여 나중에 자동결제할 수 있는 빌링키를 발급받습니다.
+ */
+export async function issueBillingKey(
+  userId: string,
+  userEmail: string,
+  cardName?: string
+): Promise<IssueBillingKeyResponse | undefined> {
+  const { requestIssueBillingKey } = await import('@portone/browser-sdk/v2');
+
+  // 빌링키 발급 ID 생성
+  const issueId = `billing_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+  // 리디렉션 URL 설정
+  const redirectUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/payment`
+    : undefined;
+
+  const billingKeyRequest: IssueBillingKeyRequest = {
+    storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,
+    channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY!,
+    billingKeyMethod: 'CARD',
+    issueName: cardName || '카드 등록',
+    issueId,
+    customer: {
+      customerId: userId,
+      email: userEmail,
+    },
+    customData: {
+      cardName: cardName || '카드',
+      registeredAt: new Date().toISOString(),
+    },
+    redirectUrl,
+  };
+
+  console.log('[BillingKey] Request:', {
+    issueId,
+    storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
+    channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
+    redirectUrl,
+  });
+
+  const response = await requestIssueBillingKey(billingKeyRequest);
+
+  console.log('[BillingKey] Response:', response);
+
+  return response;
+}
+
+/**
+ * 등록된 빌링키로 결제하기
+ * 이미 등록된 카드로 자동결제를 진행합니다.
+ */
+export async function payWithBillingKey(
+  product: PaymentProduct,
+  userId: string,
+  billingKey: string
+): Promise<any> {
+  // 서버 API를 통해 빌링키 결제 진행
+  const response = await fetch('/api/payment/pay-with-billing-key', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      billingKey,
+      product,
+      userId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('빌링키 결제 실패');
+  }
+
+  return await response.json();
 }
 
 /**

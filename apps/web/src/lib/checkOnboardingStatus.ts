@@ -41,6 +41,10 @@ export async function checkOnboardingStatus(userId: string): Promise<boolean> {
     }
     if (dietError) {
       console.error('[checkOnboardingStatus] 식단 조회 에러:', dietError);
+
+
+
+      
     }
     if (safetyError) {
       console.error('[checkOnboardingStatus] 안전카드 조회 에러:', safetyError);

@@ -1,6 +1,8 @@
-import { X, Calendar, Plane, Check } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { X, Calendar, Plane, Check, Plus, CreditCard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Language, translations } from '@/lib/translations';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import {
   createTravelPackage,
   requestPayment,
@@ -8,37 +10,159 @@ import {
   calculateTravelAmount,
   TRAVEL_PRICING,
   formatCurrency,
-  PAYMENT_METHODS,
-  PayMethod,
+  issueBillingKey,
 } from '@/lib/portone';
 import { getSupabaseClient } from '@/lib/supabase';
 import { showToast } from '@/components/ui/toast';
+import { EasyPaySelection } from './EasyPaySelection';
 
 interface TravelPaymentModalProps {
   onClose: () => void;
+  language: Language;
+}
+
+interface RegisteredPaymentMethod {
+  id: string;
+  payment_type: 'CARD' | 'EASY_PAY' | 'PAYPAL';
+  card_number_masked?: string;
+  card_brand?: string;
+  card_name?: string;
+  easy_pay_provider?: string;
+  paypal_email?: string;
+  is_default: boolean;
+  billing_key?: string;
 }
 
 export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [calculatedAmount, setCalculatedAmount] = useState(0);
   const [selectedPayMethod, setSelectedPayMethod] = useState<PayMethod>('CARD');
 
-  // 모바일 앱(WebView) 환경 감지
-  const isNativeApp =
-    typeof window !== 'undefined' && (window as any).isNativeApp === true;
+  // 등록된 결제 수단
+  const [registeredMethods, setRegisteredMethods] = useState<RegisteredPaymentMethod[]>([]);
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
+  const [isLoadingMethods, setIsLoadingMethods] = useState(true);
+
+  // 결제 수단 등록 모달
+  const [showEasyPaySelection, setShowEasyPaySelection] = useState(false);
+
+  // 등록된 결제 수단 불러오기
+  useEffect(() => {
+    loadRegisteredMethods();
+  }, []);
+
+  const loadRegisteredMethods = async () => {
+    try {
+      setIsLoadingMethods(true);
+      const response = await fetch('/api/payment/methods');
+      if (response.ok) {
+        const data = await response.json();
+        setRegisteredMethods(data.paymentMethods || []);
+
+        // 기본 결제 수단 자동 선택
+        const defaultMethod = data.paymentMethods?.find((m: RegisteredPaymentMethod) => m.is_default);
+        if (defaultMethod) {
+          setSelectedMethodId(defaultMethod.id);
+        }
+      }
+    } catch (error) {
+      console.error('[Load Payment Methods] Error:', error);
+    } finally {
+      setIsLoadingMethods(false);
+    }
+  };
+
+  const handleRegistrationSuccess = () => {
+    loadRegisteredMethods();
+  };
+
+  // 카드 등록 처리
+  const handleRegisterCard = async () => {
+    if (isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      showToast('info', language === 'ko' ? '카드 등록을 시작합니다...' : 'Starting card registration...');
+
+      const supabase = getSupabaseClient();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        showToast('error', t.loginRequired || '로그인이 필요합니다.');
+        return;
+      }
+
+      // 빌링키 발급 (PortOne 카드 등록 창 열림)
+      const response = await issueBillingKey(user.id, user.email || '', '카드');
+
+      if (response && response.code === 'ISSUED') {
+        // 빌링키 발급 성공 - 서버에 저장
+        const registerResponse = await fetch('/api/payment/methods/register-card', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            billingKey: response.billingKey,
+            cardInfo: {
+              cardName: '카드',
+            },
+          }),
+        });
+
+        if (!registerResponse.ok) {
+          throw new Error('카드 정보 저장 실패');
+        }
+
+        showToast(
+          'success',
+          language === 'ko'
+            ? '카드가 성공적으로 등록되었습니다!'
+            : 'Card registered successfully!'
+        );
+
+        // 등록된 결제 수단 목록 새로고침
+        loadRegisteredMethods();
+      } else if (response && response.code === 'PAYMENT_CANCELLED') {
+        showToast(
+          'info',
+          language === 'ko'
+            ? '카드 등록이 취소되었습니다.'
+            : 'Card registration was cancelled.'
+        );
+      } else {
+        showToast(
+          'error',
+          language === 'ko'
+            ? '카드 등록에 실패했습니다.'
+            : 'Card registration failed.'
+        );
+      }
+    } catch (error) {
+      console.error('[Card Registration] Error:', error);
+      showToast(
+        'error',
+        language === 'ko'
+          ? '카드 등록 중 오류가 발생했습니다.'
+          : 'An error occurred during card registration.'
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   // 날짜 변경 시 일수 및 금액 계산
-  const handleDateChange = (start: string, end: string) => {
+  const handleDateChange = (start: Date | null, end: Date | null) => {
     if (start && end) {
-      const startDateObj = new Date(start);
-      const endDateObj = new Date(end);
-
-      if (endDateObj >= startDateObj) {
-        const days = calculateDaysDifference(startDateObj, endDateObj);
+      if (end >= start) {
+        const days = calculateDaysDifference(start, end);
         const amount = calculateTravelAmount(days);
         setCalculatedDays(days);
         setCalculatedAmount(amount);
@@ -52,26 +176,17 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
     }
   };
 
-  const handleStartDateChange = (value: string) => {
-    setStartDate(value);
-    handleDateChange(value, endDate);
+  const handleStartDateChange = (date: Date | null) => {
+    setStartDate(date);
+    handleDateChange(date, endDate);
   };
 
-  const handleEndDateChange = (value: string) => {
-    setEndDate(value);
-    handleDateChange(startDate, value);
+  const handleEndDateChange = (date: Date | null) => {
+    setEndDate(date);
+    handleDateChange(startDate, date);
   };
 
   const handlePurchase = async () => {
-    // 모바일 앱에서는 결제 불가 안내
-    if (isNativeApp) {
-      alert(
-        t.paymentNotSupportedInApp ||
-          '모바일 앱에서는 결제가 지원되지 않습니다. 웹 브라우저에서 이용해주세요.'
-      );
-      return;
-    }
-
     if (!startDate || !endDate || calculatedDays === 0) {
       showToast('warning', t.selectTravelDates || '여행 시작일과 종료일을 선택해주세요.');
       return;
@@ -98,10 +213,7 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
       }
 
       // 2. 여행 패키지 생성
-      const product = createTravelPackage(
-        new Date(startDate),
-        new Date(endDate)
-      );
+      const product = createTravelPackage(new Date(startDate), new Date(endDate));
 
       // 3. 결제 요청 (선택한 결제 수단 사용)
       const response = await requestPayment(
@@ -169,13 +281,6 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
     }
   };
 
-  // 오늘 날짜 (최소 선택 가능 날짜)
-  const today = new Date().toISOString().split('T')[0];
-  // 1년 후 날짜 (최대 선택 가능 날짜)
-  const maxDate = new Date();
-  maxDate.setFullYear(maxDate.getFullYear() + 1);
-  const maxDateStr = maxDate.toISOString().split('T')[0];
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
       <div className="w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
@@ -202,7 +307,7 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* 요금 안내 */}
           <div className="rounded-2xl border-2 border-[#2ECC71] bg-gradient-to-br from-[#2ECC71]/10 to-white p-4">
-            <div className="mb-2 flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-2">
               <Check className="h-5 w-5 text-[#2ECC71]" />
               <h3 className="font-semibold text-[#2ECC71]">
                 {t.dailyRate || '일일 요금'}
@@ -210,12 +315,13 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
             </div>
             <p className="text-2xl font-bold">
               {formatCurrency(TRAVEL_PRICING.DAILY_RATE)}
-              <span className="ml-2 text-base font-normal text-gray-600">
+              <span className="text-base font-normal text-gray-600 ml-2">
                 / {t.day || '일'}
               </span>
             </p>
-            <p className="mt-2 text-sm text-gray-600">
-              {t.dailyRateDesc || '여행 기간 동안 메뉴 OCR 번역 무제한 이용'}
+            <p className="text-sm text-gray-600 mt-2">
+              {t.dailyRateDesc ||
+                '여행 기간 동안 메뉴 OCR 번역 무제한 이용'}
             </p>
           </div>
 
@@ -228,15 +334,18 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
                   {t.travelStartDate || '여행 시작일'}
                 </div>
               </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => handleStartDateChange(e.target.value)}
-                min={today}
-                max={maxDateStr}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base text-center focus:border-[#2ECC71] focus:outline-none"
-                style={{ minHeight: '48px' }}
+              <DatePicker
+                selected={startDate}
+                onChange={handleStartDateChange}
+                minDate={new Date()}
+                maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1))}
+                dateFormat="yyyy-MM-dd"
+                placeholderText={language === 'ko' ? '날짜 선택' : 'Select date'}
                 disabled={isProcessing}
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-lg focus:border-[#2ECC71] focus:outline-none"
+                wrapperClassName="w-full"
+                calendarClassName="text-lg"
+                showPopperArrow={false}
               />
             </div>
 
@@ -247,67 +356,145 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
                   {t.travelEndDate || '여행 종료일'}
                 </div>
               </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => handleEndDateChange(e.target.value)}
-                min={startDate || today}
-                max={maxDateStr}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base text-center focus:border-[#2ECC71] focus:outline-none"
-                style={{ minHeight: '48px' }}
+              <DatePicker
+                selected={endDate}
+                onChange={handleEndDateChange}
+                minDate={startDate || new Date()}
+                maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1))}
+                dateFormat="yyyy-MM-dd"
+                placeholderText={language === 'ko' ? '날짜 선택' : 'Select date'}
                 disabled={isProcessing || !startDate}
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-lg focus:border-[#2ECC71] focus:outline-none disabled:bg-gray-100"
+                wrapperClassName="w-full"
+                calendarClassName="text-lg"
+                showPopperArrow={false}
               />
             </div>
           </div>
 
-          {/* 결제 수단 선택 */}
+          {/* 등록된 결제 수단 */}
           <div className="space-y-2 sm:space-y-3">
-            <h3 className="text-sm font-medium text-gray-700">
-              {language === 'ko' ? '결제 수단 선택' : 'Payment Method'}
-            </h3>
-            <div className="space-y-2">
-              {Object.values(PAYMENT_METHODS).map((method) => (
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-700">
+                {language === 'ko' ? '결제 수단' : 'Payment Method'}
+              </h3>
+              {registeredMethods.length > 0 && (
                 <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => setSelectedPayMethod(method.id)}
+                  onClick={handleRegisterCard}
                   disabled={isProcessing}
-                  className={`w-full rounded-xl border-2 p-3 sm:p-4 text-left transition-all active:scale-[0.98] ${
-                    selectedPayMethod === method.id
-                      ? 'border-[#2ECC71] bg-[#2ECC71]/10'
-                      : 'border-gray-200 hover:border-gray-300 active:border-gray-400'
-                  } disabled:opacity-50`}
+                  className="text-xs text-[#2ECC71] hover:text-[#27AE60] font-medium flex items-center gap-1 disabled:opacity-50"
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-xl sm:text-2xl flex-shrink-0">{method.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                        <p className="font-semibold text-sm sm:text-base">
-                          {language === 'ko' ? method.name : method.nameEn}
-                        </p>
-                        {method.recommended && (
-                          <span className="rounded-full bg-[#2ECC71] px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-white whitespace-nowrap">
-                            {language === 'ko' ? '추천' : 'Recommended'}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-0.5 truncate">
-                        {language === 'ko' ? method.description : method.descriptionEn}
-                      </p>
-                    </div>
-                    {selectedPayMethod === method.id && (
-                      <Check className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 text-[#2ECC71]" />
-                    )}
-                  </div>
+                  <Plus className="h-3 w-3" />
+                  {language === 'ko' ? '카드 추가' : 'Add Card'}
                 </button>
-              ))}
+              )}
             </div>
+
+            {isLoadingMethods ? (
+              <div className="rounded-xl border-2 border-gray-200 p-4 text-center text-sm text-gray-500">
+                {language === 'ko' ? '결제 수단을 불러오는 중...' : 'Loading payment methods...'}
+              </div>
+            ) : registeredMethods.length === 0 ? (
+              <div className="space-y-3">
+                <div className="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-4 text-center">
+                  <CreditCard className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600 mb-3">
+                    {language === 'ko'
+                      ? '등록된 결제 수단이 없습니다.'
+                      : 'No payment methods registered.'}
+                  </p>
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleRegisterCard}
+                      disabled={isProcessing}
+                      className="w-full rounded-lg bg-[#2ECC71] px-4 py-2 text-sm font-semibold text-white hover:bg-[#27AE60] disabled:opacity-50"
+                    >
+                      {language === 'ko' ? '💳 카드 등록하기' : '💳 Register Card'}
+                    </button>
+                    <button
+                      onClick={() => setShowEasyPaySelection(true)}
+                      disabled={isProcessing}
+                      className="w-full rounded-lg border-2 border-[#2ECC71] bg-white px-4 py-2 text-sm font-semibold text-[#2ECC71] hover:bg-[#2ECC71]/10 disabled:opacity-50"
+                    >
+                      {language === 'ko' ? '📱 간편결제 연동하기' : '📱 Connect Easy Pay'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {registeredMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => setSelectedMethodId(method.id)}
+                    disabled={isProcessing}
+                    className={`w-full rounded-xl border-2 p-3 sm:p-4 text-left transition-all active:scale-[0.98] ${
+                      selectedMethodId === method.id
+                        ? 'border-[#2ECC71] bg-[#2ECC71]/10'
+                        : 'border-gray-200 hover:border-gray-300'
+                    } disabled:opacity-50`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {method.payment_type === 'CARD' ? (
+                        <>
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl">
+                            💳
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm">
+                              {method.card_name || method.card_brand || 'Card'}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {method.card_number_masked || '**** **** **** ****'}
+                            </p>
+                          </div>
+                        </>
+                      ) : method.payment_type === 'EASY_PAY' ? (
+                        <>
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-yellow-400 text-xl">
+                            📱
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm">
+                              {method.easy_pay_provider}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {language === 'ko' ? '간편결제' : 'Easy Pay'}
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white text-xl">
+                            🌐
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm">PayPal</p>
+                            <p className="text-xs text-gray-600">
+                              {method.paypal_email}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                      {method.is_default && (
+                        <span className="rounded-full bg-[#2ECC71] px-2 py-0.5 text-xs text-white whitespace-nowrap">
+                          {language === 'ko' ? '기본' : 'Default'}
+                        </span>
+                      )}
+                      {selectedMethodId === method.id && (
+                        <Check className="h-5 w-5 flex-shrink-0 text-[#2ECC71]" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 계산 결과 */}
           {calculatedDays > 0 && (
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-              <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-700">
                   {t.travelDuration || '여행 기간'}
                 </span>
@@ -315,7 +502,7 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
                   {calculatedDays} {t.days || '일'}
                 </span>
               </div>
-              <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-700">
                   {t.dailyRate || '일일 요금'}
                 </span>
@@ -323,11 +510,9 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
                   {formatCurrency(TRAVEL_PRICING.DAILY_RATE)}
                 </span>
               </div>
-              <div className="my-3 border-t border-gray-300"></div>
+              <div className="border-t border-gray-300 my-3"></div>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold">
-                  {t.totalAmount || '총 금액'}
-                </span>
+                <span className="text-lg font-bold">{t.totalAmount || '총 금액'}</span>
                 <span className="text-2xl font-bold text-[#2ECC71]">
                   {formatCurrency(calculatedAmount)}
                 </span>
@@ -355,20 +540,17 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
               <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
                 <span className="text-xs text-white">i</span>
               </div>
-              <div className="space-y-1 text-sm text-blue-900">
+              <div className="text-sm text-blue-900 space-y-1">
                 <p>
-                  •{' '}
-                  {t.paymentNotice1 ||
+                  • {t.paymentNotice1 ||
                     '결제는 포트원을 통해 안전하게 처리됩니다.'}
                 </p>
                 <p>
-                  •{' '}
-                  {t.travelPackageNotice ||
+                  • {t.travelPackageNotice ||
                     '선택한 기간 동안 메뉴 OCR 번역을 무제한으로 이용할 수 있습니다.'}
                 </p>
                 <p>
-                  •{' '}
-                  {t.maxDaysNotice ||
+                  • {t.maxDaysNotice ||
                     `최대 ${TRAVEL_PRICING.MAX_DAYS}일까지 선택 가능합니다.`}
                 </p>
               </div>
@@ -376,6 +558,15 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
           </div>
         </div>
       </div>
+
+      {/* 간편결제 선택 모달 */}
+      {showEasyPaySelection && (
+        <EasyPaySelection
+          onClose={() => setShowEasyPaySelection(false)}
+          onSuccess={handleRegistrationSuccess}
+          language={language}
+        />
+      )}
     </div>
   );
 }
