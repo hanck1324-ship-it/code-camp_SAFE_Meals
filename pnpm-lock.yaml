@@ -23,6 +23,9 @@ importers:
       '@react-native-async-storage/async-storage':
         specifier: 1.23.1
         version: 1.23.1(react-native@0.76.9)
+      '@react-native-google-signin/google-signin':
+        specifier: ^16.1.1
+        version: 16.1.1(expo@52.0.48)(react-native@0.76.9)(react@18.3.1)
       '@supabase/supabase-js':
         specifier: ^2.45.4
         version: 2.89.0
@@ -3833,6 +3836,21 @@ packages:
       react-native: ^0.0.0-0 || >=0.60 <1.0
     dependencies:
       merge-options: 3.0.4
+      react-native: 0.76.9(@babel/core@7.28.5)(@babel/preset-env@7.28.5)(@types/react@18.3.27)(react@18.3.1)
+    dev: false
+
+  /@react-native-google-signin/google-signin@16.1.1(expo@52.0.48)(react-native@0.76.9)(react@18.3.1):
+    resolution: {integrity: sha512-lcHBnZ7uvCJiWtGooKOklo/4okqszWvJ0BatW1UaIe+ynmpVpp1lyJkvv1Mj08d39k4soaWuhZVNKjD/RFL34Q==}
+    peerDependencies:
+      expo: '>=52.0.40'
+      react: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      expo:
+        optional: true
+    dependencies:
+      expo: 52.0.48(@babel/core@7.28.5)(@babel/preset-env@7.28.5)(react-native-webview@13.12.5)(react-native@0.76.9)(react@18.3.1)
+      react: 18.3.1
       react-native: 0.76.9(@babel/core@7.28.5)(@babel/preset-env@7.28.5)(@types/react@18.3.27)(react@18.3.1)
     dev: false
 

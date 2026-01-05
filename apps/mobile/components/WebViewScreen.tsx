@@ -293,15 +293,16 @@ export default function WebViewScreen({
         supabaseSession && supabaseStorageKey
           ? `
       try {
-        localStorage.setItem('${supabaseStorageKey}', ${JSON.stringify(
-            supabaseSession
-          )});
-        console.log('[WebView] Supabase 세션이 주입되었습니다.');
+        // supabaseSession은 이미 JSON 문자열이므로 그대로 저장
+        // JSON.stringify로 감싸서 JavaScript 문자열 리터럴로 안전하게 전달
+        var sessionData = ${JSON.stringify(supabaseSession)};
+        localStorage.setItem('${supabaseStorageKey}', sessionData);
+        console.log('[WebView] Supabase 세션이 주입되었습니다. Key:', '${supabaseStorageKey}');
       } catch (e) {
         console.error('[WebView] Supabase 세션 주입 실패:', e);
       }
       `
-          : ''
+          : `console.log('[WebView] Supabase 세션 없음 - 세션:', ${!!supabaseSession}, '키:', '${supabaseStorageKey}');`
       }
       
       // 네이티브에서 저장된 언어가 있으면 localStorage에 동기화

@@ -1,20 +1,25 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import * as WebBrowser from 'expo-web-browser';
+import {
+  GoogleSignin,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+import { Session } from '@supabase/supabase-js';
 
 import { checkOnboardingStatus } from '@/lib/onboarding';
 import {
@@ -22,89 +27,36 @@ import {
   serializeSupabaseSession,
 } from '@/lib/supabase';
 
-WebBrowser.maybeCompleteAuthSession();
-
 export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [authInProgress, setAuthInProgress] = useState(false);
+  const [isGoogleConfigured, setIsGoogleConfigured] = useState(false);
   const extra = Constants.expoConfig?.extra || {};
-  const isWebBrowserAvailable =
-    typeof WebBrowser.openBrowserAsync === 'function';
 
-  // 환경 변수 + app.json extra 동시 지원
-  const googleClientIds = useMemo(() => {
-    const androidClientId =
-      process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-      (extra as any).googleAndroidClientId ||
-      process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID ||
-      (extra as any).googleExpoClientId;
-
-    const iosClientId =
-      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
-      (extra as any).googleIosClientId ||
-      process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID ||
-      (extra as any).googleExpoClientId;
-
+  // Google Sign-In 초기화
+  useEffect(() => {
     const webClientId =
       process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
       (extra as any).googleWebClientId;
 
-    const expoClientId =
-      process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID ||
-      (extra as any).googleExpoClientId;
-
-    // 라이브러리의 필수 값 검증 에러를 피하기 위해 최소 더미 값 설정
-    const fallback = 'missing-client-id';
-
-    return {
-      androidClientId: androidClientId || fallback,
-      iosClientId: iosClientId || fallback,
-      webClientId: webClientId || fallback,
-      expoClientId: expoClientId || fallback,
-      hasConfig:
-        (Platform.OS === 'android' ? !!androidClientId : true) &&
-        (Platform.OS === 'ios' ? !!iosClientId : true),
-    };
+    if (webClientId) {
+      GoogleSignin.configure({
+        webClientId,
+        offlineAccess: true,
+        scopes: ['openid', 'email', 'profile'],
+      });
+      setIsGoogleConfigured(true);
+    }
   }, [extra]);
 
-  const redirectUri = useMemo(
-    () =>
-      makeRedirectUri({
-        scheme: 'safemeals',
-      }),
-    []
-  );
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: googleClientIds.androidClientId,
-    iosClientId: googleClientIds.iosClientId,
-    webClientId: googleClientIds.webClientId,
-    expoClientId: googleClientIds.expoClientId,
-    scopes: ['openid', 'email', 'profile'],
-    redirectUri,
-    responseType: 'id_token',
-  });
-
-  const completeNativeLogin = useCallback(
-    async (idToken: string, accessToken?: string | null) => {
-      setAuthInProgress(true);
-      setErrorMessage(null);
-
+  // 로그인 완료 후 세션 저장 및 라우팅
+  const completeLogin = useCallback(
+    async (session: Session) => {
       try {
-        const supabase = getSupabaseClient();
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
-          token: idToken,
-          access_token: accessToken ?? undefined,
-        });
-
-        if (error || !data.session) {
-          throw new Error(error?.message || '세션이 생성되지 않았습니다.');
-        }
-
-        const { session } = data;
         const supabaseSessionString = serializeSupabaseSession(session);
-
         const isNewUser = await checkOnboardingStatus(session.user.id);
 
         const storageEntries: [string, string][] = [
@@ -118,14 +70,12 @@ export default function LoginScreen() {
         }
 
         if (isNewUser) {
-          // 온보딩이 필요하면 기존 플래그 제거
           await AsyncStorage.multiRemove(['hasOnboarded']);
         } else {
           storageEntries.push(['hasOnboarded', 'true']);
         }
 
         await AsyncStorage.multiSet(storageEntries);
-
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         if (isNewUser) {
@@ -134,52 +84,32 @@ export default function LoginScreen() {
           router.replace('/(tabs)');
         }
       } catch (err) {
-        console.error('[NativeLogin] 로그인 실패:', err);
-        setErrorMessage('Google 로그인에 실패했습니다. 다시 시도해주세요.');
-      } finally {
-        setAuthInProgress(false);
+        console.error('[Login] 세션 저장 실패:', err);
+        throw err;
       }
     },
     []
   );
 
-  useEffect(() => {
-    if (!response) return;
-
-    if (response.type === 'success') {
-      const idToken =
-        response.authentication?.idToken || (response.params as any)?.id_token;
-      const accessToken =
-        response.authentication?.accessToken ||
-        (response.params as any)?.access_token;
-
-      if (!idToken) {
-        setErrorMessage('Google 토큰을 불러오지 못했습니다. 다시 시도해주세요.');
-        setAuthInProgress(false);
-        return;
-      }
-
-      completeNativeLogin(idToken, accessToken);
-    } else if (response.type === 'error') {
-      setErrorMessage('Google 로그인에 실패했습니다. 다시 시도해주세요.');
-      setAuthInProgress(false);
-    } else {
-      setAuthInProgress(false);
+  // 이메일/비밀번호 로그인
+  const handleEmailLogin = useCallback(async () => {
+    if (!email.trim()) {
+      setErrorMessage('이메일을 입력해주세요.');
+      return;
     }
-  }, [response, completeNativeLogin]);
-
-  const handleGoogleLogin = useCallback(async () => {
-    if (!isWebBrowserAvailable) {
-      setErrorMessage(
-        '이 빌드에는 expo-web-browser 네이티브 모듈이 없습니다.\nexpo run:android 등으로 dev client를 다시 빌드 후 시도해주세요.'
-      );
+    if (!password) {
+      setErrorMessage('비밀번호를 입력해주세요.');
       return;
     }
 
-    if (!googleClientIds.hasConfig) {
-      setErrorMessage(
-        'Google 클라이언트 ID가 설정되지 않았습니다.\nEXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID / EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID를 환경변수나 app.json extra에 추가해주세요.'
-      );
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setErrorMessage('올바른 이메일 형식을 입력해주세요.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('비밀번호는 6자 이상이어야 합니다.');
       return;
     }
 
@@ -187,79 +117,210 @@ export default function LoginScreen() {
       setErrorMessage(null);
       setAuthInProgress(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const result = await promptAsync();
 
-      if (!result || result.type !== 'success') {
-        setAuthInProgress(false);
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
+        }
+        throw new Error(error.message);
       }
-    } catch (err) {
-      console.error('[NativeLogin] Google 로그인 실행 실패:', err);
-      setErrorMessage('Google 로그인에 실패했습니다. 다시 시도해주세요.');
+
+      if (!data.session) {
+        throw new Error('세션이 생성되지 않았습니다.');
+      }
+
+      await completeLogin(data.session);
+    } catch (err: any) {
+      console.error('[Login] 이메일 로그인 실패:', err);
+      setErrorMessage(err.message || '로그인에 실패했습니다. 다시 시도해주세요.');
+    } finally {
       setAuthInProgress(false);
     }
-  }, [promptAsync]);
+  }, [email, password, completeLogin]);
 
-  const handleOpenWebLogin = useCallback(() => {
-    router.push('/webview/auth/login');
+  // Google 로그인
+  const handleGoogleLogin = useCallback(async () => {
+    if (!isGoogleConfigured) {
+      setErrorMessage('Google Sign-In이 설정되지 않았습니다.');
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+      setAuthInProgress(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      const isSignedIn = await GoogleSignin.getCurrentUser();
+      if (isSignedIn) {
+        await GoogleSignin.signOut();
+      }
+
+      await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+
+      if (!tokens.idToken) {
+        throw new Error('ID Token을 가져오지 못했습니다.');
+      }
+
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: tokens.idToken,
+        access_token: tokens.accessToken ?? undefined,
+      });
+
+      if (error || !data.session) {
+        throw new Error(error?.message || '세션이 생성되지 않았습니다.');
+      }
+
+      await completeLogin(data.session);
+    } catch (err: any) {
+      console.error('[Login] Google 로그인 실패:', err);
+
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        setErrorMessage('로그인이 취소되었습니다.');
+      } else if (err.code === statusCodes.IN_PROGRESS) {
+        setErrorMessage('이미 로그인 진행 중입니다.');
+      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setErrorMessage('Google Play Services를 사용할 수 없습니다.');
+      } else {
+        setErrorMessage(err.message || 'Google 로그인에 실패했습니다.');
+      }
+    } finally {
+      setAuthInProgress(false);
+    }
+  }, [isGoogleConfigured, completeLogin]);
+
+  // 회원가입 페이지로 이동
+  const handleSignUp = useCallback(() => {
+    router.push('/webview/auth/sign-up');
   }, []);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.hero}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logo}>🍽️</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero Section */}
+        <View style={styles.hero}>
+          <View style={styles.logoBadge}>
+            <Text style={styles.logo}>🍽️</Text>
+          </View>
+          <Text style={styles.title}>SafeMeals</Text>
+          <Text style={styles.subtitle}>
+            알레르기 걱정 없는 안전한 식사를 시작하세요
+          </Text>
         </View>
-        <Text style={styles.title}>SafeMeals</Text>
-        <Text style={styles.subtitle}>
-          Google로 빠르고 안전하게 로그인하고
-          {'\n'}
-          알레르기 걱정 없는 식사를 시작하세요.
-        </Text>
-      </View>
 
-      {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
-
-      <TouchableOpacity
-        style={[
-          styles.googleButton,
-          (!request || authInProgress || !isWebBrowserAvailable) &&
-            styles.googleButtonDisabled,
-        ]}
-        onPress={handleGoogleLogin}
-        disabled={!request || authInProgress || !isWebBrowserAvailable}
-        activeOpacity={0.8}
-      >
-        {authInProgress ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <>
-            <Ionicons name="logo-google" size={20} color="#ffffff" />
-            <Text style={styles.googleButtonText}>Google로 로그인</Text>
-          </>
+        {/* Error Message */}
+        {errorMessage && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={16} color="#DC2626" />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
         )}
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={handleOpenWebLogin}
-      >
-        <Text style={styles.secondaryText}>이메일/기타 로그인(웹뷰 열기)</Text>
-      </TouchableOpacity>
+        {/* Email Input */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>이메일</Text>
+          <View style={styles.inputWrapper}>
+            <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="example@email.com"
+              placeholderTextColor="#9CA3AF"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!authInProgress}
+            />
+          </View>
+        </View>
 
-      {!googleClientIds.hasConfig && (
-        <Text style={styles.helperText}>
-          Android/iOS Google Client ID를 설정하면 버튼이 정상 동작합니다.
-          {'\n'}app.json extra나 EXPO_PUBLIC_GOOGLE_* 환경변수를 확인하세요.
-        </Text>
-      )}
+        {/* Password Input */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>비밀번호</Text>
+          <View style={styles.inputWrapper}>
+            <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="6자 이상 입력"
+              placeholderTextColor="#9CA3AF"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              editable={!authInProgress}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeButton}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color="#9CA3AF"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      {!isWebBrowserAvailable && (
-        <Text style={styles.helperText}>
-          현재 빌드에 expo-web-browser 네이티브 모듈이 없어요.
-          {'\n'}`expo run:android` 또는 EAS 개발 빌드로 재설치한 뒤 다시 시도해주세요.
-        </Text>
-      )}
-    </View>
+        {/* Email Login Button */}
+        <TouchableOpacity
+          style={[styles.primaryButton, authInProgress && styles.buttonDisabled]}
+          onPress={handleEmailLogin}
+          disabled={authInProgress}
+          activeOpacity={0.8}
+        >
+          {authInProgress ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.primaryButtonText}>로그인</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>또는</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Google Login Button */}
+        <TouchableOpacity
+          style={[styles.googleButton, (!isGoogleConfigured || authInProgress) && styles.buttonDisabled]}
+          onPress={handleGoogleLogin}
+          disabled={!isGoogleConfigured || authInProgress}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="logo-google" size={20} color="#4285F4" />
+          <Text style={styles.googleButtonText}>Google로 로그인</Text>
+        </TouchableOpacity>
+
+        {/* Sign Up Link */}
+        <View style={styles.signUpContainer}>
+          <Text style={styles.signUpText}>계정이 없으신가요? </Text>
+          <TouchableOpacity onPress={handleSignUp}>
+            <Text style={styles.signUpLink}>회원가입</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -267,79 +328,149 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 80,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   hero: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 32,
   },
   logoBadge: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#F1F8F4',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   logo: {
-    fontSize: 44,
+    fontSize: 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#4B5563',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  error: {
-    marginBottom: 16,
-    color: '#DC2626',
+    fontSize: 15,
+    color: '#6B7280',
     textAlign: 'center',
   },
-  googleButton: {
+  errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+  },
+  inputIcon: {
+    marginLeft: 14,
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    color: '#111827',
+  },
+  eyeButton: {
+    padding: 14,
+  },
+  primaryButton: {
     height: 52,
     borderRadius: 12,
     backgroundColor: '#22c55e',
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
     shadowColor: '#22c55e',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  googleButtonDisabled: {
-    opacity: 0.6,
-  },
-  googleButtonText: {
+  primaryButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
   },
-  secondaryButton: {
-    marginTop: 16,
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  divider: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginVertical: 24,
   },
-  secondaryText: {
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    color: '#9CA3AF',
+    fontSize: 14,
+    marginHorizontal: 16,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 10,
+  },
+  signUpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  signUpText: {
     color: '#6B7280',
     fontSize: 14,
-    textDecorationLine: 'underline',
   },
-  helperText: {
-    marginTop: 12,
-    fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 16,
+  signUpLink: {
+    color: '#22c55e',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

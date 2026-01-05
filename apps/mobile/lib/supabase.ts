@@ -48,12 +48,11 @@ export function getSupabaseAuthStorageKey(): string | null {
 
 /**
  * WebView에 넘겨줄 수 있도록 Supabase 세션을 직렬화한다.
+ * Supabase JS v2가 localStorage에 저장하는 형식과 동일하게 세션 객체를 직접 직렬화한다.
  */
 export function serializeSupabaseSession(session: Session | null): string | null {
   if (!session) return null;
 
-  return JSON.stringify({
-    currentSession: session,
-    expiresAt: session.expires_at,
-  });
+  // Supabase JS v2는 세션 객체를 그대로 localStorage에 저장한다
+  return JSON.stringify(session);
 }

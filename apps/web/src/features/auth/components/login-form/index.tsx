@@ -51,6 +51,10 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
   } = usePasswordReset();
 
   const { language } = useTranslation();
+  const isNativeApp =
+    typeof window !== 'undefined' &&
+    (((window as any).ReactNativeWebView !== undefined) ||
+      (window as any).isNativeApp === true);
 
   // 계정 찾기 모달 상태
   const [isFindAccountModalOpen, setIsFindAccountModalOpen] = useState(false);
@@ -383,26 +387,32 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
         </div>
 
         {/* Social Login Buttons */}
-        <div className="space-y-3">
-          <button
-            onClick={() => handleSocialLogin('google')}
-            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
-          >
-            {currentText.continueWithGoogle}
-          </button>
-          <button
-            onClick={() => handleSocialLogin('apple')}
-            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
-          >
-            {currentText.continueWithApple}
-          </button>
-          <button
-            onClick={() => handleSocialLogin('facebook')}
-            className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
-          >
-            {currentText.continueWithFacebook}
-          </button>
-        </div>
+        {isNativeApp ? (
+          <div className="rounded-2xl bg-gray-50 px-4 py-5 text-center text-sm text-gray-600">
+            앱에서는 네이티브 로그인 화면의 Google 버튼을 사용해주세요.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <button
+              onClick={() => handleSocialLogin('google')}
+              className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
+            >
+              {currentText.continueWithGoogle}
+            </button>
+            <button
+              onClick={() => handleSocialLogin('apple')}
+              className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
+            >
+              {currentText.continueWithApple}
+            </button>
+            <button
+              onClick={() => handleSocialLogin('facebook')}
+              className="h-12 w-full rounded-full border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
+            >
+              {currentText.continueWithFacebook}
+            </button>
+          </div>
+        )}
 
         {/* Sign Up Link */}
         <p className="mt-6 text-center text-sm text-muted-foreground">
