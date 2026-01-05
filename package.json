@@ -2,7 +2,6 @@
   "name": "safemeals-monorepo",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@8.15.0",
   "scripts": {
     "dev": "pnpm --filter @safemeals/web dev",
     "dev:web": "pnpm --filter @safemeals/web dev",
@@ -21,5 +20,6 @@
   "engines": {
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
-  }
+  },
+  "packageManager": "pnpm@8.15.0"
 }

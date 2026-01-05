@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSupabaseAuthStorageKey } from '@/lib/supabase';
 
 interface WebViewScreenProps {
   path: string;
@@ -22,7 +23,7 @@ interface WebViewScreenProps {
 }
 
 // 항상 이 주소를 사용 (필요시 아래 한 줄만 수정)
-const WEBVIEW_BASE_URL = 'http://172.30.1.96:3000';
+const WEBVIEW_BASE_URL = 'http://172.16.2.168:3000';
 
 export default function WebViewScreen({
   path,
@@ -34,6 +35,8 @@ export default function WebViewScreen({
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [savedLanguage, setSavedLanguage] = useState<string | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
+  const [supabaseSession, setSupabaseSession] = useState<string | null>(null);
+  const [isAuthSessionLoaded, setIsAuthSessionLoaded] = useState(false);
 
   // URL 쿼리 파라미터 추가
   const queryString = Object.keys(params)
@@ -45,6 +48,7 @@ export default function WebViewScreen({
     .join('&');
 
   const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
+  const supabaseStorageKey = getSupabaseAuthStorageKey();
 
   // AsyncStorage에서 저장된 언어 로드
   useEffect(() => {
@@ -79,6 +83,24 @@ export default function WebViewScreen({
     };
     loadPendingImage();
   }, [params.hasImage]);
+
+  // AsyncStorage에 저장된 Supabase 세션 로드 (WebView에 주입)
+  useEffect(() => {
+    const loadSupabaseSession = async () => {
+      try {
+        const storedSession = await AsyncStorage.getItem('supabaseSession');
+        if (storedSession) {
+          setSupabaseSession(storedSession);
+        }
+      } catch (error) {
+        console.error('Supabase 세션 로드 실패:', error);
+      } finally {
+        setIsAuthSessionLoaded(true);
+      }
+    };
+
+    loadSupabaseSession();
+  }, []);
 
   useEffect(() => {
     setCanGoBack(false);
@@ -192,6 +214,7 @@ export default function WebViewScreen({
               'refreshToken',
               'userId',
               'hasOnboarded',
+              'supabaseSession',
             ]);
             console.log('[LOGOUT] AsyncStorage 클리어 완료');
 
@@ -265,6 +288,22 @@ export default function WebViewScreen({
       window.isNativeApp = true;
       window.nativeAppVersion = '${Constants.expoConfig?.version || '1.0.0'}';
       
+      // 네이티브 Supabase 세션을 WebView localStorage에 주입
+      ${
+        supabaseSession && supabaseStorageKey
+          ? `
+      try {
+        localStorage.setItem('${supabaseStorageKey}', ${JSON.stringify(
+            supabaseSession
+          )});
+        console.log('[WebView] Supabase 세션이 주입되었습니다.');
+      } catch (e) {
+        console.error('[WebView] Supabase 세션 주입 실패:', e);
+      }
+      `
+          : ''
+      }
+      
       // 네이티브에서 저장된 언어가 있으면 localStorage에 동기화
       (function syncLanguageFromNative() {
         const savedLang = '${savedLanguage || ''}';
@@ -316,7 +355,7 @@ export default function WebViewScreen({
   `;
 
   // 이미지 로딩 중이면 로딩 표시
-  if (!isImageLoaded) {
+  if (!isImageLoaded || !isAuthSessionLoaded) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -388,9 +427,7 @@ export default function WebViewScreen({
             syntheticEvent.nativeEvent.url
           );
         }}
-        onNavigationStateChange={(navState) =>
-          setCanGoBack(navState.canGoBack)
-        }
+        onNavigationStateChange={(navState) => setCanGoBack(navState.canGoBack)}
       />
     </SafeAreaView>
   );
