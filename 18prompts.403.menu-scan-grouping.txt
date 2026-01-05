@@ -1,0 +1,74 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 구현될 HOOK 파일경로: /src/features/scan/components/menu-scan/hooks/useMenuGrouping.hook.ts
+조건-파일경로) 구현될 TEST 파일경로: /src/features/scan/components/menu-scan/tests/menu-grouping.spec.ts
+
+
+==============================================
+
+핵심요구사항) playwright 테스트를 활용하여 TDD 기반으로 구현하고, 테스트에 통과할 때까지 반복할 것.
+
+1) 테스트 제외 라이브러리
+   - jest
+   - @testing-library/react
+
+2) 테스트 조건
+   - timeout은 설정하지 않거나, 500ms 미만으로 설정할 것.
+   - 페이지가 완전히 로드된 후 테스트할 것.
+       - 페이지 로드 식별 요구사항: 고정식별자 data-testid 대기 방법
+       - **중요금지사항** 페이지 로드 식별 금지사항: networkidle 대기 방법
+
+핵심요구사항) OCR 텍스트를 메뉴 단위로 그룹핑하는 커스텀 훅을 구현할 것.
+
+핵심요구사항) 기본 그룹핑 로직을 step-by-step으로 구현하고, 적용 결과를 체크리스트로 반환할 것.
+                1) 텍스트 줄 단위 그룹핑
+                    - Y축 좌표 기준 정렬
+                    - 같은 줄 판단 기준: Y축 거리 30px 이내
+                    - 줄 내에서 X축 좌표 기준 정렬
+
+                2) 잘린 텍스트 병합
+                    - 높이가 비슷한 텍스트 (±10px 이내)
+                    - 가로로 인접한 텍스트 (X축 거리 20px 이내)
+                    - 병합된 텍스트 재조합
+
+                3) 메뉴명과 가격 매칭
+                    - 메뉴명 패턴: 왼쪽에 위치한 텍스트 (한글, 영문 포함)
+                    - 가격 패턴: 오른쪽에 위치한 숫자 텍스트 (쉼표, 원화 기호 포함)
+                    - 매칭 규칙: 같은 줄 내에서 가장 가까운 가격
+
+                4) 메뉴 후보 리스트 생성
+                    - 각 메뉴 항목: { name: string, price: string, confidence: number }
+                    - 신뢰도 계산: OCR confidence + 패턴 매칭 점수
+                    - 신뢰도 낮은 항목 필터링 (0.5 미만 제외)
+
+핵심요구사항) 메뉴 타입을 다음과 같이 정의할 것.
+                ```typescript
+                interface MenuItem {
+                  name: string;
+                  price: string;
+                  confidence: number;
+                  rawTexts: string[]; // 병합 전 원본 텍스트들
+                }
+
+                interface MenuGroupingResult {
+                  menuItems: MenuItem[];
+                  totalItems: number;
+                  averageConfidence: number;
+                  isProcessing: boolean;
+                  error: string | null;
+                }
+                ```
+
+핵심요구사항) 훅 인터페이스를 다음과 같이 구현할 것.
+                - 입력: OCRResult[] (OCR 추출 결과)
+                - 출력: MenuGroupingResult
+                - 메서드: groupMenuItems(), filterByConfidence(threshold: number)

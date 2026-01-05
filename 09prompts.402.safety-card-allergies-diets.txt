@@ -1,0 +1,153 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 참고할 PAGE 경로: apps/web/src/features/profile/components/settings
+조건-파일경로) 구현될 HOOK 경로: apps/web/src/features/profile/components/settings/hooks/index.submit-allergies-diets.hook.ts
+조건-파일경로) 구현될 TEST 경로: apps/web/tests/safety-card-allergies-diets.spec.ts
+
+==============================================
+
+조건-스키마문서) 참고할 Supabase 스키마 문서: docs/schema.md
+            - user_allergies 테이블 (118-133행)
+            - user_diets 테이블 (135-148행)
+            - allergy_types 참조 테이블 (20-52행)
+            - diet_types 참조 테이블 (57-79행)
+
+==============================================
+
+핵심요구사항) playwright 테스트를 활용하여 TDD 기반으로 구현하고, 테스트에 통과할 때까지 반복할 것.
+
+1) 테스트 제외 라이브러리
+   - jest
+   - @testing-library/react
+
+2) 테스트 조건
+   - timeout은 설정하지 않거나, 500ms 미만으로 설정할 것.
+   - 페이지가 완전히 로드된 후 테스트할 것.
+       - 페이지 로드 식별 요구사항: 고정식별자 data-testid 대기 방법
+       - **중요금지사항** 페이지 로드 식별 금지사항: networkidle 대기 방법
+
+3) 테스트 시나리오
+   3-1) 성공 시나리오
+       - 알레르기 정보 저장 성공
+       - 식단 정보 저장 성공
+       - 알레르기 + 식단 정보 동시 저장 성공
+       - 저장 후 성공 메시지 표시
+       - 저장 후 페이지 이동
+
+   3-2) 실패 시나리오
+       - 유효하지 않은 allergy_code 처리
+       - 유효하지 않은 diet_code 처리
+       - 중복 데이터 처리 (UNIQUE 제약)
+       - 네트워크 에러 처리
+
+==============================================
+
+핵심요구사항) 다음의 기능을 Supabase를 연동하여 step-by-step 으로 구현하고, 적용 결과를 체크리스트로 반환할 것.
+
+1. 알레르기 및 식단 정보 저장 시나리오
+   1-1) 다음의 데이터를 Supabase에 저장할 것
+       - 참고문서: docs/schema.md
+       - 접속키: Supabase Client (getSupabaseClient)
+       - 테이블 1: user_allergies
+           - user_id: UUID (자동, auth.uid() 사용)
+           - allergy_code: string (필수, allergy_types.code 참조)
+           - severity: 'mild' | 'moderate' | 'severe' | 'life_threatening' (선택, 기본값: 'moderate')
+           - notes: string | null (선택, 최대 500자)
+
+       - 테이블 2: user_diets
+           - user_id: UUID (자동, auth.uid() 사용)
+           - diet_code: string (필수, diet_types.code 참조)
+           - notes: string | null (선택, 최대 500자)
+
+   1-2) 저장 로직 구현 조건
+       - **중요** 기존 데이터 삭제 후 새로 저장할 것 (upsert 방식)
+       - user_allergies 테이블: 사용자의 모든 기존 알레르기 삭제 후 배열로 받은 데이터 일괄 삽입
+       - user_diets 테이블: 사용자의 모든 기존 식단 삭제 후 배열로 받은 데이터 일괄 삽입
+       - 트랜잭션 처리: 삭제와 삽입이 모두 성공해야 완료
+       - RLS 정책 준수: auth.uid()로 본인 데이터만 접근
+
+   1-3) 유효성 검증 규칙
+       - allergy_code: allergy_types 테이블에 존재하는 code인지 검증
+       - diet_code: diet_types 테이블에 존재하는 code인지 검증
+       - severity: enum 값 검증 ('mild', 'moderate', 'severe', 'life_threatening')
+       - notes: 500자 이하
+       - 빈 배열 허용 (알레르기/식단이 없는 경우)
+
+   1-4) 저장 성공 이후 로직을 완성할 것
+       - 알림메시지: "알레르기 및 식단 정보가 저장되었습니다."
+       - 이동할페이지: "/profile"
+
+   1-5) 에러 처리
+       - 인증 실패: "로그인이 필요합니다."
+       - 유효하지 않은 code: "유효하지 않은 알레르기/식단 정보입니다."
+       - 중복 데이터: "이미 등록된 정보입니다."
+       - 네트워크 에러: "저장에 실패했습니다. 다시 시도해주세요."
+
+==============================================
+
+핵심요구사항) 훅 인터페이스 및 반환값 구조
+
+1) 훅 함수명: useSafetyCardAllergiesDietsSubmit
+
+2) 입력 파라미터 타입
+   interface AllergiesAndDietsInput {
+     allergies: Array<{
+       allergy_code: string;
+       severity?: 'mild' | 'moderate' | 'severe' | 'life_threatening';
+       notes?: string;
+     }>;
+     diets: Array<{
+       diet_code: string;
+       notes?: string;
+     }>;
+   }
+
+3) 반환값 구조
+   {
+     submitAllergiesAndDiets: (data: AllergiesAndDietsInput) => Promise<void>;
+     isSubmitting: boolean;
+     error: string | null;
+     isSuccess: boolean;
+   }
+
+4) 상태 관리
+   - isSubmitting: 저장 중 true, 완료/실패 시 false
+   - error: 에러 발생 시 메시지, 성공 시 null
+   - isSuccess: 저장 성공 시 true
+
+==============================================
+
+핵심요구사항) 테스트 케이스 구현 조건
+
+1) 기본 테스트 설정
+   - 테스트용 사용자 로그인 (auth.signIn)
+   - 테스트 종료 시 생성된 데이터 정리 (cleanup)
+
+2) 성공 테스트
+   - 알레르기 정보만 저장
+   - 식단 정보만 저장
+   - 알레르기 + 식단 정보 동시 저장
+   - severity 옵션 포함 저장
+   - notes 포함 저장
+   - 빈 배열 저장 (모든 정보 삭제)
+
+3) 검증 테스트
+   - Supabase에 실제 저장되었는지 확인 (SELECT 쿼리)
+   - 기존 데이터가 삭제되고 새 데이터만 남았는지 확인
+   - 성공 메시지 표시 확인
+   - 페이지 이동 확인 (/profile)
+
+4) 에러 테스트
+   - 유효하지 않은 allergy_code 입력
+   - 유효하지 않은 diet_code 입력
+   - 네트워크 에러 시뮬레이션
+   - 에러 메시지 표시 확인
