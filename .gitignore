@@ -55,3 +55,7 @@ playwright/.cache/
 # pnpm
 pnpm-lock.yaml
 
+# expo
+.expo/
+**/.expo/
+
