@@ -22,8 +22,17 @@ interface WebViewScreenProps {
   showHeader?: boolean;
 }
 
-// 항상 이 주소를 사용 (필요시 아래 한 줄만 수정)
-const WEBVIEW_BASE_URL = 'http://172.16.2.168:3000';
+// Expo extra(webviewUrl) -> 기본값(LAN IP) 순서로 사용
+const resolveWebviewBaseUrl = () => {
+  const extra =
+    (Constants.expoConfig?.extra as { webviewUrl?: string } | undefined) ??
+    ((Constants as { manifest?: { extra?: { webviewUrl?: string } } }).manifest
+      ?.extra as { webviewUrl?: string } | undefined);
+
+  return extra?.webviewUrl ?? 'http://172.16.2.168:3000';
+};
+
+const WEBVIEW_BASE_URL = resolveWebviewBaseUrl();
 
 export default function WebViewScreen({
   path,
