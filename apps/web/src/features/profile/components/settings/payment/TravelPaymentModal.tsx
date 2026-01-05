@@ -8,6 +8,8 @@ import {
   calculateTravelAmount,
   TRAVEL_PRICING,
   formatCurrency,
+  PAYMENT_METHODS,
+  PayMethod,
 } from '@/lib/portone';
 import { getSupabaseClient } from '@/lib/supabase';
 import { showToast } from '@/components/ui/toast';
@@ -27,6 +29,7 @@ export function TravelPaymentModal({
   const [endDate, setEndDate] = useState('');
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [calculatedAmount, setCalculatedAmount] = useState(0);
+  const [selectedPayMethod, setSelectedPayMethod] = useState<PayMethod>('CARD');
 
   // 날짜 변경 시 일수 및 금액 계산
   const handleDateChange = (start: string, end: string) => {
@@ -88,11 +91,12 @@ export function TravelPaymentModal({
       // 2. 여행 패키지 생성
       const product = createTravelPackage(new Date(startDate), new Date(endDate));
 
-      // 3. 결제 요청
+      // 3. 결제 요청 (선택한 결제 수단 사용)
       const response = await requestPayment(
         product,
         user.id,
-        user.email || ''
+        user.email || '',
+        selectedPayMethod
       );
 
       // 4. 결제 성공 처리
@@ -240,6 +244,50 @@ export function TravelPaymentModal({
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-[#2ECC71] focus:outline-none"
                 disabled={isProcessing || !startDate}
               />
+            </div>
+          </div>
+
+          {/* 결제 수단 선택 */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-gray-700">
+              {language === 'ko' ? '결제 수단 선택' : 'Payment Method'}
+            </h3>
+            <div className="space-y-2">
+              {Object.values(PAYMENT_METHODS).map((method) => (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => setSelectedPayMethod(method.id)}
+                  disabled={isProcessing}
+                  className={`w-full rounded-xl border-2 p-4 text-left transition-all ${
+                    selectedPayMethod === method.id
+                      ? 'border-[#2ECC71] bg-[#2ECC71]/10'
+                      : 'border-gray-200 hover:border-gray-300'
+                  } disabled:opacity-50`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{method.icon}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">
+                          {language === 'ko' ? method.name : method.nameEn}
+                        </p>
+                        {method.recommended && (
+                          <span className="rounded-full bg-[#2ECC71] px-2 py-0.5 text-xs text-white">
+                            {language === 'ko' ? '추천' : 'Recommended'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {language === 'ko' ? method.description : method.descriptionEn}
+                      </p>
+                    </div>
+                    {selectedPayMethod === method.id && (
+                      <Check className="h-6 w-6 flex-shrink-0 text-[#2ECC71]" />
+                    )}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 

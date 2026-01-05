@@ -93,22 +93,89 @@ function isMobileEnvironment(): boolean {
 }
 
 /**
+ * 지원하는 결제 수단 타입
+ */
+export type PayMethod =
+  | 'CARD'           // 신용/체크카드 (국내외)
+  | 'EASY_PAY'       // 간편결제 (카카오페이, 네이버페이, 토스페이 등)
+  | 'VIRTUAL_ACCOUNT' // 가상계좌
+  | 'TRANSFER'       // 실시간 계좌이체
+  | 'MOBILE'         // 휴대폰 소액결제
+  | 'PAYPAL';        // 페이팔
+
+/**
+ * 결제 수단 정보
+ *
+ * 외국인 관광객이 가장 많이 사용하는 결제 수단:
+ * 1. 신용/체크카드 (CARD) - 전 세계 공통, 가장 널리 사용됨
+ *    - Visa, Mastercard (미국, 유럽, 아시아 등 전 세계)
+ *    - AMEX (미국인 선호)
+ *    - JCB (일본인 선호)
+ *    - UnionPay (중국인 선호)
+ *
+ * 2. PayPal (PAYPAL) - 미국, 유럽 관광객이 선호
+ *
+ * 3. 모바일 결제 (EASY_PAY)
+ *    - Apple Pay (미국, 유럽, 일본 등)
+ *    - Google Pay (전 세계)
+ *    - Samsung Pay (한국, 아시아)
+ *
+ * 4. 기타 지역별 인기 결제:
+ *    - Alipay, WeChat Pay (중국)
+ *    - Klarna (유럽)
+ *    - Stripe (전 세계)
+ */
+export const PAYMENT_METHODS = {
+  CARD: {
+    id: 'CARD' as const,
+    name: '카드결제',
+    nameEn: 'Credit/Debit Card',
+    description: 'Visa, Mastercard, AMEX, JCB, UnionPay',
+    descriptionEn: 'Visa, Mastercard, AMEX, JCB, UnionPay',
+    icon: '💳',
+    global: true,
+    recommended: true, // 가장 추천하는 결제 수단
+  },
+  EASY_PAY: {
+    id: 'EASY_PAY' as const,
+    name: '간편결제',
+    nameEn: 'Mobile Wallet',
+    description: '카카오페이, 네이버페이, 토스페이',
+    descriptionEn: 'Apple Pay, Google Pay, Samsung Pay',
+    icon: '📱',
+    global: true,
+    recommended: false,
+  },
+  PAYPAL: {
+    id: 'PAYPAL' as const,
+    name: 'PayPal',
+    nameEn: 'PayPal',
+    description: '전 세계 2억 명 이상 사용',
+    descriptionEn: 'Available worldwide',
+    icon: '🌐',
+    global: true,
+    recommended: false,
+  },
+} as const;
+
+/**
  * 포트원 결제 요청
- * 웹/모바일 모두 간편결제와 카드결제 지원
+ * 모든 결제 수단 지원:
+ * - 카드결제 (국내/해외 신용카드, 체크카드)
+ * - 간편결제 (카카오페이, 네이버페이, 토스페이, 페이코 등)
+ * - 해외결제 (PayPal, Alipay, WeChat Pay 등)
+ * - 계좌이체, 가상계좌 등
  */
 export async function requestPayment(
   product: PaymentProduct,
   userId: string,
-  userEmail: string
+  userEmail: string,
+  payMethod: PayMethod = 'CARD'
 ): Promise<PaymentResponse | undefined> {
   const { requestPayment: portoneRequestPayment } = await import('@portone/browser-sdk/v2');
 
   // 주문 ID 생성 (timestamp + random)
   const merchantUid = `order_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-
-  // 모바일 환경에서는 EASY_PAY 우선, 웹에서는 CARD 우선
-  // 결제창에서 사용자가 다른 수단도 선택 가능
-  const payMethod = isMobileEnvironment() ? 'EASY_PAY' : 'CARD';
 
   // 리디렉션 URL 설정 (결제 완료 후 돌아올 URL)
   const redirectUrl = typeof window !== 'undefined'
@@ -122,7 +189,7 @@ export async function requestPayment(
     orderName: product.name,
     totalAmount: product.amount,
     currency: 'CURRENCY_KRW',
-    payMethod,
+    payMethod, // 사용자가 선택한 결제 수단
     customer: {
       customerId: userId,
       email: userEmail,
