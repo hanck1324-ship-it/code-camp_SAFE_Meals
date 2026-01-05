@@ -52,10 +52,8 @@ blob-report/
 playwright/.cache/
 **/playwright/.cache/
 
-# pnpm
-pnpm-lock.yaml
-
 # expo
 .expo/
 **/.expo/
-
+apps/mobile/android/
+apps/mobile/ios/

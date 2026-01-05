@@ -19,7 +19,7 @@ interface TravelPaymentModalProps {
 }
 
 export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -110,8 +110,6 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
         user.email || '',
         selectedPayMethod
       );
-      // 3. 결제 요청
-      const response = await requestPayment(product, user.id, user.email || '');
 
       // 4. 결제 성공 처리
       if (response && response.code === 'PAID') {
@@ -181,8 +179,6 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
       <div className="w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 border-b border-gray-200 bg-white px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
@@ -204,7 +200,6 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        <div className="space-y-6 p-6">
           {/* 요금 안내 */}
           <div className="rounded-2xl border-2 border-[#2ECC71] bg-gradient-to-br from-[#2ECC71]/10 to-white p-4">
             <div className="mb-2 flex items-center gap-3">

@@ -7,6 +7,7 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasSupabaseSession, setHasSupabaseSession] = useState(false);
 
   useEffect(() => {
     const checkInitialState = async () => {
@@ -17,15 +18,21 @@ export default function Index() {
         const authToken = await AsyncStorage.getItem('authToken');
         console.log('[Index] authToken 존재 여부:', !!authToken);
 
+        // Supabase 세션 여부 확인 (웹뷰 주입용)
+        const supabaseSession = await AsyncStorage.getItem('supabaseSession');
+        console.log('[Index] supabaseSession 존재 여부:', !!supabaseSession);
+
         // 온보딩 완료 여부 확인
         const hasOnboarded = await AsyncStorage.getItem('hasOnboarded');
         console.log('[Index] hasOnboarded:', hasOnboarded);
 
-        setIsAuthenticated(!!authToken);
+        setIsAuthenticated(!!authToken && !!supabaseSession);
+        setHasSupabaseSession(!!supabaseSession);
         setIsOnboarded(hasOnboarded === 'true');
 
         console.log('[Index] 최종 상태:', {
-          isAuthenticated: !!authToken,
+          isAuthenticated: !!authToken && !!supabaseSession,
+          hasSupabaseSession: !!supabaseSession,
           isOnboarded: hasOnboarded === 'true',
         });
       } catch (error) {
@@ -48,8 +55,8 @@ export default function Index() {
     );
   }
 
-  // 로그인이 안 되어 있으면 로그인 페이지로
-  if (!isAuthenticated) {
+  // 토큰이 없거나 세션이 없으면 로그인 페이지로
+  if (!isAuthenticated || !hasSupabaseSession) {
     return <Redirect href="/(auth)/login" />;
   }
 
