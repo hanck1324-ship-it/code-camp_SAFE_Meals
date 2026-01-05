@@ -165,20 +165,20 @@ export function TravelPaymentModal({
   const maxDateStr = maxDate.toISOString().split('T')[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
+      <div className="w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 border-b border-gray-200 bg-white px-6 py-4">
+        <div className="sticky top-0 border-b border-gray-200 bg-white px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Plane className="h-6 w-6 text-[#2ECC71]" />
-              <h2 className="text-xl font-bold">
+              <Plane className="h-5 w-5 sm:h-6 sm:w-6 text-[#2ECC71]" />
+              <h2 className="text-lg sm:text-xl font-bold">
                 {t.travelPackage || '여행 패키지'}
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100"
+              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200"
               disabled={isProcessing}
             >
               <X className="h-5 w-5" />
@@ -187,7 +187,7 @@ export function TravelPaymentModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* 요금 안내 */}
           <div className="rounded-2xl border-2 border-[#2ECC71] bg-gradient-to-br from-[#2ECC71]/10 to-white p-4">
             <div className="flex items-center gap-3 mb-2">
@@ -250,7 +250,7 @@ export function TravelPaymentModal({
           </div>
 
           {/* 결제 수단 선택 */}
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             <h3 className="text-sm font-medium text-gray-700">
               {language === 'ko' ? '결제 수단 선택' : 'Payment Method'}
             </h3>
@@ -261,31 +261,31 @@ export function TravelPaymentModal({
                   type="button"
                   onClick={() => setSelectedPayMethod(method.id)}
                   disabled={isProcessing}
-                  className={`w-full rounded-xl border-2 p-4 text-left transition-all ${
+                  className={`w-full rounded-xl border-2 p-3 sm:p-4 text-left transition-all active:scale-[0.98] ${
                     selectedPayMethod === method.id
                       ? 'border-[#2ECC71] bg-[#2ECC71]/10'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-gray-200 hover:border-gray-300 active:border-gray-400'
                   } disabled:opacity-50`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{method.icon}</span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="text-xl sm:text-2xl flex-shrink-0">{method.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <p className="font-semibold text-sm sm:text-base">
                           {language === 'ko' ? method.name : method.nameEn}
                         </p>
                         {method.recommended && (
-                          <span className="rounded-full bg-[#2ECC71] px-2 py-0.5 text-xs text-white">
+                          <span className="rounded-full bg-[#2ECC71] px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-white whitespace-nowrap">
                             {language === 'ko' ? '추천' : 'Recommended'}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs sm:text-sm text-gray-600 mt-0.5 truncate">
                         {language === 'ko' ? method.description : method.descriptionEn}
                       </p>
                     </div>
                     {selectedPayMethod === method.id && (
-                      <Check className="h-6 w-6 flex-shrink-0 text-[#2ECC71]" />
+                      <Check className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 text-[#2ECC71]" />
                     )}
                   </div>
                 </button>
@@ -326,7 +326,8 @@ export function TravelPaymentModal({
           <button
             onClick={handlePurchase}
             disabled={isProcessing || calculatedDays === 0}
-            className="w-full rounded-xl bg-[#2ECC71] px-6 py-4 text-lg font-semibold text-white transition-all hover:bg-[#27AE60] disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-xl bg-[#2ECC71] px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:bg-[#27AE60] active:bg-[#27AE60] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ minHeight: '48px' }}
           >
             {isProcessing
               ? t.processing || '처리 중...'
