@@ -18,8 +18,11 @@ importers:
         specifier: ^7.28.4
         version: 7.28.4
       '@expo/vector-icons':
-        specifier: ~14.0.4
-        version: 14.0.4
+        specifier: ^14.0.0
+        version: 14.1.0(expo-font@14.0.10)(react-native@0.76.5)(react@18.3.1)
+      '@portone/react-native-sdk':
+        specifier: ^0.4.2
+        version: 0.4.2(@portone/browser-sdk@0.1.1)(expo@52.0.48)(react-native-webview@13.12.5)(react-native@0.76.5)(react@18.3.1)
       '@react-native-async-storage/async-storage':
         specifier: 1.23.1
         version: 1.23.1(react-native@0.76.9)
@@ -2602,6 +2605,22 @@ packages:
 
   /@portone/browser-sdk@0.1.2:
     resolution: {integrity: sha512-XwB8AEHsCKlz+A7KX9wKD4Um2mEOaagR47usrWOuKou7b6OqtDL6HCPN6TocEnS+o1vvQYSQ2b75EBCT3pUh0g==}
+    dev: false
+
+  /@portone/react-native-sdk@0.4.2(@portone/browser-sdk@0.1.1)(expo@52.0.48)(react-native-webview@13.12.5)(react-native@0.76.5)(react@18.3.1):
+    resolution: {integrity: sha512-imMmWiWjK63Bpxn2934tfjuqBovaK0kvwN8dFfQnoAvum5AiUTl2ETwttY+cLKAHHdKg3nhtOWhBao9fj/t5bw==}
+    peerDependencies:
+      '@portone/browser-sdk': '*'
+      expo: '*'
+      react: '*'
+      react-native: '*'
+      react-native-webview: '*'
+    dependencies:
+      '@portone/browser-sdk': 0.1.1
+      expo: 52.0.48(@babel/core@7.28.5)(@babel/preset-env@7.28.5)(react-native-webview@13.12.5)(react-native@0.76.5)(react@18.3.1)
+      react: 18.3.1
+      react-native: 0.76.5(@babel/core@7.28.5)(@babel/preset-env@7.28.5)(@types/react@18.3.27)(react@18.3.1)
+      react-native-webview: 13.12.5(react-native@0.76.5)(react@18.3.1)
     dev: false
 
   /@radix-ui/number@1.1.1:

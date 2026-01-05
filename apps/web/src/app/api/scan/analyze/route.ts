@@ -317,7 +317,112 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
       );
     }
 
-    // 5. ✅ 결과 반환
+    // 5. 🔍 재료 DB를 활용한 알레르기 검증 강화
+    console.log('🔍 재료 DB로 알레르기 검증 시작...');
+
+    // 각 메뉴 항목의 재료를 DB와 대조하여 알레르기 위험도 재확인
+    const enhancedResults = await Promise.all(
+      analysisData.results.map(async (menuItem: any) => {
+        // 추출된 재료 목록
+        const ingredients = menuItem.ingredients || [];
+
+        if (ingredients.length === 0 || userAllergies.length === 0) {
+          // 재료가 없거나 사용자 알레르기가 없으면 원본 그대로 반환
+          return menuItem;
+        }
+
+        // DB에서 각 재료의 알레르기 위험도 확인
+        const dbAllergenChecks = await Promise.all(
+          ingredients.map(async (ingredient: string) => {
+            try {
+              const { data, error } = await supabase
+                .rpc('check_ingredient_allergens', {
+                  ingredient_name: ingredient,
+                  user_allergens: userAllergies,
+                });
+
+              if (error) {
+                console.warn(`재료 "${ingredient}" 알레르기 체크 실패:`, error);
+                return { ingredient, is_dangerous: false, matched_allergens: [] };
+              }
+
+              return {
+                ingredient,
+                is_dangerous: data?.[0]?.is_dangerous || false,
+                matched_allergens: data?.[0]?.matched_allergens || [],
+              };
+            } catch (err) {
+              console.warn(`재료 "${ingredient}" 체크 중 오류:`, err);
+              return { ingredient, is_dangerous: false, matched_allergens: [] };
+            }
+          })
+        );
+
+        // DB에서 발견된 알레르기 물질 수집
+        const dbMatchedAllergens = dbAllergenChecks
+          .filter((check) => check.is_dangerous)
+          .flatMap((check) => check.matched_allergens);
+
+        // AI 분석 결과와 DB 결과 병합
+        const aiMatchedAllergens = menuItem.allergy_risk?.matched_allergens || [];
+        const combinedMatchedAllergens = Array.from(
+          new Set([...aiMatchedAllergens, ...dbMatchedAllergens])
+        );
+
+        // DB에서 새로운 알레르기가 발견된 경우 위험도 상향 조정
+        let updatedSafetyStatus = menuItem.safety_status;
+        let updatedReason = menuItem.reason;
+
+        if (dbMatchedAllergens.length > 0) {
+          // DB에서 위험한 재료가 발견되면 최소 CAUTION 이상으로 상향
+          if (menuItem.safety_status === 'SAFE') {
+            updatedSafetyStatus = 'CAUTION';
+            const dbAllergenNames = dbMatchedAllergens
+              .map((code: string) => allergyCodeToLabel[code] || code)
+              .join(', ');
+            updatedReason = `${menuItem.reason} (DB 확인: ${dbAllergenNames} 포함 가능성)`;
+          } else if (menuItem.safety_status === 'CAUTION') {
+            // CAUTION인데 DB에서 확실한 매칭이 있으면 DANGER로 상향
+            const confirmedIngredients = dbAllergenChecks.filter(
+              (check) => check.is_dangerous
+            );
+            if (confirmedIngredients.length > 0) {
+              updatedSafetyStatus = 'DANGER';
+              const confirmedNames = confirmedIngredients
+                .map((check) => check.ingredient)
+                .join(', ');
+              updatedReason = `${confirmedNames} 확인됨 (DB 검증)`;
+            }
+          }
+        }
+
+        console.log(`  ✓ ${menuItem.original_name}: ${menuItem.safety_status} → ${updatedSafetyStatus}`);
+
+        return {
+          ...menuItem,
+          safety_status: updatedSafetyStatus,
+          reason: updatedReason,
+          allergy_risk: {
+            status: updatedSafetyStatus,
+            matched_allergens: combinedMatchedAllergens,
+          },
+          db_verification: {
+            checked: true,
+            db_matched_allergens: dbMatchedAllergens,
+            total_allergen_matches: combinedMatchedAllergens.length,
+          },
+        };
+      })
+    );
+
+    // overall_status 재계산 (DB 검증 결과 반영)
+    const hasDanger = enhancedResults.some((item: any) => item.safety_status === 'DANGER');
+    const hasCaution = enhancedResults.some((item: any) => item.safety_status === 'CAUTION');
+    const finalOverallStatus = hasDanger ? 'DANGER' : hasCaution ? 'CAUTION' : 'SAFE';
+
+    console.log(`✅ DB 검증 완료 - 최종 상태: ${finalOverallStatus}`);
+
+    // 6. ✅ 결과 반환 (DB 검증 강화 버전)
     return NextResponse.json({
       success: true,
       analyzed_at: new Date().toISOString(),
@@ -325,8 +430,9 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
         allergies: userAllergies,
         diet: dietType,
       },
-      overall_status: analysisData.overall_status || 'SAFE',
-      results: analysisData.results,
+      overall_status: finalOverallStatus,
+      results: enhancedResults,
+      db_enhanced: true, // DB 검증이 추가되었음을 표시
     });
   } catch (error: any) {
     console.error('Menu Analysis Error:', error);

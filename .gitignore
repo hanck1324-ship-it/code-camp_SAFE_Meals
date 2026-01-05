@@ -53,6 +53,7 @@ playwright/.cache/
 **/playwright/.cache/
 
 # expo
-.expo
+.expo/
+**/.expo/
 apps/mobile/android/
 apps/mobile/ios/

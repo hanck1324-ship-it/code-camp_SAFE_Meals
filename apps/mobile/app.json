@@ -37,7 +37,9 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      "@portone/react-native-sdk/plugin",
+      
+          "expo-router",
       [
         "expo-camera",
         {
