@@ -24,7 +24,7 @@ export interface PaymentProduct {
  * 여행 기간 기반 요금 설정
  */
 export const TRAVEL_PRICING = {
-  DAILY_RATE: 1500, // 하루당 1,500원
+  DAILY_RATE: 4000, // 하루당 4,000원
   MIN_DAYS: 1,
   MAX_DAYS: 365,
 } as const;
@@ -94,6 +94,7 @@ function isMobileEnvironment(): boolean {
 
 /**
  * 포트원 결제 요청
+ * 웹/모바일 모두 간편결제와 카드결제 지원
  */
 export async function requestPayment(
   product: PaymentProduct,
@@ -105,7 +106,8 @@ export async function requestPayment(
   // 주문 ID 생성 (timestamp + random)
   const merchantUid = `order_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-  // 모바일 환경에서는 EASY_PAY (간편결제), 웹에서는 CARD
+  // 모바일 환경에서는 EASY_PAY 우선, 웹에서는 CARD 우선
+  // 결제창에서 사용자가 다른 수단도 선택 가능
   const payMethod = isMobileEnvironment() ? 'EASY_PAY' : 'CARD';
 
   const paymentRequest: PaymentRequest = {
@@ -129,9 +131,19 @@ export async function requestPayment(
     },
   };
 
-  console.log('[Payment] Request:', { payMethod, isMobile: isMobileEnvironment(), merchantUid });
+  console.log('[Payment] Request:', {
+    payMethod,
+    isMobile: isMobileEnvironment(),
+    merchantUid,
+    storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID,
+    channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
+    amount: product.amount,
+  });
 
   const response = await portoneRequestPayment(paymentRequest);
+
+  console.log('[Payment] Response:', response);
+
   return response;
 }
 
