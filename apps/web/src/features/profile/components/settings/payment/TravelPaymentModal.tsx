@@ -27,10 +27,6 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
   const [calculatedAmount, setCalculatedAmount] = useState(0);
   const [selectedPayMethod, setSelectedPayMethod] = useState<PayMethod>('CARD');
 
-  // 모바일 앱(WebView) 환경 감지
-  const isNativeApp =
-    typeof window !== 'undefined' && (window as any).isNativeApp === true;
-
   // 날짜 변경 시 일수 및 금액 계산
   const handleDateChange = (start: string, end: string) => {
     if (start && end) {
@@ -63,15 +59,6 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
   };
 
   const handlePurchase = async () => {
-    // 모바일 앱에서는 결제 불가 안내
-    if (isNativeApp) {
-      alert(
-        t.paymentNotSupportedInApp ||
-          '모바일 앱에서는 결제가 지원되지 않습니다. 웹 브라우저에서 이용해주세요.'
-      );
-      return;
-    }
-
     if (!startDate || !endDate || calculatedDays === 0) {
       showToast('warning', t.selectTravelDates || '여행 시작일과 종료일을 선택해주세요.');
       return;
