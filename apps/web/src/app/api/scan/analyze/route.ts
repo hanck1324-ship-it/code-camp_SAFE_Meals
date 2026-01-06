@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
+import { PerformanceMonitor } from '@/lib/performance';
+import { extractText } from '@/lib/ocr-service';
+import { scanCache, getImageHash, getCacheKey } from '@/lib/scan-cache';
 
 // Gemini API 클라이언트 초기화
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: NextRequest) {
+  const perf = new PerformanceMonitor('메뉴 스캔 분석');
+
   try {
     // 1. 🔐 헤더에서 토큰 추출 및 유저 확인
+    perf.start('인증 및 사용자 정보 조회');
     // 클라이언트가 보낸 'Authorization: Bearer <token>' 헤더를 확인합니다.
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.split(' ')[1];
@@ -46,22 +52,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. 👤 유저의 알레르기 및 식이제한 정보 가져오기 (Supabase DB)
-    // user_allergies 테이블에서 알레르기 코드 조회
-    const { data: allergiesData, error: allergiesError } = await supabase
-      .from('user_allergies')
-      .select('allergy_code')
-      .eq('user_id', user.id);
+    // 2. 👤 유저의 알레르기 및 식이제한 정보 가져오기 (병렬 처리)
+    const [allergiesResult, dietsResult] = await Promise.all([
+      supabase
+        .from('user_allergies')
+        .select('allergy_code')
+        .eq('user_id', user.id),
+      supabase
+        .from('user_diets')
+        .select('diet_code')
+        .eq('user_id', user.id),
+    ]);
+
+    const { data: allergiesData, error: allergiesError } = allergiesResult;
+    const { data: dietsData, error: dietsError } = dietsResult;
 
     if (allergiesError) {
       console.error('알레르기 조회 실패:', allergiesError);
     }
-
-    // user_diets 테이블에서 식이제한 코드 조회
-    const { data: dietsData, error: dietsError } = await supabase
-      .from('user_diets')
-      .select('diet_code')
-      .eq('user_id', user.id);
 
     if (dietsError) {
       console.error('식이제한 조회 실패:', dietsError);
@@ -72,6 +80,8 @@ export async function POST(req: NextRequest) {
     // 식이제한 코드 배열로 변환
     const userDiets = dietsData?.map((d) => d.diet_code) || [];
     const dietType = userDiets.length > 0 ? userDiets.join(', ') : 'None';
+
+    perf.end('인증 및 사용자 정보 조회');
 
     // 🔍 디버깅: 사용자 알레르기/식단 정보 로그
     console.log('👤 사용자 ID:', user.id);
@@ -107,7 +117,55 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. 🤖 Gemini에게 분석 요청 (프롬프트 핵심!)
+    // 3.5. ⚡ 캐시 확인 (동일 이미지 + 동일 사용자 컨텍스트)
+    perf.start('캐시 확인');
+    const imageHash = getImageHash(image);
+    const cacheKey = getCacheKey(imageHash, userAllergies, userDiets);
+    const cachedResult = scanCache.get(cacheKey);
+
+    if (cachedResult) {
+      perf.end('캐시 확인');
+      console.log('⚡ 캐시 히트! 즉시 응답 반환');
+      perf.log();
+
+      return NextResponse.json({
+        ...cachedResult,
+        from_cache: true,
+        cached_at: new Date().toISOString(),
+        performance: perf.getResults(),
+      });
+    }
+
+    console.log('🔄 캐시 미스 - 새로운 분석 시작');
+    perf.end('캐시 확인');
+
+    // 4. 🔍 OCR로 이미지에서 텍스트 추출
+    // 기본 전략: race (Google Vision vs Gemini 병렬 경쟁, 1-2초)
+    perf.start('OCR 텍스트 추출');
+    let extractedText = '';
+    let ocrSource = 'none';
+
+    // OCR 전략 선택: 환경변수로 제어 가능
+    // 'race' (추천), 'google-vision', 'gemini-only', 'tesseract', 'hybrid'
+    const ocrStrategy = (process.env.OCR_STRATEGY as any) || 'race';
+
+    try {
+      const ocrResult = await extractText(
+        image,
+        language === 'ko' ? 'kor+eng' : 'eng',
+        ocrStrategy
+      );
+      extractedText = ocrResult.text;
+      ocrSource = ocrResult.source;
+      console.log(`📝 OCR 추출 완료 (${ocrSource}): ${extractedText.length}자`);
+    } catch (ocrError) {
+      console.error('❌ OCR 실패:', ocrError);
+      // OCR 실패해도 계속 진행 (Gemini Vision으로 폴백)
+    }
+
+    perf.end('OCR 텍스트 추출');
+
+    // 5. 🤖 Gemini에게 분석 요청 (프롬프트 핵심!)
     // gemini-3-flash-preview: 최신 모델, 무료 티어 사용 가능
     const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
@@ -142,7 +200,7 @@ export async function POST(req: NextRequest) {
     );
 
     const prompt = `
-You are a strict food safety and dietary compliance expert. Analyze this menu image and assess safety based on the user's allergies and dietary restrictions.
+You are a strict food safety and dietary compliance expert. Analyze this menu ${extractedText ? 'using the provided OCR text and image' : 'image'} and assess safety based on the user's allergies and dietary restrictions.
 
 # User Context
 - Allergies: ${allergyDescriptions.length > 0 ? allergyDescriptions.join(', ') : 'None'}
@@ -152,13 +210,18 @@ You are a strict food safety and dietary compliance expert. Analyze this menu im
 # CRITICAL: User has these specific allergies that MUST be checked:
 ${allergyDescriptions.length > 0 ? allergyDescriptions.map((a) => `  - ${a}`).join('\n') : '  - No allergies specified'}
 
+${extractedText ? `# OCR Extracted Text from Image:\n${extractedText}\n` : ''}
+
 # Task Instructions
 
 ## Step 1: Menu Item Identification
-1. Identify ALL menu items visible in the image
-2. Extract the original menu name (as shown in image)
-3. Translate the name to the target language (${language})
-4. Detect visible ingredients from the image or menu description
+1. Identify ALL menu items visible in ${extractedText ? 'the OCR text and image' : 'the image'}
+2. Extract the original menu name (as shown in ${extractedText ? 'OCR text or image' : 'image'})
+3. Extract the price if visible next to the menu item (look for numbers with currency symbols like $, ₩, €, £, ¥, etc.)
+   - If price is found, return it as a string (e.g., "$12.99", "₩15,000", "€8.50")
+   - If no price is visible for a menu item, return null
+4. Translate the name to the target language (${language})
+5. Detect visible ingredients from ${extractedText ? 'the OCR text, image, or menu description' : 'the image or menu description'}
 
 ## Step 2: Allergy Risk Assessment
 
@@ -237,6 +300,7 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
       "id": "1",
       "original_name": "menu name in image",
       "translated_name": "translated name in ${language}",
+      "price": "$12.99" or "₩15,000" or null (if not visible),
       "description": "brief description in ${language}",
       "safety_status": "SAFE" | "CAUTION" | "DANGER",
       "reason": "specific reason in ${language} (e.g., '새우가 포함되어 있습니다')",
@@ -291,13 +355,14 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
     };
 
     console.log('🤖 Gemini API 호출 시작...');
-    const startTime = Date.now();
+    perf.start('Gemini AI 분석');
 
     const result = await model.generateContent([prompt, imagePart]);
-    const response = await result.response;
+    const response = result.response;
     const text = response.text();
 
-    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    perf.end('Gemini AI 분석');
+    const elapsedTime = ((perf.getDuration('Gemini AI 분석') || 0) / 1000).toFixed(2);
     console.log(`✅ Gemini API 응답 완료 (${elapsedTime}초)`);
 
     // JSON 파싱 (AI가 가끔 ```json ... ``` 을 붙일 때가 있어서 처리)
@@ -317,17 +382,53 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
       );
     }
 
-    // 5. 🔍 재료 DB를 활용한 알레르기 검증 강화
+    // 5. ⚡ 빠른 응답을 위한 2단계 전략
+    // 단계 1: AI 결과만으로 즉시 응답 (1-2초 내)
+    // 단계 2: DB 검증은 선택적으로 수행 (사용자 알레르기가 있을 때만)
+
+    const shouldSkipDBVerification = userAllergies.length === 0;
+
+    if (shouldSkipDBVerification) {
+      // 알레르기 정보가 없으면 DB 검증 생략하고 즉시 응답
+      console.log('⚡ 알레르기 정보 없음 - DB 검증 생략');
+      perf.log();
+
+      const responseData = {
+        success: true,
+        analyzed_at: new Date().toISOString(),
+        user_context: {
+          allergies: userAllergies,
+          diet: dietType,
+        },
+        overall_status: analysisData.overall_status,
+        results: analysisData.results,
+        db_enhanced: false,
+        ocr_info: {
+          source: ocrSource,
+          text_length: extractedText.length,
+        },
+        performance: perf.getResults(),
+      };
+
+      // 💾 캐시에 저장 (30분 유효)
+      scanCache.set(cacheKey, responseData);
+      console.log('💾 결과를 캐시에 저장');
+
+      return NextResponse.json(responseData);
+    }
+
+    // 🔍 알레르기가 있는 경우에만 DB 검증 수행
+    perf.start('DB 알레르기 검증');
     console.log('🔍 재료 DB로 알레르기 검증 시작...');
 
-    // 각 메뉴 항목의 재료를 DB와 대조하여 알레르기 위험도 재확인
-    const enhancedResults = await Promise.all(
+    // Promise.all로 병렬 처리 (기존 방식 유지하되, 타임아웃 추가)
+    const DB_VERIFICATION_TIMEOUT = 5000; // 5초 제한
+
+    const dbVerificationPromise = Promise.all(
       analysisData.results.map(async (menuItem: any) => {
-        // 추출된 재료 목록
         const ingredients = menuItem.ingredients || [];
 
-        if (ingredients.length === 0 || userAllergies.length === 0) {
-          // 재료가 없거나 사용자 알레르기가 없으면 원본 그대로 반환
+        if (ingredients.length === 0) {
           return menuItem;
         }
 
@@ -374,7 +475,6 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
         let updatedReason = menuItem.reason;
 
         if (dbMatchedAllergens.length > 0) {
-          // DB에서 위험한 재료가 발견되면 최소 CAUTION 이상으로 상향
           if (menuItem.safety_status === 'SAFE') {
             updatedSafetyStatus = 'CAUTION';
             const dbAllergenNames = dbMatchedAllergens
@@ -382,7 +482,6 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
               .join(', ');
             updatedReason = `${menuItem.reason} (DB 확인: ${dbAllergenNames} 포함 가능성)`;
           } else if (menuItem.safety_status === 'CAUTION') {
-            // CAUTION인데 DB에서 확실한 매칭이 있으면 DANGER로 상향
             const confirmedIngredients = dbAllergenChecks.filter(
               (check) => check.is_dangerous
             );
@@ -415,15 +514,32 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
       })
     );
 
-    // overall_status 재계산 (DB 검증 결과 반영)
+    // Promise.race로 타임아웃 구현
+    const timeoutPromise = new Promise<typeof analysisData.results>((resolve) => {
+      setTimeout(() => {
+        console.warn(`⚠️ DB 검증 타임아웃 (${DB_VERIFICATION_TIMEOUT}ms) - AI 결과만 반환`);
+        resolve(analysisData.results);
+      }, DB_VERIFICATION_TIMEOUT);
+    });
+
+    const enhancedResults = await Promise.race([
+      dbVerificationPromise,
+      timeoutPromise,
+    ]);
+
+    // overall_status 재계산
     const hasDanger = enhancedResults.some((item: any) => item.safety_status === 'DANGER');
     const hasCaution = enhancedResults.some((item: any) => item.safety_status === 'CAUTION');
     const finalOverallStatus = hasDanger ? 'DANGER' : hasCaution ? 'CAUTION' : 'SAFE';
 
+    perf.end('DB 알레르기 검증');
     console.log(`✅ DB 검증 완료 - 최종 상태: ${finalOverallStatus}`);
 
-    // 6. ✅ 결과 반환 (DB 검증 강화 버전)
-    return NextResponse.json({
+    // 성능 측정 결과 출력
+    perf.log();
+
+    // 6. ✅ 결과 반환
+    const responseData = {
       success: true,
       analyzed_at: new Date().toISOString(),
       user_context: {
@@ -432,8 +548,19 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
       },
       overall_status: finalOverallStatus,
       results: enhancedResults,
-      db_enhanced: true, // DB 검증이 추가되었음을 표시
-    });
+      db_enhanced: true,
+      ocr_info: {
+        source: ocrSource,
+        text_length: extractedText.length,
+      },
+      performance: perf.getResults(),
+    };
+
+    // 💾 캐시에 저장 (30분 유효)
+    scanCache.set(cacheKey, responseData);
+    console.log('💾 결과를 캐시에 저장 (DB 검증 완료)');
+
+    return NextResponse.json(responseData);
   } catch (error: any) {
     console.error('Menu Analysis Error:', error);
 
