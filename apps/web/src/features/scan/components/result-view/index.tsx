@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { LanguageSelector } from '@/components/language-selector';
 import { useAnalyzeResult } from '@/features/scan/context/analyze-result-context';
 import { useTranslation } from '@/hooks/useTranslation';
+import { translations } from '@/lib/translations';
 import { MAIN_URLS } from '@/commons/constants/url';
 
 // ============================================
