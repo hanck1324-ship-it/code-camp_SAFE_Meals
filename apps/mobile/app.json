@@ -38,8 +38,8 @@
     },
     "plugins": [
       "@portone/react-native-sdk/plugin",
-      
-          "expo-router",
+
+      "expo-router",
       [
         "expo-camera",
         {
@@ -62,6 +62,6 @@
     "experiments": {
       "typedRoutes": true
     },
-    "owner": "gharam1234"
+    "owner": "safemeals"
   }
 }
