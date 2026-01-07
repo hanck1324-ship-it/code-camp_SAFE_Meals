@@ -65,6 +65,8 @@ export interface ScanTimings {
   ocrMs?: number;
   /** 룰/DB 1차 판정 시간 (ms) */
   quickMs?: number;
+  /** Fast Gemini 1차 판정 시간 (ms) */
+  fastGeminiMs?: number;
   /** Gemini AI 분석 시간 (ms) - 완료 시에만 */
   geminiMs?: number;
   /** 타임아웃으로 대기한 시간 (ms) */
@@ -81,6 +83,8 @@ export interface ScanTimings {
   ocrTextChars?: number;
   /** Gemini 프롬프트 글자 수 */
   promptChars?: number;
+  /** 토큰 최적화 시간 (ms) */
+  tokenOptimizeMs?: number;
   /** 에러 메시지 */
   error?: string;
 }
@@ -271,7 +275,7 @@ export class MemoryJobStorage implements JobStorage {
 
 /**
  * globalThis를 사용한 진짜 싱글톤
- * 
+ *
  * Next.js dev 모드에서 HMR(핫 모듈 교체)이 발생하면
  * 모듈이 재평가되어 일반 변수는 초기화됨.
  * globalThis에 저장하면 HMR에서도 인스턴스가 유지됨.
@@ -769,6 +773,10 @@ function generateStaffQuestion(
 
 /**
  * QuickResult와 Gemini 결과를 병합하여 FinalResult 생성
+ *
+ * ⚠️ 중요: quickResult의 식단 트리거가 있으면 Gemini 결과에 반영
+ * - Gemini가 식단 위반을 놓칠 수 있으므로 quickResult 트리거도 고려
+ * - 최종 overall_status는 둘 중 더 위험한 쪽을 따름
  */
 export function mergeQuickAndGemini(
   quickResult: QuickResult,
@@ -779,11 +787,51 @@ export function mergeQuickAndGemini(
     db_enhanced?: boolean;
   }
 ): FinalResult {
+  // quickResult에서 식단 관련 트리거 확인 (알레르기 코드가 아닌 식단 코드)
+  const dietCodes = ['vegetarian', 'vegan', 'halal', 'kosher', 'gluten_free'];
+  const quickDietTriggers = quickResult.triggerCodes.filter((code) =>
+    dietCodes.includes(code)
+  );
+
+  // quickResult가 DANGER이고 식단 트리거가 있으면 Gemini 결과에 반영
+  const quickHasDietDanger =
+    quickResult.level === 'DANGER' && quickDietTriggers.length > 0;
+
+  // 최종 overall_status 결정 (더 위험한 쪽 선택)
+  let finalOverallStatus: SafetyLevel = geminiResult.overall_status;
+
+  if (quickHasDietDanger && geminiResult.overall_status === 'SAFE') {
+    // Quick 판정에서 식단 위반 발견했지만 Gemini가 놓친 경우
+    finalOverallStatus = 'DANGER';
+    console.warn(
+      '⚠️ [mergeQuickAndGemini] Quick 판정의 식단 트리거로 DANGER 상향:',
+      quickDietTriggers
+    );
+  } else if (
+    quickResult.level === 'DANGER' &&
+    geminiResult.overall_status !== 'DANGER'
+  ) {
+    // Quick이 DANGER인데 Gemini가 아니면 최소 CAUTION으로 상향
+    finalOverallStatus =
+      geminiResult.overall_status === 'SAFE'
+        ? 'CAUTION'
+        : geminiResult.overall_status;
+    console.warn(
+      '⚠️ [mergeQuickAndGemini] Quick DANGER로 인해 상태 상향:',
+      quickResult.triggerCodes
+    );
+  }
+
   return {
     menus: geminiResult.results,
-    summary: geminiResult.overall_status,
-    aiAnalysis: geminiResult,
-    overall_status: geminiResult.overall_status,
+    summary: finalOverallStatus,
+    aiAnalysis: {
+      ...geminiResult,
+      overall_status: finalOverallStatus,
+      quickDietTriggers:
+        quickDietTriggers.length > 0 ? quickDietTriggers : undefined,
+    },
+    overall_status: finalOverallStatus,
     results: geminiResult.results,
     user_context: geminiResult.user_context,
     db_enhanced: geminiResult.db_enhanced,
