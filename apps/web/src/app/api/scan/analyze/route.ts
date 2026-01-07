@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { PerformanceMonitor } from '@/lib/performance';
 import { extractText } from '@/lib/ocr-service';
 import { scanCache, getImageHash, getCacheKey } from '@/lib/scan-cache';
+import { getPrompt, type PromptMode } from '@/lib/ai-prompt-optimizer';
 
 // Gemini API 클라이언트 초기화
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     // 3. 📸 클라이언트에서 보낸 이미지 데이터 받기
     const body = await req.json();
-    const { image, language = 'ko' } = body;
+    let { image, language = 'ko' } = body;
 
     console.log(
       '📸 이미지 수신:',
@@ -116,6 +117,29 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // 3.1. 📦 이미지 크기 확인 및 자동 압축
+    perf.start('이미지 압축');
+    const getImageSizeKB = (base64: string): number => {
+      const base64Data = base64.includes('base64,')
+        ? base64.split('base64,')[1]
+        : base64;
+      const sizeInBytes = (base64Data.length * 3) / 4;
+      return Math.round(sizeInBytes / 1024);
+    };
+
+    const originalImageSize = getImageSizeKB(image);
+    console.log(`📦 원본 이미지 크기: ${originalImageSize}KB`);
+
+    // 500KB 이상이면 경고 로그 (클라이언트에서 압축했어야 함)
+    if (originalImageSize > 500) {
+      console.warn(
+        `⚠️ 이미지가 너무 큼 (${originalImageSize}KB > 500KB). 클라이언트에서 압축 권장`
+      );
+      // Note: 서버에서 이미지 압축하려면 Sharp 라이브러리 필요
+      // 지금은 클라이언트에서 압축하도록 유도
+    }
+    perf.end('이미지 압축');
 
     // 3.5. ⚡ 캐시 확인 (동일 이미지 + 동일 사용자 컨텍스트)
     perf.start('캐시 확인');
@@ -165,6 +189,12 @@ export async function POST(req: NextRequest) {
 
     perf.end('OCR 텍스트 추출');
 
+    // OCR 텍스트 길이 제한 (토큰 절감)
+    if (extractedText.length > 500) {
+      extractedText = extractedText.substring(0, 500) + '...';
+      console.log('📝 OCR 텍스트 500자로 제한');
+    }
+
     // 5. 🤖 Gemini에게 분석 요청 (프롬프트 핵심!)
     // gemini-3-flash-preview: 최신 모델, 무료 티어 사용 가능
     const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
@@ -199,147 +229,28 @@ export async function POST(req: NextRequest) {
       (code) => allergyCodeToLabel[code] || code
     );
 
-    const prompt = `
-You are a strict food safety and dietary compliance expert. Analyze this menu ${extractedText ? 'using the provided OCR text and image' : 'image'} and assess safety based on the user's allergies and dietary restrictions.
+    // 🚀 프롬프트 모드 선택 (환경변수로 제어)
+    const promptMode = (process.env.PROMPT_MODE as PromptMode) || 'fast';
+    console.log(`📝 프롬프트 모드: ${promptMode}`);
 
-# User Context
-- Allergies: ${allergyDescriptions.length > 0 ? allergyDescriptions.join(', ') : 'None'}
-- Diet Type: ${dietType}
-- Target Language: ${language}
+    // ai-prompt-optimizer를 사용한 최적화된 프롬프트
+    let prompt = getPrompt(promptMode, allergyDescriptions, dietType, language);
 
-# CRITICAL: User has these specific allergies that MUST be checked:
-${allergyDescriptions.length > 0 ? allergyDescriptions.map((a) => `  - ${a}`).join('\n') : '  - No allergies specified'}
-
-${extractedText ? `# OCR Extracted Text from Image:\n${extractedText}\n` : ''}
-
-# Task Instructions
-
-## Step 1: Menu Item Identification
-1. Identify ALL menu items visible in ${extractedText ? 'the OCR text and image' : 'the image'}
-2. Extract the original menu name (as shown in ${extractedText ? 'OCR text or image' : 'image'})
-3. Extract the price if visible next to the menu item (look for numbers with currency symbols like $, ₩, €, £, ¥, etc.)
-   - If price is found, return it as a string (e.g., "$12.99", "₩15,000", "€8.50")
-   - If no price is visible for a menu item, return null
-4. Translate the name to the target language (${language})
-5. Detect visible ingredients from ${extractedText ? 'the OCR text, image, or menu description' : 'the image or menu description'}
-
-## Step 2: Allergy Risk Assessment
-
-Evaluate each menu item against the user's allergies using these strict criteria:
-
-### DANGER (위험) - 확실히 알레르기 물질 포함
-- Menu item DEFINITELY contains the allergen as a main ingredient
-- Example: "Shrimp Fried Rice" contains shrimp → DANGER for shellfish allergy
-- Example: "Cheese Pizza" contains cheese → DANGER for milk allergy
-- Example: "Peanut Butter Cookies" contains peanut → DANGER for peanut allergy
-
-### CAUTION (주의) - 알레르기 물질 포함 가능성 있음
-- Menu item MIGHT contain the allergen (not visible but commonly used)
-- Cross-contamination risk is high
-- Example: "Fried Chicken" might contain egg (breading) → CAUTION for egg allergy
-- Example: "Pad Thai" often contains peanuts → CAUTION for peanut allergy
-- Example: "Bulgogi" might contain soy sauce → CAUTION for soy allergy
-
-### SAFE (안전) - 알레르기 물질 없음
-- No obvious allergens detected
-- No common cross-contamination risks
-- Example: "Plain Rice" → SAFE for most allergies
-- Example: "Green Salad (no dressing)" → SAFE for most allergies
-
-## Step 3: Dietary Restriction Assessment
-
-Evaluate each menu item against the user's diet type:
-
-### Vegetarian (채식주의자)
-- DANGER: Contains meat, poultry, fish, or seafood
-- CAUTION: Might contain meat-based broth or hidden meat products
-- SAFE: Plant-based only (dairy and eggs allowed)
-
-### Vegan (비건)
-- DANGER: Contains ANY animal products (meat, dairy, eggs, honey, etc.)
-- CAUTION: Might contain hidden animal products (gelatin, whey, etc.)
-- SAFE: 100% plant-based
-
-### Halal (할랄)
-- DANGER: Contains pork, alcohol, or non-halal meat
-- CAUTION: Might contain non-halal ingredients or cross-contamination
-- SAFE: Halal-certified or clearly halal-compliant
-
-### Kosher (코셔)
-- DANGER: Contains non-kosher meat, shellfish, or mixing dairy with meat
-- CAUTION: Might not meet kosher certification standards
-- SAFE: Kosher-compliant
-
-### Gluten-Free (글루텐 프리)
-- DANGER: Contains wheat, barley, rye, or gluten-containing grains
-- CAUTION: Might contain hidden gluten or cross-contamination
-- SAFE: No gluten-containing ingredients
-
-## Step 4: Combined Safety Status
-
-For each menu item, determine the FINAL safety_status:
-1. If EITHER allergy risk OR diet risk is DANGER → safety_status = "DANGER"
-2. Else if EITHER is CAUTION → safety_status = "CAUTION"
-3. Else if BOTH are SAFE → safety_status = "SAFE"
-
-## Step 5: Reason Explanation
-
-Provide a CLEAR and SPECIFIC reason in the target language:
-- DANGER: "새우가 포함되어 있습니다 (갑각류 알레르기)" / "돼지고기가 포함되어 있습니다 (할랄 식단)"
-- CAUTION: "계란이 포함될 수 있습니다 (튀김옷)" / "육수에 고기가 들어갈 수 있습니다 (채식주의)"
-- SAFE: "알레르기 물질이 없습니다" / "식단에 적합합니다"
-
-# Output Format
-
-Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
-
-{
-  "overall_status": "SAFE" | "CAUTION" | "DANGER",
-  "results": [
-    {
-      "id": "1",
-      "original_name": "menu name in image",
-      "translated_name": "translated name in ${language}",
-      "price": "$12.99" or "₩15,000" or null (if not visible),
-      "description": "brief description in ${language}",
-      "safety_status": "SAFE" | "CAUTION" | "DANGER",
-      "reason": "specific reason in ${language} (e.g., '새우가 포함되어 있습니다')",
-      "ingredients": ["detected", "ingredients", "list"],
-      "allergy_risk": {
-        "status": "SAFE" | "CAUTION" | "DANGER",
-        "matched_allergens": ["eggs", "milk"] or []
-      },
-      "diet_risk": {
-        "status": "SAFE" | "CAUTION" | "DANGER",
-        "violations": ["contains meat"] or []
-      }
+    // OCR 텍스트가 있으면 추가
+    if (extractedText) {
+      prompt = prompt.replace(
+        'Analyze this menu image',
+        `Analyze this menu image using OCR text:\n${extractedText}\n\nImage analysis:`
+      );
     }
-  ]
-}
 
-# Overall Status Rules
-- overall_status = "DANGER" if ANY menu item is DANGER
-- overall_status = "CAUTION" if ANY menu item is CAUTION (and none are DANGER)
-- overall_status = "SAFE" if ALL menu items are SAFE
-
-# Critical Requirements
-1. Be STRICT and CONSERVATIVE - err on the side of caution
-2. If uncertain, use CAUTION (never assume SAFE when unsure)
-3. Provide SPECIFIC reasons (e.g., "Contains eggs" not "May contain allergens")
-4. Translate ALL text to the target language (${language})
-5. Return ONLY valid JSON (no markdown, no extra text)
-    `;
-
-    // 🔍 디버깅: 프롬프트에 전달되는 사용자 컨텍스트 확인
-    console.log('📝 프롬프트 User Context:');
-    console.log(
-      `   - Allergies (raw codes): ${userAllergies.length > 0 ? userAllergies.join(', ') : 'None'}`
-    );
-    console.log(
-      `   - Allergies (descriptions): ${allergyDescriptions.length > 0 ? allergyDescriptions.join(', ') : 'None'}`
-    );
-    console.log(`   - Diet Type: ${dietType}`);
-    console.log(`   - Language: ${language}`);
+    // 🔍 디버깅: 프롬프트 정보
+    console.log('📝 프롬프트 정보:');
+    console.log(`   - 모드: ${promptMode}`);
+    console.log(`   - 프롬프트 길이: ${prompt.length}자`);
+    console.log(`   - 알레르기: ${allergyDescriptions.join(', ') || 'None'}`);
+    console.log(`   - 식단: ${dietType}`);
+    console.log(`   - OCR 텍스트: ${extractedText.length}자`);
 
     // 이미지 데이터 처리 (Base64 헤더 제거)
     // 예: "data:image/jpeg;base64,/9j/..." -> "/9j/..."

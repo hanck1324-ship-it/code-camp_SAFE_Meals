@@ -9,6 +9,7 @@ import {
   type AnalysisResult,
   type MenuAnalysisItem,
 } from '@/features/scan/context/analyze-result-context';
+import { optimizeImageForAI } from '@/lib/image-optimizer';
 
 export type { MenuAnalysisItem };
 
@@ -222,6 +223,24 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           base64Image = image;
         } else {
           base64Image = await fileToBase64(image);
+        }
+
+        // 📦 이미지 자동 압축 (500KB 이상이면 압축)
+        console.log('📦 이미지 최적화 시작...');
+        const {
+          optimized,
+          originalSize,
+          optimizedSize,
+          compressionRatio,
+        } = await optimizeImageForAI(base64Image);
+
+        if (compressionRatio > 1) {
+          console.log(
+            `✅ 이미지 압축 완료: ${originalSize}KB → ${optimizedSize}KB (${compressionRatio.toFixed(1)}배 감소)`
+          );
+          base64Image = optimized;
+        } else {
+          console.log(`✅ 이미지 크기 적절 (${originalSize}KB), 압축 불필요`);
         }
 
         // 이미지 데이터 저장
