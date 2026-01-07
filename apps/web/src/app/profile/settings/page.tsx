@@ -44,8 +44,11 @@ export default function SettingsPage() {
       <SafetyProfileEditScreen
         userProfile={userProfile}
         onBack={() => router.back()}
-        onEditAllergies={() => router.push('/onboarding/allergy')}
-        onEditDiets={() => router.push('/onboarding/diet')}
+        onEditAllergies={() => router.push('/onboarding/allergy?mode=edit')}
+        onEditDiets={() => router.push('/onboarding/diet?mode=edit')}
+        onEditSafetyCardPin={() =>
+          router.push('/onboarding/safety-card?mode=edit')
+        }
       />
     </RequireAuth>
   );

@@ -228,6 +228,9 @@ export const translations = {
     editAllergies: '알레르기 편집',
     noDietsAdded: '아직 식습관이 추가되지 않았습니다',
     editDietaryPreferences: '식습관 편집',
+    safetyCardPin: '안전 카드 PIN',
+    safetyCardPinDesc: '안전 카드 PIN을 설정하거나 변경합니다.',
+    editSafetyCardPin: 'PIN 설정',
     safetyProfileInfo:
       '안전 프로필은 메뉴를 스캔하고 안전한 요리를 식별하는 데 사용됩니다. 최상의 경험을 위해 최신 상태로 유지하세요.',
     scanAlerts: '스캔 알림',
@@ -246,7 +249,6 @@ export const translations = {
     unlock: '잠금 해제',
     pinSecurityInfo:
       '안전 카드에는 민감한 알레르기 정보가 포함되어 있습니다. PIN은 귀하만이 식당 직원과 공유할 수 있도록 보장합니다.',
-    demoPin: '데모: 아무 4자리 PIN 사용',
     faq: 'FAQ',
     faqDesc: '자주 묻는 질문',
     safetyGuide: '안전 가이드',
@@ -581,6 +583,9 @@ export const translations = {
     editAllergies: 'Edit Allergies',
     noDietsAdded: 'No diets added yet',
     editDietaryPreferences: 'Edit Dietary Preferences',
+    safetyCardPin: 'Safety Card PIN',
+    safetyCardPinDesc: 'Set or update your Safety Card PIN.',
+    editSafetyCardPin: 'Set PIN',
     safetyProfileInfo:
       'Your safety profile is used to scan menus and identify safe foods. Keep it up to date for the best experience.',
     scanAlerts: 'Scan Alerts',
@@ -600,7 +605,6 @@ export const translations = {
     unlock: 'Unlock',
     pinSecurityInfo:
       'The safety card contains sensitive allergy information. PIN ensures that only you can share it with restaurant staff.',
-    demoPin: 'Demo: Use any 4-digit PIN',
     faq: 'FAQ',
     faqDesc: 'Frequently Asked Questions',
     safetyGuide: 'Safety Guide',
@@ -932,6 +936,9 @@ export const translations = {
     editAllergies: 'アレルギーの編集',
     noDietsAdded: 'まだ食事が追加されていません',
     editDietaryPreferences: '食事の好みの編集',
+    safetyCardPin: '安全カードPIN',
+    safetyCardPinDesc: '安全カードのPINを設定または変更します。',
+    editSafetyCardPin: 'PINを設定',
     safetyProfileInfo:
       '安全プロファイルはメニューをスキャンし、安全な食品を特定するために使用されます。最高の体験を得るために最新の状態を維持してください。',
     scanAlerts: 'スキャンアラート',
@@ -951,7 +958,6 @@ export const translations = {
     unlock: 'ロック解除',
     pinSecurityInfo:
       '安全カードには機密的なアレルギー情報が含まれています。PINはあなたがレストランスタッフと共有できるように保証します。',
-    demoPin: 'デモ: 任意の4桁のPINを使用',
     faq: 'FAQ',
     faqDesc: 'よくある質問',
     safetyGuide: '安全ガイド',
@@ -1283,6 +1289,9 @@ export const translations = {
     editAllergies: '编辑过敏源',
     noDietsAdded: '尚未添加饮食',
     editDietaryPreferences: '编辑饮食偏好',
+    safetyCardPin: '安全卡PIN',
+    safetyCardPinDesc: '设置或更新安全卡PIN。',
+    editSafetyCardPin: '设置PIN',
     safetyProfileInfo:
       '您的安全配置文件用于扫描菜单并识别安全食品。保持最新状态以获得最佳体验。',
     scanAlerts: '扫描警报',
@@ -1300,7 +1309,6 @@ export const translations = {
     unlock: '解锁',
     pinSecurityInfo:
       '安全卡包含敏感的过敏信息。PIN确保只有您才能与餐厅员工共享。',
-    demoPin: '演示：使用任何4位PIN',
     faq: 'FAQ',
     faqDesc: '常见问题',
     safetyGuide: '安全指南',
@@ -1633,6 +1641,10 @@ export const translations = {
     editAllergies: 'Editar Alergias',
     noDietsAdded: 'Aún no se han agregado dietas',
     editDietaryPreferences: 'Editar Preferencias Dietéticas',
+    safetyCardPin: 'PIN de la tarjeta de seguridad',
+    safetyCardPinDesc:
+      'Configura o actualiza el PIN de tu tarjeta de seguridad.',
+    editSafetyCardPin: 'Configurar PIN',
     safetyProfileInfo:
       'Tu perfil de seguridad se usa para escanear menús e identificar alimentos seguros. Manténlo actualizado para la mejor experiencia.',
     scanAlerts: 'Alertas de Escaneo',
@@ -1653,7 +1665,6 @@ export const translations = {
     unlock: 'Desbloquear',
     pinSecurityInfo:
       'La tarjeta de seguridad contiene información sensible sobre alergias. El PIN garantiza que solo tú puedas compartirlo con el personal del restaurante.',
-    demoPin: 'Demo: Usa cualquier PIN de 4 dígitos',
     faq: 'FAQ',
     faqDesc: 'Preguntas Frecuentes',
     safetyGuide: 'Guía de Seguridad',

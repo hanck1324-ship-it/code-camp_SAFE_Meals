@@ -58,6 +58,7 @@ export default function WebViewScreen({
 
   const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
   const supabaseStorageKey = getSupabaseAuthStorageKey();
+  const safeAreaEdges: Array<'top'> = ['top'];
 
   // AsyncStorage에서 저장된 언어 로드
   useEffect(() => {
@@ -249,6 +250,7 @@ export default function WebViewScreen({
           try {
             const { language } = message.payload;
             await AsyncStorage.setItem('app_language', language);
+            setSavedLanguage(language);
             console.log('[LANGUAGE_CHANGE] 언어 저장됨:', language);
           } catch (error) {
             console.error('Failed to save language:', error);
@@ -482,7 +484,7 @@ export default function WebViewScreen({
   // 이미지 로딩 중이면 로딩 표시
   if (!isImageLoaded || !isAuthSessionLoaded) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={safeAreaEdges}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#22c55e" />
         </View>
@@ -491,7 +493,7 @@ export default function WebViewScreen({
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={showHeader ? ['top'] : []}>
+    <SafeAreaView style={styles.container} edges={safeAreaEdges}>
       {showHeader && (
         <View style={styles.header}>
           <TouchableOpacity

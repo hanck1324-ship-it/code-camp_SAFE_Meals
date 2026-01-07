@@ -9,12 +9,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const { logout } = useAppStore();
 
-  // Temporary sample data – in real app fetch from API / DB
-  const userProfile = {
-    allergies: [],
-    diets: [],
-  };
-
   const handleNavigate = (
     screen:
       | 'safetyProfileEdit'
@@ -52,11 +46,7 @@ export default function ProfilePage() {
 
   return (
     <RequireAuth>
-      <ProfileScreen
-        userProfile={userProfile}
-        onNavigate={handleNavigate}
-        onLogout={handleLogout}
-      />
+      <ProfileScreen onNavigate={handleNavigate} onLogout={handleLogout} />
     </RequireAuth>
   );
 }

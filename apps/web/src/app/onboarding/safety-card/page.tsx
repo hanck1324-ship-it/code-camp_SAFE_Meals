@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ShieldAlert, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
@@ -12,9 +12,11 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SafetyCardOnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useTranslation();
   const language = useLanguageStore((state) => state.language);
   const { completeOnboarding } = useAppStore();
+  const isEditMode = searchParams.get('mode') === 'edit';
 
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -98,19 +100,53 @@ export default function SafetyCardOnboardingPage() {
         return;
       }
 
-      // Safety card 생성
-      const { error: insertError } = await supabase.from('safety_cards').insert({
-        user_id: user.id,
-        pin_code: pin,
-        message_ko: '저는 알레르기가 있습니다.\n이 음식에 알레르기 성분이 들어있나요?',
-        message_en: 'I have allergies.\nDoes this food contain any allergens?',
-        message_ja: '私はアレルギーがあります。\nこの食べ物にアレルゲンが含まれていますか?',
-        message_zh: '我有过敏症。\n这种食物含有过敏原吗?',
-      });
+      const { data: existingCards, error: fetchError } = await supabase
+        .from('safety_cards')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
 
-      if (insertError) {
-        console.error('Safety card 저장 실패:', insertError);
+      if (fetchError) {
+        console.error('Safety card 조회 실패:', fetchError);
         setError('저장에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      if (existingCards && existingCards.length > 0) {
+        const { error: updateError } = await supabase
+          .from('safety_cards')
+          .update({ pin_code: pin })
+          .eq('user_id', user.id);
+
+        if (updateError) {
+          console.error('Safety card 업데이트 실패:', updateError);
+          setError('저장에 실패했습니다. 다시 시도해주세요.');
+          return;
+        }
+      } else {
+        // Safety card 생성
+        const { error: insertError } = await supabase
+          .from('safety_cards')
+          .insert({
+            user_id: user.id,
+            pin_code: pin,
+            message_ko:
+              '저는 알레르기가 있습니다.\n이 음식에 알레르기 성분이 들어있나요?',
+            message_en: 'I have allergies.\nDoes this food contain any allergens?',
+            message_ja:
+              '私はアレルギーがあります。\nこの食べ物にアレルゲンが含まれていますか?',
+            message_zh: '我有过敏症。\n这种食物含有过敏原吗?',
+          });
+
+        if (insertError) {
+          console.error('Safety card 저장 실패:', insertError);
+          setError('저장에 실패했습니다. 다시 시도해주세요.');
+          return;
+        }
+      }
+
+      if (isEditMode) {
+        router.replace('/profile/settings');
         return;
       }
 
@@ -154,6 +190,11 @@ export default function SafetyCardOnboardingPage() {
    * 건너뛰기
    */
   const handleSkip = () => {
+    if (isEditMode) {
+      router.replace('/profile/settings');
+      return;
+    }
+
     completeOnboarding();
 
     // 네이티브 앱 감지: ReactNativeWebView 또는 isNativeApp 플래그 확인
@@ -197,11 +238,17 @@ export default function SafetyCardOnboardingPage() {
 
         {/* Title & Description */}
         <h1 className="mb-2 text-2xl font-bold text-gray-900">
-          {step === 'create' ? 'Safety Card PIN 설정' : 'PIN 확인'}
+          {step === 'create'
+            ? isEditMode
+              ? 'Safety Card PIN 변경'
+              : 'Safety Card PIN 설정'
+            : 'PIN 확인'}
         </h1>
         <p className="mb-8 max-w-sm text-center text-gray-600">
           {step === 'create'
-            ? '긴급 상황에서 사용할 4자리 PIN 번호를 설정해주세요.'
+            ? isEditMode
+              ? '안전 카드 PIN을 변경해주세요.'
+              : '긴급 상황에서 사용할 4자리 PIN 번호를 설정해주세요.'
             : '동일한 PIN 번호를 한 번 더 입력해주세요.'}
         </p>
 
@@ -243,7 +290,7 @@ export default function SafetyCardOnboardingPage() {
             {isSaving ? '저장 중...' : step === 'create' ? '다음' : '완료'}
           </Button>
 
-          {step === 'create' && (
+          {step === 'create' && !isEditMode && (
             <button
               onClick={handleSkip}
               className="w-full rounded-2xl py-3 text-gray-500 hover:text-gray-700"

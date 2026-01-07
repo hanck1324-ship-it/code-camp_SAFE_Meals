@@ -76,6 +76,7 @@ const ALLERGY_CODE_TO_ID: Record<string, string> = {
 function AllergyDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isEditMode = searchParams.get('mode') === 'edit';
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const [isSaving, setIsSaving] = useState(false);
@@ -121,7 +122,11 @@ function AllergyDetailContent() {
   const handleAllergySelect = async (allergies: string[]) => {
     // 빈 배열이면 저장하지 않고 다음으로 진행 (기존 데이터 유지)
     if (allergies.length === 0) {
-      router.push('/onboarding/diet');
+      if (isEditMode) {
+        router.replace('/profile/settings');
+      } else {
+        router.push('/onboarding/diet');
+      }
       return;
     }
 
@@ -136,7 +141,6 @@ function AllergyDetailContent() {
       } = await supabase.auth.getUser();
       if (authError || !user) {
         console.error('로그인이 필요합니다.');
-        router.push('/onboarding/diet');
         return;
       }
 
@@ -177,7 +181,11 @@ function AllergyDetailContent() {
       console.error('알레르기 저장 중 에러:', err);
     } finally {
       setIsSaving(false);
-      router.push('/onboarding/diet');
+      if (isEditMode) {
+        router.replace('/profile/settings');
+      } else {
+        router.push('/onboarding/diet');
+      }
     }
   };
 

@@ -1,7 +1,6 @@
 import { ChevronLeft, Check } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Language } from '@/lib/translations';
-import { useRouter } from 'next/navigation';
 
 interface LanguageSettingsScreenProps {
   onBack: () => void;
@@ -11,7 +10,6 @@ export function LanguageSettingsScreen({
   onBack,
 }: LanguageSettingsScreenProps) {
   const { t, language: currentLanguage, setLanguage } = useTranslation();
-  const router = useRouter();
 
   const languages: {
     code: Language;
@@ -28,8 +26,6 @@ export function LanguageSettingsScreen({
 
   const handleLanguageSelect = (lang: Language) => {
     setLanguage(lang);
-    // 언어 변경 후 모든 페이지를 다시 렌더링하여 즉시 반영
-    router.refresh();
   };
 
   return (

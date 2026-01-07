@@ -148,12 +148,6 @@ export function SafetyCardPinScreen({
             </div>
           </div>
 
-          {/* Demo Hint */}
-          <div className="mt-4 text-center">
-            <p className="text-xs text-muted-foreground">
-              {t.demoPin || 'Demo: Use any 4-digit PIN'}
-            </p>
-          </div>
         </div>
       </div>
     </div>

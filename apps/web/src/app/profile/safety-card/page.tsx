@@ -91,6 +91,15 @@ export default function SafetyCardPage() {
     getMessage,
   } = useSafetyCardData({ enabled: isUnlocked });
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.replace('/profile');
+  };
+
   /**
    * PIN 제출 핸들러
    */
@@ -153,7 +162,7 @@ export default function SafetyCardPage() {
                 {queryErrorMessage || t.failedToLoadData}
               </p>
               <button
-                onClick={() => router.back()}
+                onClick={handleBack}
                 className="mt-4 rounded-xl bg-gray-200 px-6 py-2 text-gray-700"
               >
                 {t.goBack}
@@ -172,7 +181,7 @@ export default function SafetyCardPage() {
                 {t.noSafetyCardInfo}
               </p>
               <button
-                onClick={() => router.back()}
+                onClick={handleBack}
                 className="mt-4 rounded-xl bg-gray-200 px-6 py-2 text-gray-700"
               >
                 {t.goBack}
@@ -186,7 +195,7 @@ export default function SafetyCardPage() {
             >
               {/* Top bar */}
               <div className="mb-2 flex w-full items-center">
-                <button onClick={() => router.back()} className="mr-2 p-2">
+                <button onClick={handleBack} className="mr-2 p-2">
                   <ChevronLeft className="h-6 w-6" />
                 </button>
               </div>
@@ -231,7 +240,7 @@ export default function SafetyCardPage() {
           >
             {/* Top bar */}
             <div className="mb-2 flex w-full items-center">
-              <button onClick={() => router.back()} className="mr-2 p-2">
+              <button onClick={handleBack} className="mr-2 p-2">
                 <ChevronLeft className="h-6 w-6" />
               </button>
               <h1 className="text-lg font-medium">
@@ -328,7 +337,6 @@ export default function SafetyCardPage() {
               </p>
             </div>
 
-            <p className="mt-8 text-sm text-gray-400">{t.demoPin}</p>
           </div>
         )}
       </div>

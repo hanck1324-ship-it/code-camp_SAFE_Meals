@@ -1,0 +1,418 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-파일경로) 참고할 PAGE 경로: src/app/dashboard/page.tsx
+조건-파일경로) 구현될 TSX 파일경로: src/features/dashboard/components/home-view/index.tsx
+조건-파일경로) 구현될 HOOK 경로: src/features/dashboard/hooks/useRecentScans.ts
+조건-파일경로) 참고 스키마 문서: /code-camp_SAFE_Meals/docs/schema.md
+
+==============================================
+
+조건-스타일) Tailwind CSS를 사용하여 스타일링할 것.
+            - globals.css에 정의된 CSS 변수를 Tailwind 클래스로 활용
+            - safety_level별 색상 매핑 (CSS 변수 활용)
+                - safe: bg-green-50, text-green-700, border-green-200
+                - caution: bg-yellow-50, text-yellow-700, border-yellow-200
+                - danger: bg-red-50, text-red-700, border-red-200
+                - unknown: bg-gray-50, text-gray-700, border-gray-200
+            - 하드코딩된 색상값 사용 금지
+            - 반응형: sm:, md:, lg: 등 Tailwind 반응형 유틸리티 활용
+
+==============================================
+
+핵심요구사항) 다음의 기능을 playwright 테스트를 활용하여 TDD 기반으로 구현하고, 테스트에 통과할 때까지 반복할 것.
+
+1) 테스트 제외 라이브러리
+   - jest
+   - @testing-library/react
+
+2) 테스트 조건
+   - timeout은 설정하지 않거나, 500ms 미만으로 설정할 것.
+   - 페이지가 완전히 로드된 후 테스트할 것.
+       - 페이지 로드 식별 요구사항: 고정식별자 data-testid 대기 방법
+       - **중요금지사항** 페이지 로드 식별 금지사항: networkidle 대기 방법
+
+3) 테스트 인증 전략
+   3-1) 저장된 인증 상태 사용 (Storage State)
+        - Playwright의 storageState 기능을 활용하여 로그인 세션 재사용
+        - 테스트 실행 전 한 번만 로그인하고 상태 저장
+        - **계정별 storageState 파일 2개 분리**:
+            - playwright/.auth/with-scans.json (스캔 기록 있는 계정)
+            - playwright/.auth/without-scans.json (스캔 기록 없는 계정)
+
+   3-2) 인증 상태 확보 방법
+        ```typescript
+        // global-setup.ts에서 두 계정 모두 로그인 후 상태 저장
+        
+        // 1. 스캔 기록 있는 계정
+        await page.goto('/login');
+        await page.fill('[data-testid="email-input"]', process.env.TEST_USER_WITH_SCANS_EMAIL);
+        await page.fill('[data-testid="password-input"]', process.env.TEST_USER_WITH_SCANS_PASSWORD);
+        await page.click('[data-testid="login-button"]');
+        await page.waitForURL(/\/dashboard/);
+        await page.context().storageState({ path: 'playwright/.auth/with-scans.json' });
+        
+        // 2. 스캔 기록 없는 계정 (새 컨텍스트로)
+        const context2 = await browser.newContext();
+        const page2 = await context2.newPage();
+        await page2.goto('/login');
+        await page2.fill('[data-testid="email-input"]', process.env.TEST_USER_WITHOUT_SCANS_EMAIL);
+        await page2.fill('[data-testid="password-input"]', process.env.TEST_USER_WITHOUT_SCANS_PASSWORD);
+        await page2.click('[data-testid="login-button"]');
+        await page2.waitForURL(/\/dashboard/);
+        await context2.storageState({ path: 'playwright/.auth/without-scans.json' });
+        ```
+
+   3-3) Playwright 프로젝트 분리 (계정별)
+        ```typescript
+        // playwright.config.ts
+        projects: [
+          { name: 'setup', testMatch: /global-setup\.ts/ },
+          { 
+            name: 'authenticated-with-scans', 
+            use: { storageState: 'playwright/.auth/with-scans.json' },
+            testMatch: /.*\.with-scans\.spec\.ts/,
+            dependencies: ['setup']
+          },
+          { 
+            name: 'authenticated-without-scans', 
+            use: { storageState: 'playwright/.auth/without-scans.json' },
+            testMatch: /.*\.without-scans\.spec\.ts/,
+            dependencies: ['setup']
+          }
+        ]
+        ```
+
+4) 테스트 데이터 조건 (Fixture 관리)
+   4-1) 데이터 전략
+        - 실제 Supabase 데이터를 사용할 것 (Mock 금지)
+        - **테스트 전용 계정 2개 사용** (환경변수로 관리)
+            - TEST_USER_WITH_SCANS_EMAIL / TEST_USER_WITH_SCANS_PASSWORD
+            - TEST_USER_WITHOUT_SCANS_EMAIL / TEST_USER_WITHOUT_SCANS_PASSWORD
+            - TEST_USER_WITH_SCANS_ID / TEST_USER_WITHOUT_SCANS_ID (UUID)
+
+   4-2) RLS(Row Level Security) 대응 전략 (중요)
+        - **시드 데이터 삽입/삭제는 Service Role Key 사용**
+        - Service Role Key는 RLS를 우회하므로 시드 관리에 적합
+        - **보안 주의**: Service Role Key는 절대 클라이언트 번들에 포함 금지
+        - 환경변수: SUPABASE_SERVICE_ROLE_KEY (CI/로컬 전용)
+        ```typescript
+        // test-fixtures.ts - Service Role Client 생성
+        import { createClient } from '@supabase/supabase-js';
+        
+        const serviceClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!  // Service Role Key
+        );
+        ```
+
+   4-3) Fixture 관리 규칙 (모킹 아님, 실DB fixture)
+        - 테스트 시작 전: 시드 데이터 삽입 (beforeAll)
+        - 테스트 종료 후: 시드 데이터 정리 (afterAll)
+        - **시드 데이터에 고유 식별자 포함** (병렬 실행 충돌 방지)
+        ```typescript
+        // 예시: test-fixtures.ts
+        import { v4 as uuidv4 } from 'uuid';
+        
+        export async function seedRecentScans(userId: string, testRunId: string) {
+          const { data } = await serviceClient.from('scan_history').insert({
+            user_id: userId,
+            scan_type: 'menu',
+            image_url: 'https://example.com/test.jpg',
+            restaurant_name: `Test Restaurant [${testRunId}]`,  // 고유 식별자
+            scanned_at: new Date().toISOString()
+          }).select().single();
+          
+          await serviceClient.from('scan_results').insert({
+            scan_id: data.id,
+            item_name: `Test Menu Item [${testRunId}]`,
+            safety_level: 'safe'
+          });
+          return data.id;
+        }
+        ```
+
+   4-4) Cleanup 순서 (FK 제약 대응 - 중요)
+        - **scan_results 먼저 삭제 → scan_history 삭제** (FK 의존 순서)
+        - 스키마에 ON DELETE CASCADE가 있더라도 명시적 순서 권장
+        ```typescript
+        export async function cleanupScans(scanIds: string[]) {
+          // 1. 자식 테이블 먼저 삭제
+          await serviceClient.from('scan_results').delete().in('scan_id', scanIds);
+          // 2. 부모 테이블 삭제
+          await serviceClient.from('scan_history').delete().in('id', scanIds);
+        }
+        
+        // 또는 고유 식별자로 정리 (더 안전)
+        export async function cleanupByTestRunId(testRunId: string) {
+          const { data: scans } = await serviceClient
+            .from('scan_history')
+            .select('id')
+            .like('restaurant_name', `%[${testRunId}]%`);
+          
+          if (scans?.length) {
+            const scanIds = scans.map(s => s.id);
+            await serviceClient.from('scan_results').delete().in('scan_id', scanIds);
+            await serviceClient.from('scan_history').delete().in('id', scanIds);
+          }
+        }
+        ```
+
+   4-5) 병렬 실행 충돌 방지 전략
+        - **이 테스트 파일은 직렬 실행** (데이터 일관성 보장)
+        ```typescript
+        // recent-scans.spec.ts
+        test.describe.configure({ mode: 'serial' });
+        
+        test.describe('최근 스캔 섹션', () => {
+          const testRunId = uuidv4();
+          let seedScanIds: string[] = [];
+          
+          test.beforeAll(async () => {
+            seedScanIds.push(await seedRecentScans(userId, testRunId));
+          });
+          
+          test.afterAll(async () => {
+            await cleanupByTestRunId(testRunId);
+          });
+          
+          // ... tests
+        });
+        ```
+
+   4-6) 성공 시나리오
+        - 최근 스캔 데이터가 1건 이상 존재하는 경우 
+          → authenticated-with-scans 프로젝트, *.with-scans.spec.ts
+        - 최근 스캔 데이터가 0건인 경우 
+          → authenticated-without-scans 프로젝트, *.without-scans.spec.ts
+
+   4-7) 에러 시나리오
+        - 네트워크 에러 시뮬레이션: Playwright의 route.abort() 사용
+        ```typescript
+        await page.route('**/rest/v1/scan_history*', route => route.abort());
+        ```
+        - 이는 모킹이 아닌 네트워크 레벨 차단으로, 실제 에러 상황 재현
+
+==============================================
+
+핵심요구사항) 대시보드에 최근 스캔 결과 3건을 최신순으로 표시할 것.
+
+1) 데이터 관계 정의 (중요)
+   - **1스캔 = N결과 관계**: scan_history 1건에 scan_results가 여러 건 연결될 수 있음
+   - 대시보드에서는 **스캔 단위로 3건** 표시 (결과 3건이 아님)
+   - 각 스캔 카드에는 **대표 결과 1개**만 표시
+
+2) 대표 결과 선정 규칙 (1:N 처리)
+   - 위험도 우선순위: danger > caution > unknown > safe
+   - 동일 스캔 내 여러 결과가 있을 경우, 가장 위험한 등급을 대표로 표시
+   - 항목명 표시 규칙:
+       - 결과가 1개: 해당 item_name 표시
+       - 결과가 2개 이상: "가장 위험한 항목명 외 N개" 형식
+       - 예: "새우튀김 외 2개"
+
+3) 데이터 소스
+   - Supabase 연동: scan_history + scan_results 테이블 조인
+   - 현재 로그인한 사용자(user_id)의 스캔 이력만 조회
+   - 정렬: scanned_at 기준 내림차순 (최신순)
+   - 제한: 스캔 기준 최대 3건만 조회 (LIMIT 3)
+
+4) 조회 쿼리 구조
+   ```typescript
+   // Supabase 쿼리 예시
+   const { data } = await supabase
+     .from('scan_history')
+     .select(`
+       id,
+       scan_type,
+       image_url,
+       restaurant_name,
+       scanned_at,
+       scan_results (
+         id,
+         item_name,
+         safety_level
+       )
+     `)
+     .eq('user_id', userId)
+     .order('scanned_at', { ascending: false })
+     .limit(3);
+   ```
+
+5) 결과 가공 로직
+   ```typescript
+   // 대표 결과 선정 함수
+   function selectRepresentativeResult(results: ScanResult[]): {
+     itemName: string;
+     safetyLevel: SafetyLevel;
+     totalCount: number;
+   } {
+     const priorityOrder = { danger: 0, caution: 1, unknown: 2, safe: 3 };
+     const sorted = [...results].sort((a, b) => 
+       priorityOrder[a.safety_level] - priorityOrder[b.safety_level]
+     );
+     const representative = sorted[0];
+     return {
+       itemName: results.length > 1 
+         ? `${representative.item_name} 외 ${results.length - 1}개`
+         : representative.item_name,
+       safetyLevel: representative.safety_level,
+       totalCount: results.length
+     };
+   }
+   ```
+
+==============================================
+
+핵심요구사항) useRecentScans 커스텀 Hook 구현
+
+1) Hook 인터페이스
+   ```typescript
+   interface ScanResultItem {
+     id: string;
+     itemName: string;
+     safetyLevel: 'safe' | 'caution' | 'danger' | 'unknown';
+   }
+
+   interface RecentScan {
+     id: string;
+     scanType: 'menu' | 'barcode' | 'image';
+     imageUrl: string | null;
+     restaurantName: string | null;
+     scannedAt: string;
+     // 대표 결과 (1:N 관계에서 가공된 값)
+     representativeItem: {
+       itemName: string;        // "새우튀김" 또는 "새우튀김 외 2개"
+       safetyLevel: 'safe' | 'caution' | 'danger' | 'unknown';
+       totalCount: number;      // 전체 결과 개수
+     };
+     // 원본 결과 배열 (상세 보기용)
+     allResults: ScanResultItem[];
+   }
+
+   interface UseRecentScansResult {
+     recentScans: RecentScan[];
+     isLoading: boolean;
+     error: string | null;
+     refetch: () => Promise<void>;
+   }
+   ```
+
+2) 구현 세부사항
+   - Supabase 클라이언트를 사용하여 데이터 조회
+   - 사용자 인증 상태 확인 후 조회
+   - 에러 핸들링 및 로딩 상태 관리
+   - 컴포넌트 마운트 시 자동 조회
+
+==============================================
+
+핵심요구사항) 대시보드 UI 데이터 바인딩
+
+1) 기존 하드코딩된 recentScans 배열 제거
+   - 현재 HomeDashboard 컴포넌트 내 하드코딩된 recentScans 배열 삭제
+   - useRecentScans Hook으로 대체
+
+2) 데이터 바인딩 상세내용
+   2-1) 각 스캔 카드에 표시할 정보
+        - 이미지: imageUrl (없을 경우 기본 placeholder 이미지)
+        - 메뉴명: representativeItem.itemName (예: "새우튀김 외 2개")
+        - 시간: scannedAt을 상대 시간으로 표시 (예: "10분 전", "1시간 전")
+        - 안전 등급 뱃지: representativeItem.safetyLevel에 따른 색상 표시
+        - 결과 개수 표시: totalCount > 1인 경우 개수 뱃지 표시
+
+   2-2) 빈 상태 UI
+        - 스캔 이력이 없는 경우 "아직 스캔한 메뉴가 없습니다" 메시지 표시
+        - 스캔 시작 유도 버튼 표시
+
+   2-3) 로딩 상태 UI
+        - 스켈레톤 UI 또는 로딩 인디케이터 표시
+        - 3개의 카드 형태 스켈레톤
+
+   2-4) 에러 상태 UI
+        - 에러 메시지 표시
+        - 재시도 버튼 제공
+
+3) data-testid 속성 (테스트용)
+   - 최근 스캔 섹션 컨테이너: data-testid="recent-scans-section"
+   - 각 스캔 카드: data-testid="recent-scan-card-{index}"
+   - 빈 상태: data-testid="recent-scans-empty"
+   - 로딩 상태: data-testid="recent-scans-loading"
+   - 에러 상태: data-testid="recent-scans-error"
+
+==============================================
+
+핵심요구사항) 시간 표시 유틸리티 함수 구현
+
+1) 함수 위치: src/lib/utils/formatRelativeTime.ts
+
+2) 함수 인터페이스
+   ```typescript
+   function formatRelativeTime(dateString: string, locale?: string): string
+   ```
+
+3) 반환 예시
+   - 1분 미만: "방금 전"
+   - 1~59분: "N분 전"
+   - 1~23시간: "N시간 전"
+   - 1~6일: "N일 전"
+   - 7일 이상: "YYYY.MM.DD" 형식
+
+4) 다국어 지원
+   - ko: "방금 전", "N분 전", "N시간 전", "N일 전"
+   - en: "just now", "N min ago", "N hours ago", "N days ago"
+
+==============================================
+
+체크리스트 반환 형식:
+
+[ ] 테스트 인프라 설정
+    [ ] 테스트 전용 계정 2개 환경변수 설정
+        [ ] TEST_USER_WITH_SCANS_EMAIL / PASSWORD / ID
+        [ ] TEST_USER_WITHOUT_SCANS_EMAIL / PASSWORD / ID
+        [ ] SUPABASE_SERVICE_ROLE_KEY (시드용)
+    [ ] Playwright storageState 인증 설정 (계정별 2개 파일)
+        [ ] playwright/.auth/with-scans.json
+        [ ] playwright/.auth/without-scans.json
+    [ ] Playwright 프로젝트 분리 (authenticated-with-scans, authenticated-without-scans)
+    [ ] global-setup.ts 두 계정 로그인 상태 저장 구현
+    [ ] test-fixtures.ts 시드/정리 함수 구현
+        [ ] Service Role Client 생성
+        [ ] seedRecentScans (고유 testRunId 포함)
+        [ ] cleanupByTestRunId (FK 순서: scan_results → scan_history)
+    [ ] 테스트 파일 직렬 실행 설정 (test.describe.configure)
+
+[ ] useRecentScans Hook 구현
+    [ ] Supabase 쿼리 작성 (scan_history + scan_results 조인)
+    [ ] 최신순 정렬 및 스캔 기준 3건 제한 적용
+    [ ] 1:N 관계 처리 - 대표 결과 선정 로직 구현
+    [ ] 위험도 우선순위 정렬 (danger > caution > unknown > safe)
+    [ ] "외 N개" 형식 항목명 가공
+    [ ] 로딩/에러/데이터 상태 관리
+    [ ] 사용자 인증 상태 확인
+
+[ ] formatRelativeTime 유틸리티 함수 구현
+    [ ] 상대 시간 계산 로직
+    [ ] 다국어 지원 (ko, en)
+
+[ ] HomeDashboard 컴포넌트 수정
+    [ ] 하드코딩된 recentScans 배열 제거
+    [ ] useRecentScans Hook 연동
+    [ ] 빈 상태 UI 구현
+    [ ] 로딩 상태 UI 구현
+    [ ] 에러 상태 UI 구현
+    [ ] safety_level별 색상 뱃지 표시
+
+[ ] Playwright 테스트 작성 및 통과
+    [ ] 테스트 파일 분리 (계정별)
+        [ ] recent-scans.with-scans.spec.ts (데이터 있는 케이스)
+        [ ] recent-scans.without-scans.spec.ts (빈 상태 케이스)
+    [ ] 최근 스캔 데이터 표시 테스트
+    [ ] 빈 상태 UI 테스트
+    [ ] 에러 상태 테스트 (route.abort() 활용)
+    [ ] 1:N 관계 - "외 N개" 표시 테스트
+    [ ] data-testid 검증
+
+[ ] 커서룰 적용 결과 체크
+    [ ] @01-common.mdc 규칙 준수
+    [ ] @04-func.mdc 규칙 준수

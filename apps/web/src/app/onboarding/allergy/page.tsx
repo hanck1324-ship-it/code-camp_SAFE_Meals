@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AllergyCategoryScreen } from '@/components/onboarding/allergy/allergy-category-screen';
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
@@ -54,6 +54,8 @@ const ALLERGY_TO_CATEGORY: Record<string, string> = {
 
 export default function AllergyOnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get('mode') === 'edit';
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
@@ -97,15 +99,22 @@ export default function AllergyOnboardingPage() {
   }, []);
 
   const handleCategorySelect = (categories: string[]) => {
-    // Store selected categories for next step
     if (categories.length > 0) {
-      // Navigate to detail screen with categories
       const params = new URLSearchParams({ categories: categories.join(',') });
+      if (isEditMode) {
+        params.set('mode', 'edit');
+      }
       router.push(`/onboarding/allergy-detail?${params}`);
-    } else {
-      // Skip to diet if no categories selected
-      router.push('/onboarding/diet');
+      return;
     }
+
+    if (isEditMode) {
+      router.replace('/profile/settings');
+      return;
+    }
+
+    // Skip to diet if no categories selected
+    router.push('/onboarding/diet');
   };
 
   const handleBack = () => {

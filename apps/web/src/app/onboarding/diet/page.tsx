@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DietCategoryScreen } from '@/components/onboarding/diet/ category/diet-category-screen';
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
@@ -21,6 +21,8 @@ const DIET_CODE_TO_CATEGORY: Record<string, string> = {
 
 export default function DietOnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get('mode') === 'edit';
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
@@ -69,6 +71,10 @@ export default function DietOnboardingPage() {
 
     // 아무것도 선택하지 않으면 기존 데이터 유지하고 Safety Card로
     if (categories.length === 0) {
+      if (isEditMode) {
+        router.replace('/profile/settings');
+        return;
+      }
       router.replace('/onboarding/safety-card');
       return;
     }
@@ -88,10 +94,18 @@ export default function DietOnboardingPage() {
         console.error('식단 삭제 중 에러:', err);
       }
 
+      if (isEditMode) {
+        router.replace('/profile/settings');
+        return;
+      }
+
       router.replace('/onboarding/safety-card');
     } else {
       // Navigate to detail screen with categories
       const params = new URLSearchParams({ categories: categories.join(',') });
+      if (isEditMode) {
+        params.set('mode', 'edit');
+      }
       router.push(`/onboarding/diet-detail?${params}`);
     }
   };

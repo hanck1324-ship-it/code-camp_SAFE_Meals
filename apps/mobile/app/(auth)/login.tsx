@@ -22,10 +22,7 @@ import {
 import { Session } from '@supabase/supabase-js';
 
 import { checkOnboardingStatus } from '@/lib/onboarding';
-import {
-  getSupabaseClient,
-  serializeSupabaseSession,
-} from '@/lib/supabase';
+import { getSupabaseClient, serializeSupabaseSession } from '@/lib/supabase';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -41,10 +38,14 @@ export default function LoginScreen() {
     const webClientId =
       process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
       (extra as any).googleWebClientId;
+    const iosClientId =
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+      (extra as any).googleIosClientId;
 
     if (webClientId) {
       GoogleSignin.configure({
         webClientId,
+        iosClientId, // iOS에서 필수
         offlineAccess: true,
         scopes: ['openid', 'email', 'profile'],
       });
@@ -53,43 +54,40 @@ export default function LoginScreen() {
   }, [extra]);
 
   // 로그인 완료 후 세션 저장 및 라우팅
-  const completeLogin = useCallback(
-    async (session: Session) => {
-      try {
-        const supabaseSessionString = serializeSupabaseSession(session);
-        const isNewUser = await checkOnboardingStatus(session.user.id);
+  const completeLogin = useCallback(async (session: Session) => {
+    try {
+      const supabaseSessionString = serializeSupabaseSession(session);
+      const isNewUser = await checkOnboardingStatus(session.user.id);
 
-        const storageEntries: [string, string][] = [
-          ['authToken', session.access_token],
-          ['refreshToken', session.refresh_token ?? ''],
-          ['userId', session.user.id],
-        ];
+      const storageEntries: [string, string][] = [
+        ['authToken', session.access_token],
+        ['refreshToken', session.refresh_token ?? ''],
+        ['userId', session.user.id],
+      ];
 
-        if (supabaseSessionString) {
-          storageEntries.push(['supabaseSession', supabaseSessionString]);
-        }
-
-        if (isNewUser) {
-          await AsyncStorage.multiRemove(['hasOnboarded']);
-        } else {
-          storageEntries.push(['hasOnboarded', 'true']);
-        }
-
-        await AsyncStorage.multiSet(storageEntries);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        if (isNewUser) {
-          router.replace('/(auth)/onboarding');
-        } else {
-          router.replace('/(tabs)');
-        }
-      } catch (err) {
-        console.error('[Login] 세션 저장 실패:', err);
-        throw err;
+      if (supabaseSessionString) {
+        storageEntries.push(['supabaseSession', supabaseSessionString]);
       }
-    },
-    []
-  );
+
+      if (isNewUser) {
+        await AsyncStorage.multiRemove(['hasOnboarded']);
+      } else {
+        storageEntries.push(['hasOnboarded', 'true']);
+      }
+
+      await AsyncStorage.multiSet(storageEntries);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      if (isNewUser) {
+        router.replace('/(auth)/onboarding');
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (err) {
+      console.error('[Login] 세션 저장 실패:', err);
+      throw err;
+    }
+  }, []);
 
   // 이메일/비밀번호 로그인
   const handleEmailLogin = useCallback(async () => {
@@ -138,7 +136,9 @@ export default function LoginScreen() {
       await completeLogin(data.session);
     } catch (err: any) {
       console.error('[Login] 이메일 로그인 실패:', err);
-      setErrorMessage(err.message || '로그인에 실패했습니다. 다시 시도해주세요.');
+      setErrorMessage(
+        err.message || '로그인에 실패했습니다. 다시 시도해주세요.'
+      );
     } finally {
       setAuthInProgress(false);
     }
@@ -156,15 +156,24 @@ export default function LoginScreen() {
       setAuthInProgress(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      console.log('[Login] Google 로그인 시작');
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+      console.log('[Login] Play Services 확인 완료');
 
       const isSignedIn = await GoogleSignin.getCurrentUser();
       if (isSignedIn) {
+        console.log('[Login] 기존 세션 로그아웃');
         await GoogleSignin.signOut();
       }
 
-      await GoogleSignin.signIn();
+      console.log('[Login] signIn() 호출');
+      const userInfo = await GoogleSignin.signIn();
+      console.log('[Login] signIn() 완료:', userInfo?.data?.user?.email);
+
       const tokens = await GoogleSignin.getTokens();
+      console.log('[Login] 토큰 획득:', !!tokens.idToken);
 
       if (!tokens.idToken) {
         throw new Error('ID Token을 가져오지 못했습니다.');
@@ -237,7 +246,12 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>이메일</Text>
           <View style={styles.inputWrapper}>
-            <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <Ionicons
+              name="mail-outline"
+              size={20}
+              color="#9CA3AF"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="example@email.com"
@@ -256,7 +270,12 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>비밀번호</Text>
           <View style={styles.inputWrapper}>
-            <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color="#9CA3AF"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="6자 이상 입력"
@@ -282,7 +301,10 @@ export default function LoginScreen() {
 
         {/* Email Login Button */}
         <TouchableOpacity
-          style={[styles.primaryButton, authInProgress && styles.buttonDisabled]}
+          style={[
+            styles.primaryButton,
+            authInProgress && styles.buttonDisabled,
+          ]}
           onPress={handleEmailLogin}
           disabled={authInProgress}
           activeOpacity={0.8}
@@ -303,7 +325,10 @@ export default function LoginScreen() {
 
         {/* Google Login Button */}
         <TouchableOpacity
-          style={[styles.googleButton, (!isGoogleConfigured || authInProgress) && styles.buttonDisabled]}
+          style={[
+            styles.googleButton,
+            (!isGoogleConfigured || authInProgress) && styles.buttonDisabled,
+          ]}
           onPress={handleGoogleLogin}
           disabled={!isGoogleConfigured || authInProgress}
           activeOpacity={0.8}
