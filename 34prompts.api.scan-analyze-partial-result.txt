@@ -1,0 +1,313 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 수정될 API 라우트 파일경로: apps/web/src/app/api/scan/analyze/route.ts
+조건-파일경로) 생성될 jobId 조회 API 파일경로: apps/web/src/app/api/scan/result/route.ts
+조건-파일경로) 생성될 유틸리티 파일경로: apps/web/src/utils/scan-job-manager.ts
+
+==============================================
+
+핵심요구사항) 현재 메뉴 스캔 분석 API를 "룰/DB 1차 판정 + Gemini 병렬, Promise.race로 2~5초 내 부분 결과 먼저 노출" 패턴으로 개선할 것.
+
+1) 목표
+    - 사용자가 스캔 버튼을 누른 후 2~5초 안에 최소한의 1차 결과를 받도록 함
+    - 총 처리 시간이 길어져도(예: Gemini가 27초 소요) 사용자 경험을 개선
+    - 제품 리스크를 고려하여 1차 결과는 보수적으로 판정(확실히 안전하지 않으면 Caution/Danger)
+
+2) 핵심 아키텍처 패턴
+    2-1) OCR 처리 (필수 대기)
+        - Google OCR을 먼저 실행하고 완료 대기
+        - OCR 텍스트가 나와야 룰/DB와 Gemini가 작동 가능
+        - OCR 소요 시간 계측 필수
+
+    2-2) 룰/DB + Gemini 병렬 처리
+        - OCR 완료 즉시 두 작업을 동시에 시작
+            - quickPromise: 룰/DB 기반 1차 판정 (빠름, 수백 ms)
+            - geminiPromise: Gemini AI 호출 (느림, 수초~수십초)
+        - 두 작업은 Promise.all이 아닌 Promise.race 패턴 사용
+
+    2-3) Promise.race 타임아웃 처리
+        - Gemini가 2.5~5초 안에 완료되지 않으면:
+            - jobId 생성
+            - PARTIAL 응답 즉시 반환 (quickResult + jobId)
+            - 백그라운드에서 Gemini 계속 실행
+        - Gemini가 타임아웃 내 완료되면:
+            - 최종 결과를 즉시 반환 (status: FINAL)
+
+3) API 응답 구조
+    3-1) PARTIAL 응답 (2~5초 내)
+        {
+          "status": "PARTIAL",
+          "jobId": "uuid-string",
+          "quickResult": {
+            "level": "SAFE" | "CAUTION" | "DANGER",
+            "summaryText": "위험도 요약 문구",
+            "triggerCodes": ["pork", "shellfish"],
+            "triggerLabels": ["돼지고기", "갑각류"],
+            "questionForStaff": "육수에 해산물/돼지고기 들어가나요?",
+            "confidence": "low" | "medium" | "high"
+          },
+          "timings": {
+            "ocrMs": 1234,
+            "quickMs": 123,
+            "waitedForGeminiMs": 3000,
+            "totalMs": 4567
+          }
+        }
+
+    3-2) FINAL 응답 (즉시 또는 폴링으로)
+        {
+          "status": "FINAL",
+          "jobId": null,
+          "result": {
+            "menus": [...],
+            "summary": "최종 분석 결과",
+            "aiAnalysis": {...}
+          },
+          "timings": {
+            "ocrMs": 1234,
+            "quickMs": 123,
+            "geminiMs": 27890,
+            "totalMs": 29247
+          }
+        }
+
+4) jobId 기반 폴링 시스템
+    4-1) jobId 결과 조회 API 생성
+        - 엔드포인트: GET /api/scan/result?jobId={jobId}
+        - 응답:
+            - status: "PENDING" | "FINAL" | "ERROR"
+            - result: 최종 결과 (FINAL인 경우)
+        - 저장소: 초기에는 메모리 Map, 추후 Redis 권장
+
+    4-2) 저장소 구조
+        - key: jobId (uuid)
+        - value:
+            {
+              "status": "PENDING" | "FINAL" | "ERROR",
+              "result": {...},
+              "timings": {...},
+              "createdAt": timestamp,
+              "completedAt": timestamp | null
+            }
+        - TTL: 30분 (메모리 누수 방지)
+
+    4-3) 저장소 구현 주의사항 (중요)
+        **중요금지사항** 메모리 Map 저장소는 dev/단일 인스턴스 환경 전제임.
+        - prod 환경(서버리스/스케일아웃)에서는 인스턴스가 여러 개면 jobId 조회 실패 가능
+        - 핫리로드/재시작 시 메모리 데이터 소실
+        - TTL 청소(setInterval)도 서버리스 환경에서 비효율적
+
+        **구현 요구사항**:
+        - scan-job-manager.ts를 인터페이스로 추상화할 것
+        - 저장소 교체가 쉽도록 JobStorage 인터페이스 정의
+        - 초기 구현: MemoryJobStorage (dev용)
+        - 추후 확장: RedisJobStorage (prod용, 플러그인 방식)
+
+        예시 인터페이스:
+        interface JobStorage {
+          set(jobId: string, data: JobData): Promise<void>;
+          get(jobId: string): Promise<JobData | null>;
+          delete(jobId: string): Promise<void>;
+        }
+
+5) 룰/DB 1차 판정 규칙 (보수적이고 기계적)
+    5-1) 역할
+        - 명확한 금지/위험 신호를 빠르게 감지
+        - "빨간불 조기 경보" (Safe 인증이 아님)
+        - 사용자에게 "직원에게 물어볼 질문 1줄" 제공
+
+    5-2) 판정 로직 (기계적 규칙)
+        **SAFE 반환 조건** (모두 만족해야 함):
+        - 금지 트리거 키워드 0개 (사용자의 알레르기/식단 기준)
+        - 알레르기/식단 관련 키워드 0개 (예: "달걀", "우유", "돼지", "새우" 등)
+        - OCR 텍스트 품질 confidence=high (텍스트가 명확함)
+        - 메뉴 이름이 명확하고 재료 정보가 충분함
+
+        **DANGER 반환 조건** (하나라도 만족):
+        - 명확한 금지 키워드 발견 (돼지고기, 갑각류, 알코올 등)
+        - DB에서 위험 재료 매칭 (신뢰도 high)
+        - 사용자 프로필의 심각한 알레르기 트리거
+
+        **CAUTION 반환 조건** (나머지 모든 경우):
+        - 의심스러운 키워드 (육수, 소스, 조미료 등)
+        - OCR 텍스트 품질 low/medium
+        - 재료 정보 불충분
+        - 판단 불가능한 경우 (기본값)
+
+    5-3) 출력 구조 (구조화)
+        {
+          "level": "SAFE" | "CAUTION" | "DANGER",
+          "summaryText": "위험도 요약 문구",
+          "triggerCodes": ["pork", "shellfish", "egg"],
+          "triggerLabels": ["돼지고기", "갑각류", "계란"],
+          "questionForStaff": "육수에 해산물/돼지고기 들어가나요?",
+          "confidence": "low" | "medium" | "high"
+        }
+
+        **필드 설명**:
+        - level: 위험도 등급 (열거형)
+        - summaryText: 사용자에게 보여줄 1줄 요약
+        - triggerCodes: 내부 트리거 코드 배열 (로그/분석용)
+        - triggerLabels: 사용자에게 보여줄 트리거 레이블 배열
+        - questionForStaff: 템플릿 기반 질문 (사용자 알레르기/식단에 따라 자동 생성)
+        - confidence: OCR 텍스트 품질 신뢰도
+
+    5-4) 질문 템플릿 규칙
+        사용자 프로필에 따라 질문을 자동 생성:
+        - 알레르기(갑각류): "이 요리에 새우/게/랍스터가 들어가나요?"
+        - 알레르기(돼지): "육수나 조미료에 돼지고기가 들어가나요?"
+        - 할랄: "이 요리는 할랄 인증을 받았나요? 돼지고기/알코올이 없나요?"
+        - 비건: "이 요리에 동물성 재료(고기/달걀/우유/꿀)가 전혀 없나요?"
+        - 트리거 여러 개: 가장 위험한 것 우선 질문
+
+6) 구현 시 주의사항
+    6-1) Promise.race 취소 처리
+        - race로 타임아웃 발생 시, geminiPromise를 취소하지 말고 계속 실행
+        - HTTP 응답 연결만 끊고, 백그라운드 작업은 jobId로 저장
+        - 사용자가 폴링으로 최종 결과 받을 수 있도록 함
+
+    6-2) 백그라운드 작업 관리 (응답 후 실행 보장) - Next.js 14 기준
+        **중요금지사항** 서버리스 환경에서는 응답을 보내면 함수가 종료될 수 있음.
+
+        **Next.js 14에서의 구현 방법** (우선순위 순):
+
+        **방법 1: Fire-and-forget + 주석 경고 (개발 단계)**
+        ```typescript
+        // PARTIAL 응답 반환
+        const response = NextResponse.json({...});
+
+        // 백그라운드 작업 (fire-and-forget)
+        // WARNING: 서버리스 환경에서는 응답 후 실행이 보장되지 않을 수 있음
+        // prod 환경에서는 Redis/큐(Inngest, BullMQ) 권장
+        geminiPromise
+          .then(async (gemRes) => {
+            const finalResult = mergeQuickAndGemini(quickResult, gemRes);
+            await saveJobResult(jobId, finalResult, timings);
+          })
+          .catch(async (error) => {
+            await saveJobResult(jobId, null, { error: String(error) });
+          });
+
+        return response;
+        ```
+
+        **방법 2: Edge Runtime의 waitUntil() 사용 (Vercel 배포 시)**
+        - Edge Runtime으로 변경 시 사용 가능
+        - route.ts 상단에 `export const runtime = 'edge'` 추가
+        ```typescript
+        import type { NextRequest } from 'next/server';
+
+        export const runtime = 'edge';
+
+        export async function POST(request: NextRequest) {
+          const response = NextResponse.json({...});
+
+          // Edge Runtime의 waitUntil() 사용
+          request.waitUntil(
+            geminiPromise.then(async (gemRes) => {
+              const finalResult = mergeQuickAndGemini(quickResult, gemRes);
+              await saveJobResult(jobId, finalResult, timings);
+            })
+          );
+
+          return response;
+        }
+        ```
+
+        **방법 3: 외부 큐/워커 사용 (prod 권장)**
+        - Redis + BullMQ 또는 Inngest 같은 큐 시스템
+        - PARTIAL 응답 후 jobId를 큐에 추가
+        - 워커가 백그라운드에서 Gemini 처리 및 결과 저장
+        - 확장성과 안정성 보장
+
+        **주석으로 명시할 것**:
+        - Next.js 14에서는 after() API 미지원 (15+부터 사용 가능)
+        - 현재 구현: fire-and-forget (dev 환경에서만 안정적)
+        - Vercel Edge Runtime 사용 시: waitUntil() 권장
+        - prod 환경: Redis/큐(Inngest, BullMQ) 전환 필요
+        - 응답 후 작업 실행이 보장되지 않을 수 있음을 로그에 기록
+
+        **백그라운드 작업 내용**:
+        - Gemini 완료 대기
+        - quickResult + Gemini 결과 병합
+        - jobId 저장소에 FINAL 결과 저장
+        - 에러 발생 시 status: "ERROR" 저장
+        - 계측 지표 로깅
+
+    6-3) 타임아웃 설정
+        - 기본값: 3000ms (3초)
+        - 환경 변수로 조정 가능 (GEMINI_TIMEOUT_MS)
+        - 너무 짧으면 PARTIAL만 반환, 너무 길면 UX 저하
+
+7) 성능 계측 지표 추가
+    7-1) 기존 계측 유지
+        - Gemini 호출 시간
+        - 총 API 응답 시간
+
+    7-2) 추가 계측 필수
+        - ocrMs: OCR 소요 시간
+        - quickMs: 룰/DB 1차 판정 시간
+        - geminiMs: Gemini AI 분석 시간 (완료 시)
+        - waitedForGeminiMs: 타임아웃으로 대기한 시간
+        - totalMs: 총 소요 시간 (PARTIAL 응답 시점 기준)
+
+    7-3) 추가 지표 (추후 분석용)
+        - partial_rate: PARTIAL 응답 비율
+        - time_to_first_result_ms (TTFR): 사용자에게 첫 결과 보여준 시간
+        - final_arrival_rate: jobId 최종 결과 정상 도착 비율
+        - gemini_timeout_rate: 타임아웃 발생 비율
+
+8) 클라이언트 대응 가이드
+    8-1) PARTIAL 응답 받은 경우
+        - quickResult를 "1차 분석 결과(임시)" 배지와 함께 표시
+        - "정밀 분석 중..." 스피너 표시
+        - jobId로 1~2초 간격 폴링 시작 (최대 30초, 백오프 권장)
+
+    8-2) FINAL 응답 받은 경우
+        - 최종 결과로 UI 업데이트
+        - 임시 배지 및 스피너 제거
+
+핵심요구사항) 각 단계별로 상세 로그를 출력하여 디버깅과 성능 분석을 용이하게 할 것.
+            - 각 구간 시작/종료 시간
+            - OCR 텍스트 길이, 응답 크기
+            - Promise.race 결과 (PARTIAL vs FINAL)
+            - jobId 생성 및 저장 여부
+
+핵심요구사항) 에러 처리를 철저히 할 것.
+            - OCR 실패 시 명확한 에러 메시지 반환
+            - Gemini 실패 시 quickResult만으로라도 응답 반환
+            - jobId 조회 시 존재하지 않으면 404 반환
+            - 타임아웃 시 에러가 아닌 PARTIAL 응답으로 처리
+
+핵심요구사항) 기존 코드 구조를 최대한 유지하되, 병목 구간만 개선할 것.
+            - 기존 OCR, Gemini 호출 로직은 재사용
+            - 기존 타입 정의 유지
+            - 클라이언트 코드는 최소 수정 (응답 구조 변경만)
+
+==============================================
+
+참고사항) 이 패턴은 Safe Meals의 핵심 UX 개선입니다.
+        - 기존: 사용자가 27초 동안 아무것도 못 봄
+        - 개선 후: 3~5초 내 뭔가 보여줌 → 이탈률 감소
+        - 실제 처리 시간이 줄지 않아도 체감 속도가 크게 개선됨
+        - 추후 OCR 최적화, Gemini 프롬프트 개선 등과 함께 진행 가능
+
+참고사항) 1차 결과는 "Safe 인증"이 아니라 "빨간불 조기 경보"에 가깝게 설계할 것.
+        - 사용자 안전이 최우선
+        - 의심스러우면 보수적으로 판정
+        - 최종 결과에서 Safe로 업데이트 가능
+
+참고사항) 추후 고도화 방향
+        - 폴링 → SSE(Server-Sent Events) 또는 WebSocket
+        - 메모리 저장소 → Redis
+        - 1차 판정 → ML 모델 기반 빠른 분류
+        - OCR → 온디바이스 OCR 또는 ROI 크롭

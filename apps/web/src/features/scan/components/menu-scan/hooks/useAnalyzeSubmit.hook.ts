@@ -9,6 +9,10 @@ import {
   type AnalysisResult,
   type MenuAnalysisItem,
 } from '@/features/scan/context/analyze-result-context';
+import {
+  PerformanceTracker,
+  getGlobalCollector,
+} from '@/utils/performance-metrics';
 
 export type { MenuAnalysisItem };
 
@@ -23,8 +27,25 @@ export interface UserContext {
 /**
  * API 응답 타입 (실제 API 응답 형식)
  */
+/**
+ * QuickResult 타입 (1차 판정 결과)
+ */
+export interface QuickResult {
+  level: 'SAFE' | 'CAUTION' | 'DANGER';
+  summaryText: string;
+  triggerCodes: string[];
+  triggerLabels: string[];
+  questionForStaff: string;
+  confidence: 'low' | 'medium' | 'high';
+}
+
+/**
+ * API 응답 타입 (PARTIAL/FINAL 패턴)
+ */
 export interface AnalyzeAPIResponse {
   success: boolean;
+  status: 'PARTIAL' | 'FINAL';
+  jobId?: string | null;
   message?: string;
   analyzed_at?: string;
   user_context?: {
@@ -33,6 +54,7 @@ export interface AnalyzeAPIResponse {
   };
   overall_status?: 'SAFE' | 'CAUTION' | 'DANGER';
   results?: MenuAnalysisItem[];
+  quickResult?: QuickResult;
 }
 
 /**
@@ -73,6 +95,8 @@ export interface UseAnalyzeSubmitReturn {
   isLoading: boolean;
   /** 에러 메시지 */
   error: string | null;
+  /** 현재 성능 트래커 */
+  performanceTracker: PerformanceTracker | null;
   /** 이미지 설정 */
   setImageData: (data: string | null) => void;
   /** 분석 제출 */
@@ -81,6 +105,8 @@ export interface UseAnalyzeSubmitReturn {
   clearError: () => void;
   /** 상태 리셋 */
   reset: () => void;
+  /** 렌더링 완료 알림 (계측용) */
+  notifyRenderComplete: () => void;
 }
 
 /**
@@ -108,9 +134,8 @@ const ERROR_MESSAGES = {
   },
 };
 
-const normalizeLanguageForAnalysis = (
-  language: Language
-): 'ko' | 'en' => (language === 'ko' ? 'ko' : 'en');
+const normalizeLanguageForAnalysis = (language: Language): 'ko' | 'en' =>
+  language === 'ko' ? 'ko' : 'en';
 
 /**
  * 사용자 알레르기/식단 정보 조회 헬퍼 함수
@@ -165,6 +190,12 @@ async function fetchUserAllergyDietContext(): Promise<UserContext> {
 }
 
 /**
+ * 폴링 설정
+ */
+const POLL_INTERVAL_MS = 2000; // 2초마다 폴링
+const MAX_POLL_ATTEMPTS = 30; // 최대 60초 (30 * 2초)
+
+/**
  * 이미지 분석 제출 커스텀 훅
  *
  * 기능:
@@ -172,6 +203,7 @@ async function fetchUserAllergyDietContext(): Promise<UserContext> {
  * 2) 품질 검사 결과 처리
  * 3) 분석 결과 저장 및 페이지 이동
  * 4) 에러 처리 및 로딩 상태 관리
+ * 5) PARTIAL 응답 시 백그라운드 폴링으로 FINAL 결과 업데이트
  */
 export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
   const router = useRouter();
@@ -183,6 +215,12 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
 
   // AbortController 참조
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 폴링 타이머 참조
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 성능 트래커 참조 (계측용)
+  const performanceTrackerRef = useRef<PerformanceTracker | null>(null);
 
   /**
    * File을 Base64로 변환
@@ -197,11 +235,134 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
   }, []);
 
   /**
+   * PARTIAL 응답 후 FINAL 결과 폴링
+   * - 2초마다 /api/scan/result 호출
+   * - FINAL 상태가 되면 결과 업데이트
+   */
+  const pollForFinalResult = useCallback(
+    async (jobId: string, language: 'ko' | 'en') => {
+      let attempts = 0;
+
+      const poll = async () => {
+        if (attempts >= MAX_POLL_ATTEMPTS) {
+          console.log('[Polling] 최대 시도 횟수 도달, 폴링 중단');
+          return;
+        }
+
+        attempts++;
+        console.log(
+          `[Polling] 시도 ${attempts}/${MAX_POLL_ATTEMPTS} - jobId: ${jobId}`
+        );
+
+        try {
+          const response = await fetch(`/api/scan/result?jobId=${jobId}`);
+          const data = await response.json();
+
+          // 서버 응답: { status: 'FINAL', result: {...}, results: [...] }
+          if (data.status === 'FINAL' && (data.result || data.results)) {
+            console.log('[Polling] FINAL 결과 수신!');
+
+            // 폴링 중단
+            if (pollTimerRef.current) {
+              clearTimeout(pollTimerRef.current);
+              pollTimerRef.current = null;
+            }
+
+            // FINAL 결과로 업데이트
+            // 서버에서 result 또는 최상위 results를 사용
+            const results = data.results || data.result?.results || [];
+
+            if (results.length > 0) {
+              const overallStatus = data.overall_status || data.result?.overall_status || 'SAFE';
+              const detectedIngredients: string[] = [];
+              const warnings: Array<{
+                ingredient: string;
+                allergen: string;
+                severity: 'HIGH' | 'MEDIUM' | 'LOW';
+              }> = [];
+
+              for (const item of results) {
+                detectedIngredients.push(...item.ingredients);
+
+                if (item.safety_status === 'DANGER') {
+                  warnings.push({
+                    ingredient: item.original_name,
+                    allergen: item.reason,
+                    severity: 'HIGH',
+                  });
+                } else if (item.safety_status === 'CAUTION') {
+                  warnings.push({
+                    ingredient: item.original_name,
+                    allergen: item.reason,
+                    severity: 'MEDIUM',
+                  });
+                }
+              }
+
+              const analysis: AnalysisResult = {
+                overall_status: overallStatus,
+                detected_ingredients: [...new Set(detectedIngredients)],
+                warnings,
+                message_ko:
+                  overallStatus === 'SAFE'
+                    ? '안전하게 섭취할 수 있습니다.'
+                    : overallStatus === 'CAUTION'
+                      ? '주의가 필요한 메뉴가 있습니다.'
+                      : '알레르기 유발 성분이 포함된 메뉴가 있습니다.',
+                message_en:
+                  overallStatus === 'SAFE'
+                    ? 'Safe to consume.'
+                    : overallStatus === 'CAUTION'
+                      ? 'Some items require caution.'
+                      : 'Some items contain allergens.',
+                results,
+                _isPartial: false, // FINAL 결과임
+              };
+
+              setAnalysisResult(analysis);
+              console.log('[Polling] 결과 업데이트 완료');
+            }
+          } else if (data.status === 'PENDING') {
+            // 아직 처리 중 - 다음 폴링 예약
+            pollTimerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
+          } else if (data.status === 'ERROR') {
+            console.error('[Polling] 에러 발생:', data.error);
+            // 에러 시 폴링 중단 (PARTIAL 결과는 유지)
+          }
+        } catch (err) {
+          console.error('[Polling] 네트워크 에러:', err);
+          // 네트워크 에러 시 다음 폴링 계속 시도
+          pollTimerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
+        }
+      };
+
+      // 첫 폴링 시작 (2초 후)
+      pollTimerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
+    },
+    [setAnalysisResult]
+  );
+
+  /**
    * 분석 제출
    */
   const submitAnalyze = useCallback(
     async (image: File | string, language: Language): Promise<void> => {
       const analysisLanguage = normalizeLanguageForAnalysis(language);
+
+      // 이전 폴링 중단
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+
+      // 성능 트래커 초기화
+      const tracker = new PerformanceTracker();
+      performanceTrackerRef.current = tracker;
+
+      // 전역 참조 설정 (결과 화면에서 렌더링 완료 시점 기록용)
+      if (typeof window !== 'undefined') {
+        (window as any).__currentPerformanceTracker = tracker;
+      }
 
       // 이전 요청 취소
       if (abortControllerRef.current) {
@@ -251,44 +412,93 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           headers['Authorization'] = `Bearer ${token}`;
         }
 
+        // 요청 바디 생성 (크기 측정용)
+        const requestBody = JSON.stringify({
+          image: base64Image,
+          language: analysisLanguage,
+          device_info: {
+            platform:
+              typeof navigator !== 'undefined' ? navigator.platform : 'unknown',
+            userAgent:
+              typeof navigator !== 'undefined'
+                ? navigator.userAgent
+                : 'unknown',
+          },
+          user_context: userContext,
+        });
+
+        // [계측] 요청 크기 기록
+        tracker.setRequestSize(new Blob([requestBody]).size);
+
+        // [계측] 업로드 구간 시작 (요청 전송)
+        tracker.start('upload');
+        tracker.start('network'); // 전체 네트워크도 시작
+
         // Edge Function 호출
         const response = await fetch('/api/scan/analyze', {
           method: 'POST',
           headers,
-          body: JSON.stringify({
-            image: base64Image,
-            language: analysisLanguage,
-            device_info: {
-              platform:
-                typeof navigator !== 'undefined'
-                  ? navigator.platform
-                  : 'unknown',
-              userAgent:
-                typeof navigator !== 'undefined'
-                  ? navigator.userAgent
-                  : 'unknown',
-            },
-            user_context: userContext,
-          }),
+          body: requestBody,
           signal,
+        });
+
+        // [계측] 업로드 + TTFB 완료 (응답 헤더 수신됨)
+        // Note: fetch는 응답 헤더가 도착하면 resolve됨
+        // 따라서 upload + ttfb가 합쳐진 시점임
+        tracker.end('upload');
+
+        // [계측] 다운로드 구간 시작
+        tracker.start('download');
+
+        // [계측] 응답 크기 및 Server-Timing 기록
+        const contentLength = response.headers.get('content-length');
+        const serverTiming = response.headers.get('server-timing');
+        tracker.setResponseSize(contentLength);
+        tracker.setServerTiming(serverTiming);
+        tracker.addMetadata({
+          httpStatus: response.status,
+          contentType: response.headers.get('content-type'),
+          transferEncoding: response.headers.get('transfer-encoding'),
         });
 
         clearTimeout(timeoutId);
 
-        // 응답 JSON 파싱
+        // 응답 JSON 파싱 (다운로드 + 파싱)
         const data: AnalyzeAPIResponse = await response.json();
+
+        // [계측] 다운로드 구간 종료
+        tracker.end('download');
+
+        // [계측] 네트워크 전체 구간 종료
+        tracker.end('network');
+
+        // [계측] 파싱 시간은 download에 포함됨 (response.json()이 둘 다 수행)
+        // 별도 파싱 계측이 필요하면 clone() 사용 필요
 
         // API 에러 응답 처리
         if (!response.ok || !data.success) {
           const errorMessage =
             data.message || ERROR_MESSAGES[analysisLanguage].server;
           setError(errorMessage);
+          // 에러 시에도 측정 완료
+          tracker.finalize();
+          tracker.printSummary();
           return;
         }
 
-        // 분석 결과가 있는 경우
-        if (data.results && data.results.length > 0) {
-          // 백엔드에서 받은 overall_status 사용 (없으면 SAFE 기본값)
+        // [계측] 매핑 구간 시작
+        tracker.start('mapping');
+
+        // ========================================
+        // PARTIAL/FINAL 응답 처리
+        // ========================================
+
+        // Case 1: FINAL 응답 (results가 있음)
+        if (
+          data.status === 'FINAL' &&
+          data.results &&
+          data.results.length > 0
+        ) {
           const overallStatus = data.overall_status || 'SAFE';
           const detectedIngredients: string[] = [];
           const warnings: Array<{
@@ -298,10 +508,8 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           }> = [];
 
           for (const item of data.results) {
-            // 재료 수집
             detectedIngredients.push(...item.ingredients);
 
-            // warnings 생성 (DANGER, CAUTION 항목만)
             if (item.safety_status === 'DANGER') {
               warnings.push({
                 ingredient: item.original_name,
@@ -317,7 +525,6 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
             }
           }
 
-          // 분석 결과 변환
           const analysis: AnalysisResult = {
             overall_status: overallStatus,
             detected_ingredients: [...new Set(detectedIngredients)],
@@ -337,10 +544,64 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
             results: data.results,
           };
 
+          tracker.end('mapping', {
+            metadata: {
+              menuItemCount: data.results.length,
+              ingredientCount: detectedIngredients.length,
+              warningCount: warnings.length,
+            },
+          });
+
+          tracker.start('rendering');
           setAnalysisResult(analysis);
-          // 결과 페이지로 이동
           router.push('/scan/result');
-        } else {
+        }
+        // Case 2: PARTIAL 응답 (quickResult만 있음) → 바로 결과 화면으로 이동 + 백그라운드 폴링
+        else if (data.status === 'PARTIAL' && data.quickResult) {
+          const quickResult = data.quickResult;
+
+          // quickResult를 임시 AnalysisResult로 변환
+          const partialAnalysis: AnalysisResult = {
+            overall_status: quickResult.level,
+            detected_ingredients: [],
+            warnings: quickResult.triggerLabels.map((label) => ({
+              ingredient: label,
+              allergen: quickResult.summaryText,
+              severity: quickResult.level === 'DANGER' ? 'HIGH' : 'MEDIUM',
+            })),
+            message_ko: quickResult.summaryText,
+            message_en: quickResult.summaryText,
+            results: [],
+            // PARTIAL 상태 표시용 추가 필드
+            _isPartial: true,
+            _jobId: data.jobId || null,
+            _questionForStaff: quickResult.questionForStaff,
+          };
+
+          tracker.end('mapping', {
+            metadata: {
+              isPartial: true,
+              jobId: data.jobId,
+              quickLevel: quickResult.level,
+            },
+          });
+
+          tracker.start('rendering');
+          setAnalysisResult(partialAnalysis);
+          router.push('/scan/result');
+
+          // 백그라운드 폴링 시작 (jobId가 있는 경우)
+          if (data.jobId) {
+            pollForFinalResult(data.jobId, analysisLanguage);
+          }
+        }
+        // Case 3: 결과 없음 (OCR + Gemini 둘 다 실패)
+        else {
+          // [계측] 매핑 구간 종료 (결과 없음)
+          tracker.end('mapping');
+          tracker.finalize();
+          tracker.printSummary();
+
           // 결과가 없는 경우
           setError(
             analysisLanguage === 'ko'
@@ -349,6 +610,12 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           );
         }
       } catch (err) {
+        // [계측] 에러 발생 시에도 측정 완료
+        if (performanceTrackerRef.current) {
+          performanceTrackerRef.current.finalize();
+          performanceTrackerRef.current.printSummary();
+        }
+
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
             setError(ERROR_MESSAGES[analysisLanguage].timeout);
@@ -382,19 +649,38 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
     setIsLoading(false);
     setError(null);
     clearAnalysisResult();
+    performanceTrackerRef.current = null;
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
   }, [clearAnalysisResult]);
 
+  /**
+   * 렌더링 완료 알림 (계측용)
+   * 결과 화면이 마운트된 후 useEffect에서 호출
+   */
+  const notifyRenderComplete = useCallback(() => {
+    const tracker = performanceTrackerRef.current;
+    if (tracker) {
+      tracker.end('rendering');
+      const metrics = tracker.finalize();
+      tracker.printSummary();
+
+      // 전역 컬렉터에 추가 (통계용)
+      getGlobalCollector().add(metrics);
+    }
+  }, []);
+
   return {
     imageData,
     isLoading,
     error,
+    performanceTracker: performanceTrackerRef.current,
     setImageData,
     submitAnalyze,
     clearError,
     reset,
+    notifyRenderComplete,
   };
 }

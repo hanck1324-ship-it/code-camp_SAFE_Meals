@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS payments (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   payment_id TEXT NOT NULL UNIQUE, -- 포트원 결제 ID
   product_id TEXT NOT NULL,
-  amount INTEGER NOT NULL,
-  status TEXT NOT NULL, -- PAID, FAILED, CANCELLED
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  status TEXT NOT NULL CHECK (status IN ('PAID', 'FAILED', 'CANCELLED')),
   paid_at TIMESTAMP WITH TIME ZONE NOT NULL,
 
   -- 여행 패키지 정보
   start_date TIMESTAMP WITH TIME ZONE,
   end_date TIMESTAMP WITH TIME ZONE,
-  days INTEGER,
+  days INTEGER CHECK (days IS NULL OR days >= 0),
 
   -- 포트원 원본 데이터
   portone_data JSONB,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS user_subscriptions (
   -- 여행 패키지 정보
   start_date TIMESTAMP WITH TIME ZONE,
   end_date TIMESTAMP WITH TIME ZONE,
-  days INTEGER,
+  days INTEGER CHECK (days IS NULL OR days >= 0),
 
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -59,30 +59,45 @@ CREATE INDEX IF NOT EXISTS idx_user_subscriptions_active ON user_subscriptions(i
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
 
--- payments 정책: 자신의 결제 내역만 조회 가능
+-- payments 정책: 자신의 결제 내역만 조회/삽입 가능, 서비스 롤 전체 관리
 DROP POLICY IF EXISTS "Users can view own payments" ON payments;
 CREATE POLICY "Users can view own payments" ON payments
   FOR SELECT
   USING (auth.uid() = user_id);
 
--- payments 정책: 서버에서만 삽입 가능 (service role)
-DROP POLICY IF EXISTS "Service role can insert payments" ON payments;
-CREATE POLICY "Service role can insert payments" ON payments
+DROP POLICY IF EXISTS "Users can insert own payments" ON payments;
+CREATE POLICY "Users can insert own payments" ON payments
   FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() = user_id);
 
--- user_subscriptions 정책: 자신의 구독만 조회 가능
+DROP POLICY IF EXISTS "Service role can manage payments" ON payments;
+CREATE POLICY "Service role can manage payments" ON payments
+  FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+-- user_subscriptions 정책: 자신의 구독만 조회/갱신 가능, 서비스 롤 전체 관리
 DROP POLICY IF EXISTS "Users can view own subscriptions" ON user_subscriptions;
 CREATE POLICY "Users can view own subscriptions" ON user_subscriptions
   FOR SELECT
   USING (auth.uid() = user_id);
 
--- user_subscriptions 정책: 서버에서만 수정 가능
+DROP POLICY IF EXISTS "Users can insert own subscriptions" ON user_subscriptions;
+CREATE POLICY "Users can insert own subscriptions" ON user_subscriptions
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own subscriptions" ON user_subscriptions;
+CREATE POLICY "Users can update own subscriptions" ON user_subscriptions
+  FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
 DROP POLICY IF EXISTS "Service role can manage subscriptions" ON user_subscriptions;
 CREATE POLICY "Service role can manage subscriptions" ON user_subscriptions
   FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
 
 -- 4. 만료된 구독 자동 비활성화 함수
 CREATE OR REPLACE FUNCTION deactivate_expired_subscriptions()
