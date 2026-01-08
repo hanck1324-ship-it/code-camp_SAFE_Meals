@@ -7,11 +7,15 @@ import {
   AlertTriangle,
   AlertCircle,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { LanguageSelector } from '@/components/language-selector';
 import { useAnalyzeResult } from '@/features/scan/context/analyze-result-context';
 import { useTranslation } from '@/hooks/useTranslation';
+import { translations } from '@/lib/translations';
 import { MAIN_URLS } from '@/commons/constants/url';
 import { getGlobalCollector } from '@/utils/performance-metrics';
 
@@ -20,63 +24,60 @@ import { getGlobalCollector } from '@/utils/performance-metrics';
 // ============================================
 
 type SafetyStatus = 'SAFE' | 'CAUTION' | 'DANGER';
-type SeverityLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 
 interface ScanResultScreenProps {
   onBack: () => void;
 }
 
 // ============================================
-// 스타일 매핑 상수
+// 스타일 매핑 상수 (디자인 시스템)
 // ============================================
 
 /**
  * overall_status별 스타일 매핑
+ * 원칙 6: 신호등 컬러 사용
+ * 원칙 7: WCAG 4.5:1 명도 대비
+ * CSS 변수를 인라인 스타일로 직접 적용
  */
 const STATUS_STYLES: Record<
   SafetyStatus,
-  { bg: string; text: string; border: string }
+  { bg: string; text: string; border: string; bgStyle: string; textStyle: string; borderStyle: string }
 > = {
   SAFE: {
-    bg: 'bg-green-50',
-    text: 'text-green-700',
-    border: 'border-green-200',
+    bg: 'bg-sm-safe-bg',
+    text: 'text-sm-safe-text',
+    border: 'border-sm-safe-border',
+    bgStyle: 'var(--sm-safe-bg)',
+    textStyle: 'var(--sm-safe-text)',
+    borderStyle: 'var(--sm-safe-border)',
   },
   CAUTION: {
-    bg: 'bg-yellow-50',
-    text: 'text-yellow-700',
-    border: 'border-yellow-200',
+    bg: 'bg-sm-caution-bg',
+    text: 'text-sm-caution-text',
+    border: 'border-sm-caution-border',
+    bgStyle: 'var(--sm-caution-bg)',
+    textStyle: 'var(--sm-caution-text)',
+    borderStyle: 'var(--sm-caution-border)',
   },
   DANGER: {
-    bg: 'bg-red-50',
-    text: 'text-red-700',
-    border: 'border-red-200',
+    bg: 'bg-sm-danger-bg',
+    text: 'text-sm-danger-text',
+    border: 'border-sm-danger-border',
+    bgStyle: 'var(--sm-danger-bg)',
+    textStyle: 'var(--sm-danger-text)',
+    borderStyle: 'var(--sm-danger-border)',
   },
 };
 
 /**
- * 경고 심각도별 스타일 매핑
+ * 아이콘 색상 스타일 매핑
  */
-const SEVERITY_STYLES: Record<
-  SeverityLevel,
-  { bg: string; border: string; text: string }
-> = {
-  HIGH: {
-    bg: 'bg-red-100',
-    border: 'border-red-300',
-    text: 'text-red-800',
-  },
-  MEDIUM: {
-    bg: 'bg-orange-100',
-    border: 'border-orange-300',
-    text: 'text-orange-800',
-  },
-  LOW: {
-    bg: 'bg-yellow-100',
-    border: 'border-yellow-300',
-    text: 'text-yellow-800',
-  },
+const ICON_STYLES: Record<SafetyStatus, string> = {
+  SAFE: 'var(--sm-safe-icon)',
+  CAUTION: 'var(--sm-caution-icon)',
+  DANGER: 'var(--sm-danger-icon)',
 };
+
 
 // ============================================
 // 헬퍼 함수
@@ -84,59 +85,80 @@ const SEVERITY_STYLES: Record<
 
 /**
  * 전체 상태에 따른 아이콘 반환
+ * 원칙 3: 통일된 아이콘 크기
  */
 function getOverallStatusIcon(status: SafetyStatus) {
-  switch (status) {
-    case 'SAFE':
-      return <CheckCircle className="h-8 w-8 text-green-600" />;
-    case 'CAUTION':
-      return <AlertTriangle className="h-8 w-8 text-yellow-600" />;
-    case 'DANGER':
-      return <AlertCircle className="h-8 w-8 text-red-600" />;
-  }
+  const Icon = {
+    SAFE: CheckCircle,
+    CAUTION: AlertTriangle,
+    DANGER: AlertCircle,
+  }[status];
+
+  return <Icon style={{ width: '32px', height: '32px', color: ICON_STYLES[status] }} />;
 }
 
 /**
  * 메뉴 아이템 안전 상태에 따른 아이콘 반환
+ * 원칙 3: 통일된 아이콘 크기
  */
 function getSafetyIcon(status: SafetyStatus) {
-  switch (status) {
-    case 'SAFE':
-      return <CheckCircle className="h-5 w-5 text-green-600" />;
-    case 'CAUTION':
-      return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
-    case 'DANGER':
-      return <AlertCircle className="h-5 w-5 text-red-600" />;
-  }
+  const Icon = {
+    SAFE: CheckCircle,
+    CAUTION: AlertTriangle,
+    DANGER: AlertCircle,
+  }[status];
+
+  return <Icon style={{ width: '20px', height: '20px', color: ICON_STYLES[status] }} />;
 }
 
 /**
  * 메뉴 아이템 안전 상태에 따른 배지 반환
+ * 원칙 6: 신호등 컬러 사용
+ * 원칙 8: 8배수 간격 시스템
  */
 function getSafetyBadge(status: SafetyStatus, t: (typeof translations)['ko']) {
-  switch (status) {
-    case 'SAFE':
-      return (
-        <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1">
-          <CheckCircle className="h-3 w-3 text-green-600" />
-          <span className="text-xs text-green-700">{t.safe}</span>
-        </div>
-      );
-    case 'CAUTION':
-      return (
-        <div className="flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-1">
-          <AlertTriangle className="h-3 w-3 text-yellow-600" />
-          <span className="text-xs text-yellow-700">{t.caution}</span>
-        </div>
-      );
-    case 'DANGER':
-      return (
-        <div className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-1">
-          <AlertCircle className="h-3 w-3 text-red-600" />
-          <span className="text-xs text-red-700">{t.warning}</span>
-        </div>
-      );
-  }
+  const config = {
+    SAFE: {
+      Icon: CheckCircle,
+      label: t.safe,
+    },
+    CAUTION: {
+      Icon: AlertTriangle,
+      label: t.caution,
+    },
+    DANGER: {
+      Icon: AlertCircle,
+      label: t.warning,
+    },
+  }[status];
+
+  const { Icon, label } = config;
+  const styles = STATUS_STYLES[status];
+
+  return (
+    <div
+      className="flex items-center gap-1 rounded-full"
+      style={{
+        backgroundColor: styles.bgStyle,
+        paddingLeft: '8px',
+        paddingRight: '8px',
+        paddingTop: '4px',
+        paddingBottom: '4px',
+      }}
+    >
+      <Icon style={{ width: '16px', height: '16px', color: ICON_STYLES[status] }} />
+      <span
+        style={{
+          color: styles.textStyle,
+          fontSize: '14px',
+          lineHeight: '1.4',
+          fontWeight: '500',
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
 }
 
 // ============================================
@@ -152,6 +174,7 @@ function getSafetyBadge(status: SafetyStatus, t: (typeof translations)['ko']) {
 export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   const router = useRouter();
   const { t, language } = useTranslation();
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Context에서 분석 결과 가져오기
   const { analysisResult, clearAnalysisResult } = useAnalyzeResult();
@@ -187,6 +210,18 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   const handleRetake = () => {
     clearAnalysisResult();
     router.push(MAIN_URLS.SCAN);
+  };
+
+  const toggleItemExpanded = (itemId: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
   };
 
   /**
@@ -225,7 +260,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
 
         {/* Error Message */}
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-          <AlertCircle className="h-16 w-16 text-red-400" />
+          <AlertCircle className="h-16 w-16 text-sm-danger-icon" />
           <p
             className="text-center text-lg text-gray-600"
             data-testid="error-message"
@@ -246,11 +281,27 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
     );
   }
 
-  const { overall_status, detected_ingredients, warnings, results } =
+  const { overall_status, detected_ingredients, results } =
     analysisResult;
   const statusStyle = STATUS_STYLES[overall_status];
   const isPartial = analysisResult._isPartial === true;
   const questionForStaff = analysisResult._questionForStaff;
+
+  // 위험도 순으로 정렬 (DANGER > CAUTION > SAFE)
+  const sortedResults = results
+    ? [...results].sort((a, b) => {
+        const priority = { DANGER: 0, CAUTION: 1, SAFE: 2 };
+        return priority[a.safety_status] - priority[b.safety_status];
+      })
+    : [];
+
+  // 위험/주의 메뉴 개수 계산
+  const dangerCount = sortedResults.filter(
+    (item) => item.safety_status === 'DANGER'
+  ).length;
+  const cautionCount = sortedResults.filter(
+    (item) => item.safety_status === 'CAUTION'
+  ).length;
 
   return (
     <div
@@ -258,33 +309,38 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
       data-testid="scan-result-screen"
     >
       {/* Top Half - Camera View */}
-      <div className="relative h-1/3 min-h-[200px]">
+      <div className="relative h-1/4 min-h-[150px]">
         <img
           src="https://images.unsplash.com/photo-1639508138725-0b8e762b3cfd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZXN0YXVyYW50JTIwbWVudSUyMGZvb2R8ZW58MXx8fHwxNzY1NDkwNjYyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
           alt="Menu"
           className="h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent" />
 
-        {/* Header Controls */}
-        <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-4">
+        {/* Header Controls (원칙 4: 44px 터치 영역) */}
+        <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-3">
           <button
             onClick={onBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg"
+            className="flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-lg"
+            style={{
+              minWidth: '44px',
+              minHeight: '44px',
+            }}
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft style={{ width: '20px', height: '20px' }} />
           </button>
           <LanguageSelector />
           <button
             onClick={onBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg"
+            className="flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-lg"
+            style={{
+              minWidth: '44px',
+              minHeight: '44px',
+            }}
           >
-            <X className="h-6 w-6" />
+            <X style={{ width: '20px', height: '20px' }} />
           </button>
         </div>
-
-        {/* Camera Frame Overlay */}
-        <div className="pointer-events-none absolute inset-4 rounded-2xl border-2 border-white/50" />
       </div>
 
       {/* Bottom Section - Results */}
@@ -306,17 +362,31 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
 
         {/* Overall Status Banner */}
         <div
-          className={`flex items-center gap-3 border-b p-4 ${statusStyle.bg} ${statusStyle.border}`}
+          className="flex items-center gap-3 border-b px-4 py-3"
+          style={{
+            backgroundColor: statusStyle.bgStyle,
+            borderColor: statusStyle.borderStyle,
+          }}
           data-testid={`overall-status-${overall_status}`}
         >
           {getOverallStatusIcon(overall_status)}
           <div className="flex-1">
             <p
-              className={`font-semibold ${statusStyle.text}`}
+              className="text-sm font-semibold"
+              style={{ color: statusStyle.textStyle }}
               data-testid="status-message"
             >
               {getMessage()}
             </p>
+            {(dangerCount > 0 || cautionCount > 0) && (
+              <p className="mt-0.5 text-xs text-gray-600">
+                {dangerCount > 0 &&
+                  `${language === 'ko' ? '위험' : 'Danger'} ${dangerCount}${language === 'ko' ? '개' : ''}`}
+                {dangerCount > 0 && cautionCount > 0 && ' · '}
+                {cautionCount > 0 &&
+                  `${language === 'ko' ? '주의' : 'Caution'} ${cautionCount}${language === 'ko' ? '개' : ''}`}
+              </p>
+            )}
           </div>
         </div>
 
@@ -338,200 +408,262 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
         )}
 
         {/* Scrollable Content */}
-        <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {/* Detected Ingredients */}
-          {detected_ingredients && detected_ingredients.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-700">
-                {language === 'ko' ? '감지된 재료' : 'Detected Ingredients'}
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {detected_ingredients.map((ingredient, index) => (
-                  <span
-                    key={index}
-                    className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
-                    data-testid="ingredient-tag"
-                  >
-                    {ingredient}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Warnings */}
-          {warnings && warnings.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-700">
-                {language === 'ko' ? '경고 사항' : 'Warnings'}
-              </h3>
-              <div className="space-y-2">
-                {warnings.map((warning, index) => {
-                  const severityStyle = SEVERITY_STYLES[warning.severity];
-                  return (
-                    <div
-                      key={index}
-                      className={`space-y-1 rounded-lg border p-4 ${severityStyle.bg} ${severityStyle.border}`}
-                      data-testid="warning-item"
-                    >
-                      <p className={`font-semibold ${severityStyle.text}`}>
-                        {warning.ingredient}
-                      </p>
-                      <p className={`text-sm ${severityStyle.text}`}>
-                        {warning.allergen}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
+        <div className="flex-1 space-y-3 overflow-y-auto p-3">
           {/* Menu Items */}
-          {results && results.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">
+          {sortedResults.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-sm font-semibold text-gray-900">
                   {t.menuItems}
                 </h3>
-                <span className="text-sm text-gray-500">
-                  {results.length} {t.itemsDetected}
+                <span className="text-xs text-gray-500">
+                  {sortedResults.length} {t.itemsDetected}
                 </span>
               </div>
-              {results.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border-2 border-gray-200 bg-white p-4"
-                  data-testid="menu-item"
-                >
-                  <div className="mb-2 flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="mb-1 font-medium">
-                        {item.translated_name}
-                      </h3>
-                      <p className="mb-2 text-xs text-gray-500">
-                        {item.original_name}
-                      </p>
-                    </div>
-                    {getSafetyIcon(item.safety_status)}
-                  </div>
+              {sortedResults.map((item) => {
+                const isExpanded = expandedItems.has(item.id);
+                const hasDetails =
+                  (item.ingredients && item.ingredients.length > 0) ||
+                  item.allergy_risk ||
+                  item.diet_risk;
 
-                  <p className="mb-3 text-sm text-gray-500">
-                    {item.description}
-                  </p>
+                // 메뉴 아이템 카드 스타일
+                const cardStyle = {
+                  borderRadius: '16px',
+                  padding: '16px',
+                  borderWidth: '2px',
+                  borderStyle: 'solid' as const,
+                  ...(item.safety_status === 'DANGER'
+                    ? {
+                        borderColor: 'var(--sm-danger-border)',
+                        backgroundColor: 'rgba(254, 242, 242, 0.5)', // --sm-danger-bg with opacity
+                      }
+                    : item.safety_status === 'CAUTION'
+                      ? {
+                          borderColor: 'var(--sm-caution-border)',
+                          backgroundColor: 'rgba(255, 251, 235, 0.3)', // --sm-caution-bg with opacity
+                        }
+                      : {
+                          borderColor: '#e5e7eb', // gray-200
+                          backgroundColor: 'white',
+                        }),
+                };
 
-                  <div className="flex items-center justify-between">
-                    {getSafetyBadge(item.safety_status, t)}
-                    {item.reason && (
-                      <p className="text-xs text-red-600">{item.reason}</p>
-                    )}
-                  </div>
+                return (
+                  <div
+                    key={item.id}
+                    className="shadow-sm transition-all"
+                    style={cardStyle}
+                    data-testid="menu-item"
+                  >
+                    {/* 메인 카드 내용 (원칙 2: 정보 위계) */}
+                    <div>
+                      <div className="mb-sm-sm flex items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="mb-sm-xs flex items-baseline gap-2">
+                            {/* 제목 - 원칙 1, 2: 18px 강조 본문 */}
+                            <h3
+                              className="font-semibold text-gray-900 truncate"
+                              style={{
+                                fontSize: '18px',
+                                lineHeight: '1.4',
+                                fontWeight: '600',
+                              }}
+                            >
+                              {item.translated_name}
+                            </h3>
+                            {item.price && (
+                              <span
+                                className="font-bold text-primary whitespace-nowrap"
+                                style={{
+                                  fontSize: '14px',
+                                }}
+                              >
+                                {item.price}
+                              </span>
+                            )}
+                          </div>
+                          {/* 부제목 - 원칙 1, 2: 14px 보조 정보 */}
+                          <p
+                            className="text-gray-500 truncate"
+                            style={{
+                              fontSize: '14px',
+                              lineHeight: '1.4',
+                            }}
+                          >
+                            {item.original_name}
+                          </p>
+                        </div>
+                        {getSafetyIcon(item.safety_status)}
+                      </div>
 
-                  {/* Ingredients */}
-                  {item.ingredients && item.ingredients.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {item.ingredients.map((ing, idx) => (
-                        <span
-                          key={idx}
-                          className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                      {/* 간단한 요약 정보 */}
+                      <div className="flex items-center justify-between gap-2">
+                        {getSafetyBadge(item.safety_status, t)}
+                        {item.reason && (
+                          <p 
+                            className="flex-1 text-xs font-medium truncate"
+                            style={{ color: 'var(--sm-danger-text)' }}
+                          >
+                            {item.reason}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* 펼치기/접기 버튼 (원칙 4: 44px 터치 영역) */}
+                      {hasDetails && (
+                        <button
+                          onClick={() => toggleItemExpanded(item.id)}
+                          className="mt-sm-sm flex w-full items-center justify-center gap-1 bg-gray-50 font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                          style={{
+                            minHeight: '44px',
+                            borderRadius: '12px',
+                            fontSize: '14px',
+                          }}
                         >
-                          {ing}
-                        </span>
-                      ))}
+                          {isExpanded
+                            ? language === 'ko'
+                              ? '간단히 보기'
+                              : 'Show Less'
+                            : language === 'ko'
+                              ? '자세히 보기'
+                              : 'Show More'}
+                          {isExpanded ? (
+                            <ChevronUp style={{ width: '16px', height: '16px' }} />
+                          ) : (
+                            <ChevronDown style={{ width: '16px', height: '16px' }} />
+                          )}
+                        </button>
+                      )}
                     </div>
-                  )}
 
-                  {/* Allergy & Diet Risk Details */}
-                  <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-                    {/* Allergy Risk */}
-                    {item.allergy_risk && (
-                      <div className="flex items-start gap-2">
-                        <span className="text-xs font-medium text-gray-500">
-                          {language === 'ko' ? '알레르기:' : 'Allergy:'}
-                        </span>
-                        <div className="flex flex-1 flex-wrap items-center gap-1">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                              item.allergy_risk.status === 'DANGER'
-                                ? 'bg-red-100 text-red-700'
-                                : item.allergy_risk.status === 'CAUTION'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-green-100 text-green-700'
-                            }`}
-                          >
-                            {item.allergy_risk.status === 'DANGER'
-                              ? language === 'ko'
-                                ? '위험'
-                                : 'Danger'
-                              : item.allergy_risk.status === 'CAUTION'
-                                ? language === 'ko'
-                                  ? '주의'
-                                  : 'Caution'
-                                : language === 'ko'
-                                  ? '안전'
-                                  : 'Safe'}
-                          </span>
-                          {item.allergy_risk.matched_allergens &&
-                            item.allergy_risk.matched_allergens.length > 0 && (
-                              <span className="text-xs text-gray-600">
-                                (
-                                {item.allergy_risk.matched_allergens.join(', ')}
-                                )
-                              </span>
-                            )}
-                        </div>
-                      </div>
-                    )}
+                    {/* 상세 정보 (펼쳤을 때만 표시) */}
+                    {isExpanded && hasDetails && (
+                      <div className="border-t border-gray-200 bg-white p-3 space-y-3">
+                        {/* 설명 */}
+                        {item.description && (
+                          <p className="text-sm text-gray-700 leading-relaxed">
+                            {item.description}
+                          </p>
+                        )}
 
-                    {/* Diet Risk */}
-                    {item.diet_risk && (
-                      <div className="flex items-start gap-2">
-                        <span className="text-xs font-medium text-gray-500">
-                          {language === 'ko' ? '식단:' : 'Diet:'}
-                        </span>
-                        <div className="flex flex-1 flex-wrap items-center gap-1">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                              item.diet_risk.status === 'DANGER'
-                                ? 'bg-red-100 text-red-700'
-                                : item.diet_risk.status === 'CAUTION'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-green-100 text-green-700'
-                            }`}
-                          >
-                            {item.diet_risk.status === 'DANGER'
-                              ? language === 'ko'
-                                ? '부적합'
-                                : 'Not Suitable'
-                              : item.diet_risk.status === 'CAUTION'
-                                ? language === 'ko'
-                                  ? '주의'
-                                  : 'Caution'
-                                : language === 'ko'
-                                  ? '적합'
-                                  : 'Suitable'}
-                          </span>
-                          {item.diet_risk.violations &&
-                            item.diet_risk.violations.length > 0 && (
-                              <span className="text-xs text-gray-600">
-                                ({item.diet_risk.violations.join(', ')})
+                        {/* 재료 */}
+                        {item.ingredients && item.ingredients.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-semibold text-gray-700 mb-1.5">
+                              {language === 'ko' ? '재료' : 'Ingredients'}
+                            </h4>
+                            <div className="flex flex-wrap gap-1.5">
+                              {item.ingredients.map((ing, idx) => (
+                                <span
+                                  key={idx}
+                                  className="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700"
+                                >
+                                  {ing}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 알레르기 & 식단 위험도 */}
+                        <div className="space-y-2">
+                          {/* Allergy Risk */}
+                          {item.allergy_risk && (
+                            <div className="flex items-start gap-2 rounded-lg bg-gray-50 p-2">
+                              <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                {language === 'ko' ? '알레르기:' : 'Allergy:'}
                               </span>
-                            )}
+                              <div className="flex flex-1 flex-wrap items-center gap-1.5">
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                  style={{
+                                    backgroundColor: ICON_STYLES[item.allergy_risk.status as SafetyStatus],
+                                    color: 'white',
+                                  }}
+                                >
+                                  {item.allergy_risk.status === 'DANGER'
+                                    ? language === 'ko'
+                                      ? '위험'
+                                      : 'Danger'
+                                    : item.allergy_risk.status === 'CAUTION'
+                                      ? language === 'ko'
+                                        ? '주의'
+                                        : 'Caution'
+                                      : language === 'ko'
+                                        ? '안전'
+                                        : 'Safe'}
+                                </span>
+                                {item.allergy_risk.matched_allergens &&
+                                  item.allergy_risk.matched_allergens.length >
+                                    0 && (
+                                    <span className="text-xs font-medium text-gray-700">
+                                      {item.allergy_risk.matched_allergens.join(
+                                        ', '
+                                      )}
+                                    </span>
+                                  )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Diet Risk */}
+                          {item.diet_risk && (
+                            <div className="flex items-start gap-2 rounded-lg bg-gray-50 p-2">
+                              <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                                {language === 'ko' ? '식단:' : 'Diet:'}
+                              </span>
+                              <div className="flex flex-1 flex-wrap items-center gap-1.5">
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                  style={{
+                                    backgroundColor: ICON_STYLES[item.diet_risk.status as SafetyStatus],
+                                    color: 'white',
+                                  }}
+                                >
+                                  {item.diet_risk.status === 'DANGER'
+                                    ? language === 'ko'
+                                      ? '부적합'
+                                      : 'Not Suitable'
+                                    : item.diet_risk.status === 'CAUTION'
+                                      ? language === 'ko'
+                                        ? '주의'
+                                        : 'Caution'
+                                      : language === 'ko'
+                                        ? '적합'
+                                        : 'Suitable'}
+                                </span>
+                                {item.diet_risk.violations &&
+                                  item.diet_risk.violations.length > 0 && (
+                                    <span className="text-xs font-medium text-gray-700">
+                                      {item.diet_risk.violations.join(', ')}
+                                    </span>
+                                  )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Retake Button */}
-        <div className="border-t border-gray-200 bg-white p-4">
+        {/* Retake Button (원칙 4: 56px 주요 버튼, 원칙 5: 피드백) */}
+        <div className="border-t border-gray-200 bg-white p-sm-md">
           <button
             onClick={handleRetake}
-            className="w-full rounded-full bg-primary py-3 text-white"
+            className="w-full bg-primary font-semibold text-white hover:bg-primary/90 transition-colors active:scale-95"
+            style={{
+              minHeight: '56px',
+              borderRadius: '16px',
+              fontSize: '16px',
+              lineHeight: '1.5',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            }}
             data-testid="retake-button"
           >
             {language === 'ko' ? '다시 촬영하기' : 'Retake Photo'}

@@ -103,30 +103,29 @@ export function useSafetyCardAllergiesDietsLoad(): UseSafetyCardAllergiesDietsLo
 
       const userId = user.id;
 
-      // 알레르기 데이터 조회
-      const { data: userAllergies, error: allergiesError } = await supabase
-        .from('user_allergies')
-        .select('allergy_code, severity, notes')
-        .eq('user_id', userId);
+      // 알레르기 및 식단 데이터 병렬 조회 (Promise.all 사용)
+      const [
+        { data: userAllergies, error: allergiesError },
+        { data: userDiets, error: dietsError }
+      ] = await Promise.all([
+        supabase
+          .from('user_allergies')
+          .select('allergy_code, severity, notes')
+          .eq('user_id', userId),
+        supabase
+          .from('user_diets')
+          .select('diet_code, notes')
+          .eq('user_id', userId)
+      ]);
 
-      console.log('[DEBUG] 알레르기 조회 결과:', {
+      console.log('[DEBUG] 병렬 조회 결과:', {
         userAllergies,
         allergiesError,
+        userDiets,
+        dietsError,
       });
 
-      if (allergiesError) {
-        throw new Error('알레르기 및 식단 정보를 불러올 수 없습니다.');
-      }
-
-      // 식단 데이터 조회
-      const { data: userDiets, error: dietsError } = await supabase
-        .from('user_diets')
-        .select('diet_code, notes')
-        .eq('user_id', userId);
-
-      console.log('[DEBUG] 식단 조회 결과:', { userDiets, dietsError });
-
-      if (dietsError) {
+      if (allergiesError || dietsError) {
         throw new Error('알레르기 및 식단 정보를 불러올 수 없습니다.');
       }
 

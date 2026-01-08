@@ -513,6 +513,17 @@ export default function WebViewScreen({
         ref={webViewRef}
         source={{ uri: url }}
         style={styles.webview}
+        originWhitelist={[
+          'http://*',
+          'https://*',
+          'file://*',
+          'data:*',
+          'blob:*',
+          'sms://*',
+          'tel://*',
+          'mailto:*',
+          'geo:*',
+        ]}
         onMessage={handleMessage}
         injectedJavaScriptBeforeContentLoaded={injectedJavaScript}
         injectedJavaScript={injectedJavaScript}

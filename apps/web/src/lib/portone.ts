@@ -190,7 +190,6 @@ export async function requestPayment(
     orderName: product.name,
     totalAmount: product.amount,
     currency: 'CURRENCY_KRW',
-    payMethod, // 사용자가 선택한 결제 수단
     payMethod: 'EASY_PAY', // 포트원 SDK v2는 EASY_PAY 사용
     customer: {
       customerId: userId,

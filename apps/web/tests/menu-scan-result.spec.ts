@@ -165,14 +165,14 @@ test.describe('메뉴 스캔 결과 페이지 테스트', () => {
       const safeStatus = page.locator('[data-testid="overall-status-SAFE"]');
       await expect(safeStatus).toBeVisible();
 
-      // 배경색 확인 (bg-green-50)
-      await expect(safeStatus).toHaveClass(/bg-green-50/);
+      // 배경색 확인 (bg-sm-safe-bg - 초록색)
+      await expect(safeStatus).toHaveClass(/bg-sm-safe-bg/);
 
       // 메시지 확인 (상태 메시지가 존재함)
       const statusMessage = page.locator('[data-testid="status-message"]');
       await expect(statusMessage).toBeVisible();
       // 초록색 텍스트 확인
-      await expect(statusMessage).toHaveClass(/text-green-700/);
+      await expect(statusMessage).toHaveClass(/text-sm-safe-text/);
     });
 
     /**
@@ -189,8 +189,8 @@ test.describe('메뉴 스캔 결과 페이지 테스트', () => {
       );
       await expect(cautionStatus).toBeVisible();
 
-      // 배경색 확인 (bg-yellow-50)
-      await expect(cautionStatus).toHaveClass(/bg-yellow-50/);
+      // 배경색 확인 (bg-sm-caution-bg - 주황색)
+      await expect(cautionStatus).toHaveClass(/bg-sm-caution-bg/);
 
       // 경고 목록 표시 확인
       const warningItems = page.locator('[data-testid="warning-item"]');
@@ -211,8 +211,8 @@ test.describe('메뉴 스캔 결과 페이지 테스트', () => {
       );
       await expect(dangerStatus).toBeVisible();
 
-      // 배경색 확인 (bg-red-50)
-      await expect(dangerStatus).toHaveClass(/bg-red-50/);
+      // 배경색 확인 (bg-sm-danger-bg - 빨간색)
+      await expect(dangerStatus).toHaveClass(/bg-sm-danger-bg/);
 
       // 경고 목록 표시 확인
       const warningItems = page.locator('[data-testid="warning-item"]');

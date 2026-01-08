@@ -46,6 +46,51 @@ const config: Config = {
           DEFAULT: 'var(--card)',
           foreground: 'var(--card-foreground)',
         },
+        // SafeMeals 안전성 색상 (원칙 6, 7)
+        'sm-safe': {
+          bg: 'var(--sm-safe-bg)',
+          border: 'var(--sm-safe-border)',
+          text: 'var(--sm-safe-text)',
+          icon: 'var(--sm-safe-icon)',
+        },
+        'sm-caution': {
+          bg: 'var(--sm-caution-bg)',
+          border: 'var(--sm-caution-border)',
+          text: 'var(--sm-caution-text)',
+          icon: 'var(--sm-caution-icon)',
+        },
+        'sm-danger': {
+          bg: 'var(--sm-danger-bg)',
+          border: 'var(--sm-danger-border)',
+          text: 'var(--sm-danger-text)',
+          icon: 'var(--sm-danger-icon)',
+        },
+      },
+      fontSize: {
+        // SafeMeals 타이포그래피 (원칙 1, 2)
+        'sm-caption': ['var(--sm-font-caption)', { lineHeight: 'var(--sm-line-height-tight)' }],
+        'sm-body': ['var(--sm-font-body)', { lineHeight: 'var(--sm-line-height-normal)' }],
+        'sm-body-emphasis': ['var(--sm-font-body-emphasis)', { lineHeight: 'var(--sm-line-height-normal)' }],
+        'sm-subtitle': ['var(--sm-font-subtitle)', { lineHeight: 'var(--sm-line-height-tight)' }],
+        'sm-title': ['var(--sm-font-title)', { lineHeight: 'var(--sm-line-height-tight)' }],
+      },
+      spacing: {
+        // SafeMeals 간격 시스템 (원칙 8)
+        'sm-xs': 'var(--sm-spacing-xs)',
+        'sm-sm': 'var(--sm-spacing-sm)',
+        'sm-md': 'var(--sm-spacing-md)',
+        'sm-lg': 'var(--sm-spacing-lg)',
+        'sm-xl': 'var(--sm-spacing-xl)',
+      },
+      minWidth: {
+        // SafeMeals 터치 영역 (원칙 4)
+        'sm-touch': 'var(--sm-touch-minimum)',
+        'sm-button': 'var(--sm-touch-button)',
+      },
+      minHeight: {
+        // SafeMeals 터치 영역 (원칙 4)
+        'sm-touch': 'var(--sm-touch-minimum)',
+        'sm-button': 'var(--sm-touch-button)',
       },
       borderRadius: {
         lg: 'var(--radius)',
