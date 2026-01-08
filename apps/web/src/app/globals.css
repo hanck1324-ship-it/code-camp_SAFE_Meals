@@ -30,10 +30,48 @@
   --font-weight-normal: 400;
   --ring: oklch(0.708 0 0);
 
-  /* SafeMeals Brand Colors */
+  /* SafeMeals Brand Colors (레거시 - 하위 호환용) */
   --safe-green: #2ecc71;
   --warning-yellow: #f1c40f;
   --danger-red: #e74c3c;
+
+  /* SafeMeals 안전성 색상 (원칙 6, 7) */
+  --sm-safe-bg: #F0FDF4;
+  --sm-safe-border: #BBF7D0;
+  --sm-safe-text: #15803D;
+  --sm-safe-icon: #16A34A;
+
+  --sm-caution-bg: #FFFBEB;
+  --sm-caution-border: #FDE68A;
+  --sm-caution-text: #92400E;
+  --sm-caution-icon: #D97706;
+
+  --sm-danger-bg: #FEF2F2;
+  --sm-danger-border: #FECACA;
+  --sm-danger-text: #B91C1C;
+  --sm-danger-icon: #DC2626;
+
+  /* SafeMeals 타이포그래피 (원칙 1, 2) */
+  --sm-font-caption: 14px;
+  --sm-font-body: 16px;
+  --sm-font-body-emphasis: 18px;
+  --sm-font-subtitle: 20px;
+  --sm-font-title: 24px;
+
+  --sm-line-height-tight: 1.4;
+  --sm-line-height-normal: 1.5;
+  --sm-line-height-relaxed: 1.6;
+
+  /* SafeMeals 간격 (원칙 8) */
+  --sm-spacing-xs: 4px;
+  --sm-spacing-sm: 8px;
+  --sm-spacing-md: 16px;
+  --sm-spacing-lg: 24px;
+  --sm-spacing-xl: 32px;
+
+  /* SafeMeals 터치 영역 (원칙 4) */
+  --sm-touch-minimum: 44px;
+  --sm-touch-button: 56px;
 
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -86,6 +124,22 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* SafeMeals 다크모드 안전성 색상 */
+  --sm-safe-bg: #052E16;
+  --sm-safe-border: #166534;
+  --sm-safe-text: #86EFAC;
+  --sm-safe-icon: #4ADE80;
+
+  --sm-caution-bg: #451A03;
+  --sm-caution-border: #92400E;
+  --sm-caution-text: #FDE68A;
+  --sm-caution-icon: #FBBF24;
+
+  --sm-danger-bg: #450A0A;
+  --sm-danger-border: #991B1B;
+  --sm-danger-text: #FCA5A5;
+  --sm-danger-icon: #F87171;
 }
 
 @theme inline {
