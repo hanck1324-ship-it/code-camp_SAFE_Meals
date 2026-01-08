@@ -8,7 +8,6 @@ import {
   failJob,
   performQuickAnalysis,
   mergeQuickAndGemini,
-  ALLERGY_CODE_TO_LABEL,
   type SafetyLevel,
   type ScanTimings,
   type QuickResult,
@@ -217,6 +216,7 @@ export async function POST(req: NextRequest) {
       ocrText,
       userAllergies,
       userDiets,
+      language,
       ocrConfidence,
       ocrFailed // OCR 실패 플래그 전달
     );
@@ -433,7 +433,8 @@ export async function POST(req: NextRequest) {
             userId: user.id,
             jobId: jobId,
             scanType: 'menu',
-            imageUrl: null, // 현재 범위에서 이미지 저장 제외
+            imageUrl: null, // imageData가 있으면 Repository에서 Storage에 업로드 후 URL 설정
+            imageData: image, // Base64 이미지 데이터 (Storage 업로드용)
             restaurantName: null, // OCR에서 추출 가능하면 추후 추가
             location: null,
             results: scanResults,
@@ -442,12 +443,15 @@ export async function POST(req: NextRequest) {
           const saveResult = await scanHistoryRepo.saveScan(saveParams);
           const saveMs = Date.now() - saveStartTime;
 
-          // backgroundTimings에 saveMs 기록
+          // backgroundTimings에 saveMs 및 imageUploadMs 기록
           backgroundTimings.saveMs = saveMs;
+          if (saveResult.imageUploadMs) {
+            backgroundTimings.imageUploadMs = saveResult.imageUploadMs;
+          }
 
           if (saveResult.success) {
             console.log(
-              `✅ [ScanHistory] 저장 완료 - scanId: ${saveResult.scanId}, results: ${saveResult.resultIds?.length}건 (${saveMs}ms)`
+              `✅ [ScanHistory] 저장 완료 - scanId: ${saveResult.scanId}, results: ${saveResult.resultIds?.length}건 (${saveMs}ms, imageUpload: ${saveResult.imageUploadMs || 0}ms)`
             );
           } else {
             console.log(`⚠️ [ScanHistory] 저장 스킵 - ${saveResult.error}`);
@@ -682,7 +686,8 @@ async function callGeminiAnalysis(
                 id: { type: 'string' },
                 original_name: {
                   type: 'string',
-                  description: 'Original menu name as shown in the image (in original language)',
+                  description:
+                    'Original menu name as shown in the image (in original language)',
                 },
                 translated_name: {
                   type: 'string',

@@ -1,9 +1,10 @@
 import { MapPin, Clock, ShieldCheck, RefreshCw, Camera } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { LanguageSelector } from '@/components/language-selector';
-import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useRecentScans, SafetyLevel } from '@/features/dashboard/hooks/useRecentScans';
+import { useRecentScans } from '@/features/dashboard/hooks/useRecentScans';
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
+import { ScanThumbnail } from '@/features/dashboard/components/scan-thumbnail';
 
 interface HomeDashboardProps {
   onScanMenu: () => void;
@@ -12,44 +13,13 @@ interface HomeDashboardProps {
   error?: string | null; // 3. 에러 상태 추가
 }
 
-// Safety Level 색상 매핑
-const SAFETY_LEVEL_STYLES: Record<SafetyLevel, { bg: string; text: string; border: string }> = {
-  safe: {
-    bg: 'bg-green-50',
-    text: 'text-green-700',
-    border: 'border-green-200',
-  },
-  caution: {
-    bg: 'bg-yellow-50',
-    text: 'text-yellow-700',
-    border: 'border-yellow-200',
-  },
-  danger: {
-    bg: 'bg-red-50',
-    text: 'text-red-700',
-    border: 'border-red-200',
-  },
-  unknown: {
-    bg: 'bg-gray-50',
-    text: 'text-gray-700',
-    border: 'border-gray-200',
-  },
-};
-
-// Safety Level 라벨 매핑
-const SAFETY_LEVEL_LABELS: Record<SafetyLevel, { ko: string; en: string }> = {
-  safe: { ko: '안전', en: 'Safe' },
-  caution: { ko: '주의', en: 'Caution' },
-  danger: { ko: '위험', en: 'Danger' },
-  unknown: { ko: '확인필요', en: 'Unknown' },
-};
-
 export function HomeDashboard({
   onScanMenu,
   haccpList = [], // 기본값 설정
   isLoading = false,
   error = null,
 }: HomeDashboardProps) {
+  const router = useRouter();
   const { t, language } = useTranslation();
   const {
     recentScans,
@@ -161,28 +131,22 @@ export function HomeDashboard({
         {!isScansLoading && !scansError && recentScans.length > 0 && (
           <div className="scrollbar-hide -mx-6 flex gap-4 overflow-x-auto px-6 pb-2">
             {recentScans.map((scan, index) => {
-              const safetyStyles = SAFETY_LEVEL_STYLES[scan.representativeItem.safetyLevel];
-              const safetyLabel = SAFETY_LEVEL_LABELS[scan.representativeItem.safetyLevel];
-
               return (
-                <div
+                <button
                   key={scan.id}
-                  className="w-32 flex-shrink-0"
+                  className="w-32 flex-shrink-0 text-left"
                   data-testid={`recent-scan-card-${index}`}
+                  onClick={() => router.push(`/scan/${scan.id}`)}
                 >
-                  <div className="relative mb-2 h-12 w-32 overflow-hidden rounded-2xl shadow-md">
-                    <ImageWithFallback
-                      src={scan.imageUrl || '/images/placeholder-food.png'}
-                      alt={scan.representativeItem.itemName}
-                      className="h-full w-full object-cover"
-                    />
-                    {/* Safety Level 뱃지 */}
-                    <div
-                      className={`absolute right-1 top-1 rounded px-1.5 py-0.5 text-xs font-medium ${safetyStyles.bg} ${safetyStyles.text} ${safetyStyles.border} border`}
-                    >
-                      {language === 'ko' ? safetyLabel.ko : safetyLabel.en}
-                    </div>
-                  </div>
+                  <ScanThumbnail
+                    imageUrl={scan.imageUrl}
+                    itemName={scan.representativeItem.itemName}
+                    safetyLevel={scan.representativeItem.safetyLevel}
+                    size="md"
+                    showBadge={true}
+                    language={language}
+                    className="mb-2 h-12 w-32 md:h-16 md:w-32"
+                  />
                   <p className="truncate text-sm">{scan.representativeItem.itemName}</p>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
@@ -194,7 +158,7 @@ export function HomeDashboard({
                       총 {scan.representativeItem.totalCount}개 항목
                     </div>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>

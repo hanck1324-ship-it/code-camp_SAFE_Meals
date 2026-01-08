@@ -1,0 +1,635 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @02-ui.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-선행작업) 이 프롬프트 실행 전 다음 프롬프트가 완료되어야 함:
+              - 37prompts.401.dashboard-recent-scans.txt (Web 버전 - Hook/타입 참고)
+              - 38prompts.401.scan-history-save.txt (저장 기능)
+              - 41prompts.401.result-page-save-supabase.txt (분석결과 저장 Hook)
+
+==============================================
+
+조건-플랫폼) **Mobile (React Native/Expo) 전용 프롬프트**
+             - 37prompts는 Web(Next.js) 버전을 다룸
+             - 이 프롬프트는 Mobile 앱의 대시보드 최근 스캔 기능을 다룸
+
+==============================================
+
+조건-파일경로) 참고할 대시보드 페이지: apps/mobile/app/(tabs)/index.tsx
+조건-파일경로) 생성될 컴포넌트 경로: apps/mobile/components/dashboard/RecentScans.tsx
+조건-파일경로) 생성될 스캔 카드 컴포넌트: apps/mobile/components/dashboard/ScanHistoryCard.tsx
+조건-파일경로) 생성될 Hook 경로: apps/mobile/hooks/useRecentScans.ts
+조건-파일경로) 참고할 Web Hook 경로: apps/web/src/features/dashboard/hooks/useRecentScans.ts
+조건-파일경로) 참고 스키마 문서: /code-camp_SAFE_Meals/docs/schema.md
+
+==============================================
+
+조건-스타일) React Native 스타일링 가이드라인
+            - React Native StyleSheet 사용 (NativeWind 선택적)
+            - safety_level별 색상 매핑:
+                - safe: { background: '#DCFCE7', text: '#15803D', border: '#86EFAC' }
+                - caution: { background: '#FEF9C3', text: '#A16207', border: '#FDE047' }
+                - danger: { background: '#FEE2E2', text: '#B91C1C', border: '#FECACA' }
+                - unknown: { background: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' }
+            - useColorScheme()으로 다크모드 대응 필수
+            - 하드코딩된 색상값은 상수 파일로 분리
+
+==============================================
+
+핵심요구사항) Mobile 앱 대시보드에 사용자의 최근 스캔 이력을 표시하는 기능을 구현할 것.
+
+1) 목표
+    - 대시보드 홈 화면에 최근 스캔 이력 3건 표시 (모바일 화면 고려)
+    - 1:N 관계 처리: 1스캔 = N결과, 대표 결과 선정 로직 적용
+    - 각 스캔 이력에 대한 요약 정보 제공 (대표 안전 등급, 메뉴명, 시간)
+    - 스캔 이력 카드 클릭 시 상세 페이지로 이동
+    - 빈 상태 / 로딩 / 에러 상태 처리
+
+2) 데이터 관계 정의 (1:N 처리 - 중요)
+    2-1) 관계
+        - **1스캔(scan_history) = N결과(scan_results)** 관계
+        - 대시보드에서는 **스캔 단위로 3건** 표시 (결과 3건이 아님)
+        - 각 스캔 카드에는 **대표 결과 1개**만 표시
+
+    2-2) 대표 결과 선정 규칙
+        - 위험도 우선순위: danger > caution > unknown > safe
+        - 동일 스캔 내 여러 결과가 있을 경우, 가장 위험한 등급을 대표로 표시
+        - 항목명 표시 규칙:
+            - 결과가 1개: 해당 item_name 표시
+            - 결과가 2개 이상: "가장 위험한 항목명 외 N개" 형식
+            - 예: "새우튀김 외 2개"
+
+    2-3) 대표 결과 선정 함수
+        ```typescript
+        function selectRepresentativeResult(results: ScanResultItem[]): {
+          itemName: string;
+          safetyLevel: SafetyLevel;
+          totalCount: number;
+        } {
+          const priorityOrder = { danger: 0, caution: 1, unknown: 2, safe: 3 };
+          const sorted = [...results].sort((a, b) => 
+            priorityOrder[a.safetyLevel] - priorityOrder[b.safetyLevel]
+          );
+          const representative = sorted[0];
+          return {
+            itemName: results.length > 1 
+              ? `${representative.itemName} 외 ${results.length - 1}개`
+              : representative.itemName,
+            safetyLevel: representative.safetyLevel,
+            totalCount: results.length
+          };
+        }
+        ```
+
+3) TypeScript 타입 정의 (Web 버전과 공유 가능)
+    3-1) ScanResultItem 타입
+        ```typescript
+        interface ScanResultItem {
+          id: string;
+          itemName: string;
+          safetyLevel: 'safe' | 'caution' | 'danger' | 'unknown';
+        }
+        ```
+
+    3-2) RecentScan 타입
+        ```typescript
+        interface RecentScan {
+          id: string;
+          scanType: 'menu' | 'barcode' | 'image';
+          imageUrl: string | null;
+          restaurantName: string | null;
+          scannedAt: string;
+          // 대표 결과 (1:N 관계에서 가공된 값)
+          representativeItem: {
+            itemName: string;        // "새우튀김" 또는 "새우튀김 외 2개"
+            safetyLevel: 'safe' | 'caution' | 'danger' | 'unknown';
+            totalCount: number;      // 전체 결과 개수
+          };
+          // 원본 결과 배열 (상세 보기용)
+          allResults: ScanResultItem[];
+        }
+        ```
+
+    3-3) UseRecentScansResult 타입
+        ```typescript
+        interface UseRecentScansResult {
+          recentScans: RecentScan[];
+          isLoading: boolean;
+          error: string | null;
+          refetch: () => Promise<void>;
+          isEmpty: boolean;
+        }
+        ```
+
+4) Supabase 쿼리
+    ```typescript
+    const { data, error } = await supabase
+      .from('scan_history')
+      .select(`
+        id,
+        scan_type,
+        image_url,
+        restaurant_name,
+        scanned_at,
+        scan_results (
+          id,
+          item_name,
+          safety_level
+        )
+      `)
+      .eq('user_id', userId)
+      .order('scanned_at', { ascending: false })
+      .limit(3);  // 모바일은 3건
+    ```
+
+5) useRecentScans Hook 구현 (apps/mobile/hooks/useRecentScans.ts)
+    5-1) Hook 구조
+        ```typescript
+        import { useState, useEffect, useCallback } from 'react';
+        import { supabase } from '@/lib/supabase';
+        import { useAuth } from '@/hooks/useAuth';
+        
+        export function useRecentScans(limit = 3): UseRecentScansResult {
+          const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState<string | null>(null);
+          const { user } = useAuth();
+          
+          const fetchRecentScans = useCallback(async () => {
+            if (!user?.id) {
+              setIsLoading(false);
+              return;
+            }
+
+            setIsLoading(true);
+            setError(null);
+
+            try {
+              const { data, error: queryError } = await supabase
+                .from('scan_history')
+                .select(`...`)
+                .eq('user_id', user.id)
+                .order('scanned_at', { ascending: false })
+                .limit(limit);
+
+              if (queryError) throw queryError;
+              
+              const mapped = data?.map(mapToRecentScan) ?? [];
+              setRecentScans(mapped);
+            } catch (e) {
+              console.error('❌ [RecentScans] 조회 실패:', e);
+              setError(e instanceof Error ? e.message : '스캔 이력을 불러올 수 없습니다.');
+            } finally {
+              setIsLoading(false);
+            }
+          }, [user?.id, limit]);
+
+          useEffect(() => {
+            fetchRecentScans();
+          }, [fetchRecentScans]);
+
+          return {
+            recentScans,
+            isLoading,
+            error,
+            refetch: fetchRecentScans,
+            isEmpty: !isLoading && recentScans.length === 0,
+          };
+        }
+        ```
+
+    5-2) 데이터 매핑 함수
+        ```typescript
+        function mapToRecentScan(row: any): RecentScan {
+          const allResults: ScanResultItem[] = row.scan_results?.map((r: any) => ({
+            id: r.id,
+            itemName: r.item_name,
+            safetyLevel: r.safety_level,
+          })) ?? [];
+
+          const representativeItem = allResults.length > 0
+            ? selectRepresentativeResult(allResults)
+            : { itemName: '결과 없음', safetyLevel: 'unknown' as const, totalCount: 0 };
+
+          return {
+            id: row.id,
+            scanType: row.scan_type,
+            imageUrl: row.image_url,
+            restaurantName: row.restaurant_name,
+            scannedAt: row.scanned_at,
+            representativeItem,
+            allResults,
+          };
+        }
+        ```
+
+6) RecentScans 컴포넌트 (apps/mobile/components/dashboard/RecentScans.tsx)
+    6-1) 컴포넌트 구조
+        ```typescript
+        import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+        import { useNavigation } from '@react-navigation/native';
+        import { useRecentScans } from '@/hooks/useRecentScans';
+        import { ScanHistoryCard } from './ScanHistoryCard';
+
+        export function RecentScans() {
+          const { recentScans, isLoading, error, isEmpty, refetch } = useRecentScans();
+          const navigation = useNavigation();
+
+          if (isLoading) {
+            return <RecentScansLoading />;
+          }
+
+          if (error) {
+            return <RecentScansError message={error} onRetry={refetch} />;
+          }
+
+          if (isEmpty) {
+            return <RecentScansEmpty />;
+          }
+
+          return (
+            <View style={styles.container}>
+              <View style={styles.header}>
+                <Text style={styles.title}>최근 스캔</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('ScanHistory')}>
+                  <Text style={styles.seeAll}>전체 보기</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <FlatList
+                data={recentScans}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <ScanHistoryCard 
+                    scan={item} 
+                    onPress={() => navigation.navigate('ScanDetail', { scanId: item.id })}
+                  />
+                )}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.listContent}
+              />
+            </View>
+          );
+        }
+        ```
+
+    6-2) 빈 상태 컴포넌트
+        ```typescript
+        function RecentScansEmpty() {
+          const navigation = useNavigation();
+          
+          return (
+            <View style={styles.emptyContainer}>
+              <CameraIcon size={48} color="#9CA3AF" />
+              <Text style={styles.emptyTitle}>아직 스캔 기록이 없어요</Text>
+              <Text style={styles.emptyDescription}>
+                메뉴판을 스캔해서 안전한 음식을 확인해보세요
+              </Text>
+              <TouchableOpacity 
+                style={styles.scanButton}
+                onPress={() => navigation.navigate('Scan')}
+                accessibilityLabel="첫 스캔 시작하기"
+                accessibilityRole="button"
+              >
+                <Text style={styles.scanButtonText}>첫 스캔 시작하기</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }
+        ```
+
+    6-3) 로딩 스켈레톤
+        ```typescript
+        function RecentScansLoading() {
+          return (
+            <View style={styles.container}>
+              <View style={styles.header}>
+                <View style={styles.skeletonTitle} />
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {[1, 2, 3].map((i) => (
+                  <View key={i} style={styles.skeletonCard}>
+                    <ActivityIndicator size="small" color="#9CA3AF" />
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        }
+        ```
+
+    6-4) 에러 상태 컴포넌트
+        ```typescript
+        function RecentScansError({ message, onRetry }: { message: string; onRetry: () => void }) {
+          return (
+            <View style={styles.errorContainer}>
+              <AlertCircleIcon size={32} color="#EF4444" />
+              <Text style={styles.errorText}>{message}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+                <Text style={styles.retryButtonText}>다시 시도</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }
+        ```
+
+7) ScanHistoryCard 컴포넌트 (apps/mobile/components/dashboard/ScanHistoryCard.tsx)
+    7-1) Props 인터페이스
+        ```typescript
+        interface ScanHistoryCardProps {
+          scan: RecentScan;
+          onPress: () => void;
+        }
+        ```
+
+    7-2) 컴포넌트 구현
+        ```typescript
+        import { View, Text, Image, TouchableOpacity, useColorScheme } from 'react-native';
+        import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
+        import { getSafetyColors } from '@/lib/utils/safetyColors';
+
+        export function ScanHistoryCard({ scan, onPress }: ScanHistoryCardProps) {
+          const colorScheme = useColorScheme();
+          const isDark = colorScheme === 'dark';
+          const safetyColors = getSafetyColors(scan.representativeItem.safetyLevel, isDark);
+          const timeAgo = formatRelativeTime(scan.scannedAt);
+
+          return (
+            <TouchableOpacity 
+              style={[
+                styles.card, 
+                { backgroundColor: isDark ? '#1F2937' : '#FFFFFF' },
+                { borderColor: safetyColors.border }
+              ]}
+              onPress={onPress}
+              activeOpacity={0.7}
+              accessibilityLabel={`${scan.restaurantName || '메뉴'} 스캔 결과. ${
+                scan.representativeItem.safetyLevel === 'safe' ? '안전' :
+                scan.representativeItem.safetyLevel === 'caution' ? '주의 필요' :
+                scan.representativeItem.safetyLevel === 'danger' ? '위험' : '확인 필요'
+              }. ${scan.representativeItem.totalCount}개 메뉴. ${timeAgo}`}
+              accessibilityRole="button"
+              accessibilityHint="탭하여 상세 결과를 확인합니다"
+            >
+              {/* 썸네일 영역 */}
+              <View style={[styles.thumbnail, { backgroundColor: safetyColors.background }]}>
+                {scan.imageUrl ? (
+                  <Image source={{ uri: scan.imageUrl }} style={styles.thumbnailImage} />
+                ) : (
+                  <SafetyIcon level={scan.representativeItem.safetyLevel} size={32} />
+                )}
+              </View>
+
+              {/* 정보 영역 */}
+              <View style={styles.info}>
+                <Text style={[styles.restaurantName, { color: isDark ? '#F9FAFB' : '#111827' }]} numberOfLines={1}>
+                  {scan.restaurantName || '메뉴 스캔'}
+                </Text>
+                
+                {/* 대표 메뉴 + 안전 등급 */}
+                <View style={styles.menuRow}>
+                  <SafetyBadge level={scan.representativeItem.safetyLevel} size="sm" />
+                  <Text style={[styles.menuName, { color: isDark ? '#D1D5DB' : '#4B5563' }]} numberOfLines={1}>
+                    {scan.representativeItem.itemName}
+                  </Text>
+                </View>
+
+                {/* 결과 개수 표시 (2개 이상인 경우) */}
+                {scan.representativeItem.totalCount > 1 && (
+                  <Text style={styles.countBadge}>
+                    총 {scan.representativeItem.totalCount}개 메뉴
+                  </Text>
+                )}
+
+                <Text style={[styles.timeAgo, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+                  {timeAgo}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }
+        ```
+
+    7-3) 안전 등급별 색상 함수
+        ```typescript
+        // lib/utils/safetyColors.ts
+        type SafetyLevel = 'safe' | 'caution' | 'danger' | 'unknown';
+
+        interface SafetyColors {
+          background: string;
+          text: string;
+          border: string;
+        }
+
+        const LIGHT_COLORS: Record<SafetyLevel, SafetyColors> = {
+          safe: { background: '#DCFCE7', text: '#15803D', border: '#86EFAC' },
+          caution: { background: '#FEF9C3', text: '#A16207', border: '#FDE047' },
+          danger: { background: '#FEE2E2', text: '#B91C1C', border: '#FECACA' },
+          unknown: { background: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' },
+        };
+
+        const DARK_COLORS: Record<SafetyLevel, SafetyColors> = {
+          safe: { background: '#14532D', text: '#86EFAC', border: '#166534' },
+          caution: { background: '#713F12', text: '#FDE047', border: '#A16207' },
+          danger: { background: '#7F1D1D', text: '#FECACA', border: '#991B1B' },
+          unknown: { background: '#374151', text: '#9CA3AF', border: '#4B5563' },
+        };
+
+        export function getSafetyColors(level: SafetyLevel, isDark = false): SafetyColors {
+          return isDark ? DARK_COLORS[level] : LIGHT_COLORS[level];
+        }
+        ```
+
+8) 상대 시간 유틸리티 (lib/utils/formatRelativeTime.ts)
+    ```typescript
+    export function formatRelativeTime(dateString: string, locale = 'ko'): string {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      const labels = {
+        ko: {
+          justNow: '방금 전',
+          minutes: (n: number) => `${n}분 전`,
+          hours: (n: number) => `${n}시간 전`,
+          days: (n: number) => `${n}일 전`,
+        },
+        en: {
+          justNow: 'just now',
+          minutes: (n: number) => `${n} min ago`,
+          hours: (n: number) => `${n}h ago`,
+          days: (n: number) => `${n}d ago`,
+        },
+      };
+
+      const l = labels[locale as keyof typeof labels] || labels.ko;
+
+      if (diffMins < 1) return l.justNow;
+      if (diffMins < 60) return l.minutes(diffMins);
+      if (diffHours < 24) return l.hours(diffHours);
+      if (diffDays < 7) return l.days(diffDays);
+      
+      return date.toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+    ```
+
+9) 대시보드 페이지 통합 (apps/mobile/app/(tabs)/index.tsx)
+    ```typescript
+    import { RecentScans } from '@/components/dashboard/RecentScans';
+
+    export default function Dashboard() {
+      const [refreshing, setRefreshing] = useState(false);
+      const { refetch: refetchScans } = useRecentScans();
+
+      const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await refetchScans();
+        setRefreshing(false);
+      }, [refetchScans]);
+
+      return (
+        <ScrollView 
+          style={styles.container}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {/* 기존 대시보드 컨텐츠 */}
+          <WelcomeSection />
+          <QuickActions />
+          
+          {/* 최근 스캔 섹션 추가 */}
+          <RecentScans />
+          
+          {/* 기타 섹션 */}
+          <SafetyTips />
+        </ScrollView>
+      );
+    }
+    ```
+
+10) 접근성 (Accessibility)
+    10-1) 필수 접근성 속성
+        - accessibilityLabel: 스크린 리더용 설명
+        - accessibilityRole: "button" 등 역할 지정
+        - accessibilityHint: 탭 시 동작 설명
+
+    10-2) 예시
+        ```typescript
+        <TouchableOpacity
+          accessibilityLabel={`${scan.restaurantName || '메뉴'} 스캔 결과`}
+          accessibilityRole="button"
+          accessibilityHint="탭하여 상세 결과를 확인합니다"
+        >
+        ```
+
+==============================================
+
+테스트 시나리오) Detox 또는 Jest 테스트
+
+1) 테스트 조건
+    - 실제 Supabase 데이터 사용 (Mock 금지)
+    - Service Role Key로 시드 데이터 삽입/삭제
+    - 테스트 후 데이터 클린업 필수
+
+2) 테스트 시나리오
+    2-1) 스캔 기록 있는 사용자
+        - 대시보드 접속
+        - 최근 스캔 섹션 표시 확인
+        - 스캔 카드 개수 확인 (최대 3개)
+        - 대표 안전 등급 배지 표시 확인
+        - "외 N개" 형식 표시 확인 (결과가 2개 이상인 경우)
+
+    2-2) 스캔 기록 없는 사용자
+        - 대시보드 접속
+        - 빈 상태 UI 표시 확인
+        - "첫 스캔 시작하기" 버튼 존재 확인
+
+    2-3) 스캔 카드 클릭 시 상세 페이지 이동
+        - 스캔 카드 클릭
+        - 상세 페이지 라우트 확인
+
+    2-4) 새 스캔 후 목록 갱신
+        - 메뉴 스캔 수행
+        - 대시보드로 이동
+        - 방금 스캔한 결과가 목록 최상단에 표시 확인
+
+    2-5) Pull to Refresh
+        - 아래로 당겨서 새로고침
+        - 최신 데이터 로드 확인
+
+==============================================
+
+체크리스트 예상)
+
+[ ] 타입 정의
+    [ ] ScanResultItem 인터페이스
+    [ ] RecentScan 인터페이스 (representativeItem 포함)
+    [ ] UseRecentScansResult 인터페이스
+
+[ ] 유틸리티 함수
+    [ ] selectRepresentativeResult (1:N 대표 결과 선정)
+    [ ] getSafetyColors (안전 등급별 색상 - 다크모드 대응)
+    [ ] formatRelativeTime (상대 시간 표시)
+
+[ ] useRecentScans Hook 구현
+    [ ] Supabase 쿼리 (scan_history + scan_results 조인)
+    [ ] 최신순 정렬 및 스캔 기준 3건 제한
+    [ ] 1:N 관계 처리 - 대표 결과 선정 로직
+    [ ] 위험도 우선순위 정렬 (danger > caution > unknown > safe)
+    [ ] "외 N개" 형식 항목명 가공
+    [ ] mapToRecentScan 매핑 함수
+    [ ] 로딩/에러/데이터 상태 관리
+
+[ ] RecentScans 컴포넌트
+    [ ] 로딩 상태 UI (스켈레톤)
+    [ ] 에러 상태 UI (재시도 버튼)
+    [ ] 빈 상태 UI (첫 스캔 유도)
+    [ ] 정상 상태 UI (카드 리스트)
+    [ ] "전체 보기" 버튼
+
+[ ] ScanHistoryCard 컴포넌트
+    [ ] 카드 레이아웃
+    [ ] 썸네일 영역 (이미지 또는 SafetyIcon)
+    [ ] 레스토랑명 표시
+    [ ] 대표 메뉴명 표시 ("외 N개" 형식)
+    [ ] 안전 등급 배지 (SafetyBadge)
+    [ ] 상대 시간 표시
+
+[ ] 스타일링
+    [ ] safety_level별 색상 상수
+    [ ] 다크모드 대응 (useColorScheme)
+    [ ] 반응형 레이아웃
+
+[ ] 접근성
+    [ ] accessibilityLabel 설정
+    [ ] accessibilityRole 설정
+    [ ] accessibilityHint 설정
+
+[ ] 대시보드 통합
+    [ ] RecentScans 컴포넌트 import
+    [ ] 적절한 위치에 배치
+    [ ] Pull to Refresh 지원
+
+[ ] 로깅
+    [ ] 조회 실패 로그 (console.error)
+
+[ ] 커서룰 적용 결과
+    [ ] @01-common.mdc 규칙 준수
+    [ ] @02-ui.mdc 규칙 준수
+    [ ] @04-func.mdc 규칙 준수

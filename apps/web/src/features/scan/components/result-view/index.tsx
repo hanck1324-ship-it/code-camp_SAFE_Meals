@@ -16,6 +16,9 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { translations } from '@/lib/translations';
 import { MAIN_URLS } from '@/commons/constants/url';
 import { getGlobalCollector } from '@/utils/performance-metrics';
+import { useAuth } from '@/app/_providers/auth-provider';
+import { useSaveAnalysisResult } from '@/hooks/useSaveAnalysisResult';
+import { convertSafetyLevel } from '@/types/scan-history.types';
 
 // ============================================
 // 타입 정의
@@ -168,6 +171,7 @@ function getSafetyBadge(status: SafetyStatus, t: (typeof translations)['ko']) {
  * - 메뉴 스캔 분석 결과를 표시하는 화면
  * - Context에서 분석 결과를 가져와 표시
  * - overall_status별 UI 분기 처리
+ * - FINAL 상태 도달 시 자동으로 Supabase에 저장
  */
 export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   const router = useRouter();
@@ -176,6 +180,49 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
 
   // Context에서 분석 결과 가져오기
   const { analysisResult, clearAnalysisResult } = useAnalyzeResult();
+
+  // Auth 훅에서 사용자 정보 가져오기
+  const { user } = useAuth();
+
+  // 분석 결과 자동 저장 Hook
+  const { saveResult, savedScanId, isDuplicate, resetSaveState } =
+    useSaveAnalysisResult();
+
+  /**
+   * [자동 저장] FINAL 상태 도달 시 Supabase에 저장
+   * - 중복 저장 방지 (savedScanId, isDuplicate 체크)
+   * - 로그인한 사용자만 저장
+   * - 저장 실패해도 UI 경험에 영향 없음
+   */
+  useEffect(() => {
+    // 저장 조건 확인
+    const shouldSave =
+      analysisResult && // 분석 결과 존재
+      !analysisResult._isPartial && // FINAL 상태 (PARTIAL 아님)
+      !savedScanId && // 아직 저장 안됨
+      !isDuplicate && // 중복 아님
+      user?.id && // 로그인한 사용자
+      analysisResult.results && // 결과 목록 존재
+      analysisResult.results.length > 0; // 결과가 1개 이상
+
+    if (!shouldSave) return;
+
+    // 저장 실행
+    saveResult({
+      userId: user.id,
+      jobId: analysisResult._jobId ?? null,
+      scanType: 'menu',
+      restaurantName: null, // TODO: 추후 레스토랑 정보 연동
+      results: analysisResult.results.map((item) => ({
+        itemName: item.translated_name || item.original_name,
+        safetyLevel: convertSafetyLevel(item.safety_status),
+        warningMessage: item.reason || null,
+        matchedAllergens: item.allergy_risk?.matched_allergens || null,
+        matchedDiets: item.diet_risk?.violations || null,
+        confidenceScore: null, // TODO: 추후 AI confidence 연동
+      })),
+    });
+  }, [analysisResult, savedScanId, isDuplicate, user?.id, saveResult]);
 
   /**
    * [계측] 렌더링 완료 시점 기록
@@ -207,6 +254,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
    */
   const handleRetake = () => {
     clearAnalysisResult();
+    resetSaveState(); // 저장 상태도 초기화
     router.push(MAIN_URLS.SCAN);
   };
 
