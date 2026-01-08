@@ -206,7 +206,6 @@ export function DietDetailScreen({
       <div className="border-t border-gray-100 p-6">
         <Button
           onClick={() => onComplete(selectedDiets)}
-          disabled={selectedDiets.length === 0}
           className="mb-4 h-14 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
         >
           {t.done}

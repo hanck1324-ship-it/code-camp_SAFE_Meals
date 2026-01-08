@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   X,
   CheckCircle,
@@ -11,8 +11,6 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { LanguageSelector } from '@/components/language-selector';
 import { useAnalyzeResult } from '@/features/scan/context/analyze-result-context';
 import { useTranslation } from '@/hooks/useTranslation';
 import { translations } from '@/lib/translations';
@@ -249,7 +247,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
-          <LanguageSelector />
+          <div /> {/* Spacer */}
           <button
             onClick={onBack}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100"
@@ -329,7 +327,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
           >
             <ChevronLeft style={{ width: '20px', height: '20px' }} />
           </button>
-          <LanguageSelector />
+          <div /> {/* Spacer */}
           <button
             onClick={onBack}
             className="flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-lg"

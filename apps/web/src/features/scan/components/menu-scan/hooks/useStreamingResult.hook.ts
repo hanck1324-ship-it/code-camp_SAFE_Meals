@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import type { Language } from '@/lib/translations';
 
 /**
  * 스트리밍 요청 페이로드 타입
@@ -14,6 +15,8 @@ export interface StreamingPayload {
   userAllergies: string[];
   /** OCR에서 추출된 메뉴 토큰 목록 */
   menuTokens: string[];
+  /** 사용자 언어 */
+  language?: Language;
 }
 
 /**
@@ -116,7 +119,7 @@ export function useStreamingResult(): UseStreamingResultReturn {
    */
   const startStreaming = useCallback(
     async (payload: StreamingPayload) => {
-      const { image, userAllergies, menuTokens } = payload;
+      const { image, userAllergies, menuTokens, language = 'ko' } = payload;
 
       // (H-1) 이전 요청 취소 + 새 requestId
       abort();
@@ -144,6 +147,7 @@ export function useStreamingResult(): UseStreamingResultReturn {
           },
           body: JSON.stringify({
             image,
+            language,
             user_allergies: userAllergies,
             menu_tokens: menuTokens,
           }),

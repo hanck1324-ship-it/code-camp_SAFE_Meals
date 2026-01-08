@@ -132,10 +132,31 @@ const ERROR_MESSAGES = {
     timeout: 'Request timed out. Please try again.',
     qualityDefault: 'Photo quality is poor. Please retake the photo.',
   },
+  ja: {
+    network: 'ネットワーク接続を確認してください。',
+    server: '一時的なエラーが発生しました。もう一度お試しください。',
+    timeout: 'リクエストがタイムアウトしました。もう一度お試しください。',
+    qualityDefault: '写真の品質が低いです。もう一度撮影してください。',
+  },
+  zh: {
+    network: '请检查您的网络连接。',
+    server: '发生临时错误，请重试。',
+    timeout: '请求超时，请重试。',
+    qualityDefault: '照片质量较差，请重新拍摄。',
+  },
+  es: {
+    network: 'Por favor, verifica tu conexión de red.',
+    server: 'Ocurrió un error temporal. Por favor, intenta de nuevo.',
+    timeout: 'La solicitud ha caducado. Por favor, intenta de nuevo.',
+    qualityDefault: 'La calidad de la foto es baja. Por favor, toma otra foto.',
+  },
 };
 
-const normalizeLanguageForAnalysis = (language: Language): 'ko' | 'en' =>
-  language === 'ko' ? 'ko' : 'en';
+/**
+ * 분석에 사용할 언어를 정규화합니다.
+ * 모든 지원 언어(ko, en, ja, zh, es)를 그대로 반환합니다.
+ */
+const normalizeLanguageForAnalysis = (language: Language): Language => language;
 
 /**
  * 사용자 알레르기/식단 정보 조회 헬퍼 함수

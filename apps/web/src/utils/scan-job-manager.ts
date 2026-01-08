@@ -448,9 +448,17 @@ export const ALLERGY_CODE_TO_LABEL: Record<string, string> = {
 export const DIET_CODE_TO_LABEL: Record<string, string> = {
   vegetarian: '채식주의',
   vegan: '비건',
+  lacto_vegetarian: '락토 채식',
+  ovo_vegetarian: '오보 채식',
+  pesco_vegetarian: '페스코 채식',
+  flexitarian: '플렉시테리언',
   halal: '할랄',
   kosher: '코셔',
+  buddhist_vegetarian: '불교 채식',
   gluten_free: '글루텐 프리',
+  pork_free: '돼지고기 제외',
+  alcohol_free: '무알코올',
+  garlic_onion_free: '마늘/양파 제외',
 };
 
 // ============================================
@@ -518,18 +526,40 @@ export const CAUTION_KEYWORDS = [
   '조림',
 ];
 
+const VEGETARIAN_BASE_KEYWORDS = [
+  '고기',
+  '육류',
+  'meat',
+  '소고기',
+  '돼지',
+  '닭',
+  '생선',
+  '해산물',
+];
+const EGG_KEYWORDS = ['계란', '달걀', 'egg', '에그'];
+const DAIRY_KEYWORDS = [
+  '우유',
+  '치즈',
+  '버터',
+  'milk',
+  'cheese',
+  'cream',
+  '크림',
+  '유제품',
+];
+const GARLIC_ONION_KEYWORDS = [
+  '마늘',
+  '양파',
+  '파',
+  '대파',
+  '쪽파',
+  'garlic',
+  'onion',
+];
+
 /** 식단별 위험 키워드 */
 export const DIET_DANGER_KEYWORDS: Record<string, string[]> = {
-  vegetarian: [
-    '고기',
-    '육류',
-    'meat',
-    '소고기',
-    '돼지',
-    '닭',
-    '생선',
-    '해산물',
-  ],
+  vegetarian: VEGETARIAN_BASE_KEYWORDS,
   vegan: [
     '고기',
     '육류',
@@ -541,9 +571,20 @@ export const DIET_DANGER_KEYWORDS: Record<string, string[]> = {
     '유제품',
     'dairy',
   ],
+  lacto_vegetarian: [...VEGETARIAN_BASE_KEYWORDS, ...EGG_KEYWORDS],
+  ovo_vegetarian: [...VEGETARIAN_BASE_KEYWORDS, ...DAIRY_KEYWORDS],
+  pesco_vegetarian: ['고기', '육류', 'meat', '소고기', '돼지', '닭'],
+  flexitarian: VEGETARIAN_BASE_KEYWORDS,
   halal: ['돼지', 'pork', '베이컨', '햄', '알코올', 'alcohol', '술', '와인'],
   kosher: ['돼지', 'pork', '갑각류', 'shellfish', '새우', '게'],
+  buddhist_vegetarian: [
+    ...VEGETARIAN_BASE_KEYWORDS,
+    ...GARLIC_ONION_KEYWORDS,
+  ],
   gluten_free: ['밀', 'wheat', '글루텐', 'gluten', '빵', '면', '파스타'],
+  pork_free: ['돼지', 'pork', '베이컨', '햄'],
+  alcohol_free: ['알코올', '술', '맥주', '와인', '소주', 'alcohol', 'beer', 'wine'],
+  garlic_onion_free: GARLIC_ONION_KEYWORDS,
 };
 
 // ============================================
@@ -743,10 +784,26 @@ function generateStaffQuestion(
         return '이 요리에 동물성 재료(고기/달걀/우유/꿀)가 전혀 없나요?';
       case 'vegetarian':
         return '이 요리에 고기나 해산물이 들어가나요?';
+      case 'lacto_vegetarian':
+        return '이 요리에 고기, 생선, 계란이 들어가나요?';
+      case 'ovo_vegetarian':
+        return '이 요리에 고기, 생선, 유제품이 들어가나요?';
+      case 'pesco_vegetarian':
+        return '이 요리에 고기나 닭고기가 들어가나요?';
+      case 'flexitarian':
+        return '이 요리에 고기나 해산물이 들어가나요?';
       case 'kosher':
         return '이 요리는 코셔 규정을 따르나요?';
+      case 'buddhist_vegetarian':
+        return '이 요리에 고기나 마늘/양파가 들어가나요?';
       case 'gluten_free':
         return '이 요리에 밀가루나 글루텐이 들어가나요?';
+      case 'pork_free':
+        return '이 요리에 돼지고기나 돼지 육수가 들어가나요?';
+      case 'alcohol_free':
+        return '이 요리에 알코올(술, 와인 등)이 들어가나요?';
+      case 'garlic_onion_free':
+        return '이 요리에 마늘이나 양파가 들어가나요?';
       default:
         return '이 요리의 재료를 확인해주시겠어요?';
     }
@@ -790,7 +847,21 @@ export function mergeQuickAndGemini(
   }
 ): FinalResult {
   // quickResult에서 식단 관련 트리거 확인 (알레르기 코드가 아닌 식단 코드)
-  const dietCodes = ['vegetarian', 'vegan', 'halal', 'kosher', 'gluten_free'];
+  const dietCodes = [
+    'vegetarian',
+    'vegan',
+    'lacto_vegetarian',
+    'ovo_vegetarian',
+    'pesco_vegetarian',
+    'flexitarian',
+    'halal',
+    'kosher',
+    'buddhist_vegetarian',
+    'gluten_free',
+    'pork_free',
+    'alcohol_free',
+    'garlic_onion_free',
+  ];
   const quickDietTriggers = quickResult.triggerCodes.filter((code) =>
     dietCodes.includes(code)
   );

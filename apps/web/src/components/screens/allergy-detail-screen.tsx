@@ -252,7 +252,6 @@ export function AllergyDetailScreen({
         <Button
           onClick={() => onComplete(selected)}
           className="h-14 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
-          disabled={selected.length === 0}
         >
           {t.continue}
         </Button>

@@ -98,7 +98,7 @@ export default function AllergyOnboardingPage() {
     loadExistingAllergies();
   }, []);
 
-  const handleCategorySelect = (categories: string[]) => {
+  const handleCategorySelect = async (categories: string[]) => {
     if (categories.length > 0) {
       const params = new URLSearchParams({ categories: categories.join(',') });
       if (isEditMode) {
@@ -106,6 +106,20 @@ export default function AllergyOnboardingPage() {
       }
       router.push(`/onboarding/allergy-detail?${params}`);
       return;
+    }
+
+    // 선택 없음 → 기존 알레르기 데이터 삭제
+    try {
+      const supabase = getSupabaseClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('user_allergies').delete().eq('user_id', user.id);
+        console.log('알레르기 데이터 삭제 완료 (선택 없음)');
+      }
+    } catch (err) {
+      console.error('알레르기 삭제 중 에러:', err);
     }
 
     if (isEditMode) {

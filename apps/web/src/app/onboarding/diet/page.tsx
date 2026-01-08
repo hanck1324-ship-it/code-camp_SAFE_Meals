@@ -11,12 +11,20 @@ import { getSupabaseClient } from '@/lib/supabase';
 const DIET_CODE_TO_CATEGORY: Record<string, string> = {
   vegan: 'plantBased',
   vegetarian: 'plantBased',
+  lacto_vegetarian: 'plantBased',
+  ovo_vegetarian: 'plantBased',
+  pesco_vegetarian: 'plantBased',
+  flexitarian: 'plantBased',
   halal: 'religious',
   kosher: 'religious',
+  buddhist_vegetarian: 'religious',
   gluten_free: 'avoidance',
   lactose_free: 'avoidance',
   low_sodium: 'avoidance',
   diabetic: 'avoidance',
+  pork_free: 'avoidance',
+  alcohol_free: 'avoidance',
+  garlic_onion_free: 'avoidance',
 };
 
 export default function DietOnboardingPage() {
@@ -71,6 +79,19 @@ export default function DietOnboardingPage() {
 
     // 아무것도 선택하지 않으면 기존 데이터 유지하고 Safety Card로
     if (categories.length === 0) {
+      try {
+        const supabase = getSupabaseClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('user_diets').delete().eq('user_id', user.id);
+          console.log('식단 데이터 삭제 완료 (선택 없음)');
+        }
+      } catch (err) {
+        console.error('식단 삭제 중 에러:', err);
+      }
+
       if (isEditMode) {
         router.replace('/profile/settings');
         return;
