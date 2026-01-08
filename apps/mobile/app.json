@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "safemeals",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -38,7 +38,6 @@
     },
     "plugins": [
       "@portone/react-native-sdk/plugin",
-
       "expo-router",
       [
         "expo-camera",
@@ -49,7 +48,7 @@
       "expo-dev-client"
     ],
     "extra": {
-      "webviewUrl": "http://172.16.2.168:3000",
+      "webviewUrl": "http://172.31.99.110:3000",
       "googleAndroidClientId": "90298941939-2fajkrcm5hal978812ut42nb7lgtfvou.apps.googleusercontent.com",
       "googleWebClientId": "90298941939-27osmtlm0v9ps2ss5jk3eg389135pn21.apps.googleusercontent.com",
       "router": {

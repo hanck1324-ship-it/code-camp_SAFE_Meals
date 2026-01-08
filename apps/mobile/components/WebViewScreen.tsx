@@ -29,7 +29,7 @@ const resolveWebviewBaseUrl = () => {
     ((Constants as { manifest?: { extra?: { webviewUrl?: string } } }).manifest
       ?.extra as { webviewUrl?: string } | undefined);
 
-  return extra?.webviewUrl ?? 'http://172.16.2.168:3000';
+  return extra?.webviewUrl ?? 'http://172.31.99.110:3000';
 };
 
 const WEBVIEW_BASE_URL = resolveWebviewBaseUrl();
