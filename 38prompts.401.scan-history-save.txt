@@ -1,0 +1,296 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-파일경로) 수정될 API 라우트 파일경로: apps/web/src/app/api/scan/analyze/route.ts
+조건-파일경로) 생성될 유틸리티 파일경로: apps/web/src/utils/scan-history-repository.ts
+조건-파일경로) 생성될 타입 파일경로: apps/web/src/types/scan-history.types.ts
+조건-파일경로) 참고 스키마 문서: /code-camp_SAFE_Meals/docs/schema.md
+
+==============================================
+
+핵심요구사항) 메뉴 스캔 분석이 완료된 후 결과를 scan_history + scan_results 테이블에 저장하는 기능을 구현할 것.
+
+1) 목표
+    - 스캔 분석 결과를 영구적으로 저장하여 사용자가 나중에 조회 가능
+    - 대시보드의 "최근 스캔 이력" 기능과 연동
+    - RLS(Row Level Security) 정책을 준수하여 사용자별 데이터 격리
+    - FINAL 상태의 분석 결과만 저장 (PARTIAL 상태는 저장하지 않음)
+
+2) 데이터베이스 스키마 참고
+    2-1) scan_history 테이블 (기존 + job_id 추가)
+        CREATE TABLE scan_history (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+            scan_type VARCHAR(20) NOT NULL CHECK (scan_type IN ('menu', 'barcode', 'image')),
+            image_url TEXT,
+            restaurant_name VARCHAR(200),
+            location JSONB, -- { lat, lng, address }
+            job_id TEXT UNIQUE, -- 중복 저장 방지용 (신규 추가)
+            scanned_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        
+        -- 신규 마이그레이션 SQL
+        ALTER TABLE scan_history ADD COLUMN IF NOT EXISTS job_id TEXT UNIQUE;
+        CREATE INDEX IF NOT EXISTS idx_scan_history_job_id ON scan_history(job_id);
+
+    2-2) scan_results 테이블
+        CREATE TABLE scan_results (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            scan_id UUID NOT NULL REFERENCES scan_history(id) ON DELETE CASCADE,
+            menu_item_id UUID REFERENCES menu_items(id) ON DELETE SET NULL,
+            product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+            item_name VARCHAR(200) NOT NULL,
+            safety_level safety_level NOT NULL DEFAULT 'unknown',
+            warning_message TEXT,
+            matched_allergens JSONB, -- 매칭된 알레르기 목록
+            matched_diets JSONB, -- 매칭된 식이제한 목록
+            confidence_score DECIMAL(3,2), -- AI 신뢰도 점수 (0.00 ~ 1.00)
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+    2-3) safety_level ENUM
+        CREATE TYPE safety_level AS ENUM ('safe', 'caution', 'danger', 'unknown');
+
+3) TypeScript 타입 정의 (scan-history.types.ts)
+    3-1) ScanHistoryInsert 타입
+        interface ScanHistoryInsert {
+          user_id: string;
+          scan_type: 'menu' | 'barcode' | 'image';
+          image_url?: string | null;
+          restaurant_name?: string | null;
+          location?: {
+            lat?: number;
+            lng?: number;
+            address?: string;
+          } | null;
+          job_id?: string | null; // 중복 저장 방지용
+        }
+
+    3-2) ScanResultInsert 타입
+        interface ScanResultInsert {
+          scan_id: string;
+          menu_item_id?: string | null;
+          product_id?: string | null;
+          item_name: string;
+          safety_level: 'safe' | 'caution' | 'danger' | 'unknown';
+          warning_message?: string | null;
+          matched_allergens?: string[] | null;
+          matched_diets?: string[] | null;
+          confidence_score?: number | null;
+        }
+
+    3-3) SaveScanParams 타입
+        interface SaveScanParams {
+          userId: string;
+          scanType: 'menu' | 'barcode' | 'image';
+          imageUrl?: string | null;
+          restaurantName?: string | null;
+          location?: {
+            lat?: number;
+            lng?: number;
+            address?: string;
+          } | null;
+          results: Array<{
+            itemName: string;
+            safetyLevel: 'safe' | 'caution' | 'danger' | 'unknown';
+            warningMessage?: string | null;
+            matchedAllergens?: string[] | null;
+            matchedDiets?: string[] | null;
+            confidenceScore?: number | null;
+          }>;
+        }
+
+    3-4) SaveScanResult 타입
+        interface SaveScanResult {
+          success: boolean;
+          scanId?: string;
+          resultIds?: string[];
+          error?: string;
+        }
+
+4) Repository 구현 (scan-history-repository.ts)
+    4-1) 클래스 설계
+        - ScanHistoryRepository 클래스 생성
+        - constructor에서 SupabaseClient 주입 받기
+        - RLS가 적용된 클라이언트 사용 (Service Role 아님)
+
+    4-2) saveScan 메서드
+        /**
+         * 스캔 이력과 결과를 저장
+         * @param params - 저장할 스캔 데이터
+         * @returns 저장 결과 (scanId, resultIds)
+         */
+        async saveScan(params: SaveScanParams): Promise<SaveScanResult>
+
+        구현 요구사항:
+        
+        **트랜잭션 처리 전략 (택1)**:
+        
+        [권장] DB RPC 방식 (원자성 보장):
+        - Supabase에 save_scan_with_results RPC 함수 생성
+        - 단일 트랜잭션으로 scan_history + scan_results 동시 저장
+        - 실패 시 자동 롤백
+        
+        [차선] 보상 트랜잭션 방식 (현재 스코프):
+        - scan_history 먼저 삽입 후 scan_results 삽입
+        - scan_results 삽입 실패 시 scan_history 삭제 시도 (보상 액션)
+        - **주의**: 보상 삭제도 실패할 수 있음 (네트워크/권한 등)
+        - 고아 데이터 발생 가능성 인지하고, job_id를 저장하여 추후 정리 가능하게 함
+        - cleanup 실패 시 반드시 로그 남기기:
+          console.error(`⚠️ [ScanHistory] 보상 삭제 실패 - orphan scanId: ${scanId}`);
+        
+        공통 요구사항:
+        - 성공 시 scanId와 resultIds 반환
+
+    4-3) 에러 처리
+        - Supabase 에러 메시지 로깅
+        - 사용자에게는 일반적인 에러 메시지 반환
+        - 저장 실패가 전체 분석 응답에 영향 주지 않도록 try-catch로 감싸기
+
+5) analyze API 수정 (route.ts)
+    5-1) FINAL 응답 반환 전에 저장 로직 추가
+        **중요: 서버리스/엣지 런타임 대응**
+        - Next.js serverless/edge 환경에서는 return Response 이후 fire-and-forget Promise가 
+          중간에 종료될 수 있음 (저장 누락 발생)
+        - 따라서 다음 우선순위로 처리:
+            1순위) Next.js 15+ 환경이면 `after()` 또는 `unstable_after()` 사용
+            2순위) Vercel Edge 환경이면 `waitUntil()` 사용  
+            3순위) 위 기능 없으면 `await`로 동기 저장 + try-catch로 실패 삼키기
+        - "응답 지연 방지"보다 "저장 누락 방지"가 우선
+        - 저장 실패해도 분석 결과는 정상 반환
+        - timings에 saveMs 추가
+
+    5-2) 저장할 데이터 매핑
+        - FinalResult → SaveScanParams 변환
+        - overall_status → 가장 높은 위험도의 safety_level로 변환
+        - results 배열의 각 메뉴 아이템 → ScanResultInsert로 변환
+
+    5-3) safety_level 매핑 규칙
+        - SAFE → 'safe'
+        - CAUTION → 'caution'
+        - DANGER → 'danger'
+        - 기타/undefined → 'unknown'
+
+    5-4) confidence_score 계산
+        - quickResult.confidence: 'high' → 0.9, 'medium' → 0.7, 'low' → 0.5
+        - 또는 AI 응답의 confidence 필드 사용
+
+6) 이미지 저장 전략 (선택적)
+    **주의사항**: 이미지 저장은 현재 범위에서 제외할 것.
+    - Base64 이미지를 직접 DB에 저장하지 않음
+    - 추후 Supabase Storage 연동 시 image_url에 저장
+    - 현재는 image_url을 null로 저장
+
+7) 저장 타이밍 및 조건
+    7-1) 저장 시점
+        - Gemini 분석 완료 후 (status: FINAL)
+        - PARTIAL 응답 후 백그라운드 완료 시점
+
+    7-2) 저장 조건
+        - status === 'FINAL' 일 때만 저장
+        - results 배열에 최소 1개 이상의 메뉴 아이템 존재
+        - user_id가 유효한 경우
+
+    7-3) 중복 저장 방지
+        **스키마 변경 필요**: scan_history 테이블에 job_id 컬럼 추가
+        
+        ALTER TABLE scan_history ADD COLUMN job_id TEXT UNIQUE;
+        CREATE INDEX idx_scan_history_job_id ON scan_history(job_id);
+        
+        - job_id UNIQUE 제약으로 DB 레벨에서 중복 방지
+        - INSERT 시 ON CONFLICT DO NOTHING 또는 에러 캐치로 처리
+        - 애플리케이션 레벨만으로는 race condition 발생 가능
+        
+        **스키마 변경 불가 시 (best-effort)**:
+        - location JSONB에 job_id 포함하여 저장
+        - 저장 전 location->>job_id로 조회하여 중복 확인
+        - 단, 인덱스/UNIQUE 없어 완전한 중복 방지 불가 (best-effort)
+
+8) 로깅 및 모니터링
+    8-1) 성공 로그
+        console.log(`✅ [ScanHistory] 저장 완료 - scanId: ${scanId}, results: ${resultIds.length}건`);
+
+    8-2) 실패 로그
+        console.error(`❌ [ScanHistory] 저장 실패:`, error);
+
+    8-3) timings 기록
+        timings.saveMs = Date.now() - saveStartTime;
+
+==============================================
+
+테스트 시나리오) Playwright 테스트로 저장 기능 검증
+
+1) 테스트 파일: tests/scan-history-save.spec.ts
+
+2) 테스트 조건
+    - 실제 Supabase 데이터 사용
+    - Service Role Key로 시드 데이터 삽입/삭제
+    - 테스트 후 데이터 클린업 필수
+
+3) 테스트 시나리오
+    3-1) 분석 완료 후 scan_history 저장 검증
+        - 메뉴 스캔 실행
+        - 분석 완료 대기
+        - DB에서 해당 사용자의 최근 scan_history 조회
+        - 방금 스캔한 결과가 저장되었는지 확인
+
+    3-2) scan_results 저장 검증
+        - scan_history에 연결된 scan_results 조회
+        - 메뉴 아이템 개수 일치 확인
+        - safety_level 값 검증
+
+    3-3) 저장 실패 시 분석 결과 정상 반환 검증
+        - DB 연결 오류 시뮬레이션 (route mock)
+        - 분석 결과는 정상 반환되는지 확인
+
+4) Fixture 관리
+    - testRunId 기반 시드 데이터 생성
+    - afterAll에서 cleanupByTestRunId 호출
+    - FK 순서 준수: scan_results → scan_history
+
+==============================================
+
+체크리스트 예상)
+
+[ ] 스키마 마이그레이션
+    [ ] scan_history.job_id 컬럼 추가 (TEXT UNIQUE)
+    [ ] idx_scan_history_job_id 인덱스 생성
+
+[ ] TypeScript 타입 정의
+    [ ] ScanHistoryInsert 타입 (job_id 포함)
+    [ ] ScanResultInsert 타입
+    [ ] SaveScanParams 타입
+    [ ] SaveScanResult 타입
+
+[ ] Repository 구현
+    [ ] ScanHistoryRepository 클래스
+    [ ] saveScan 메서드
+    [ ] 보상 트랜잭션 처리 (롤백 + 실패 로그)
+    [ ] 에러 처리
+
+[ ] API 수정
+    [ ] 런타임 환경 대응 (after/waitUntil/await)
+    [ ] FINAL 응답 시 저장 로직 추가
+    [ ] FinalResult → SaveScanParams 매핑
+    [ ] job_id 기반 중복 방지 (UNIQUE 제약)
+    [ ] safety_level 변환
+    [ ] timings.saveMs 추가
+
+[ ] 테스트
+    [ ] scan_history 저장 검증
+    [ ] scan_results 저장 검증
+    [ ] 중복 저장 방지 검증 (동일 job_id)
+    [ ] 저장 실패 시 분석 결과 정상 반환 검증
+
+[ ] 로깅
+    [ ] 성공/실패 로그
+    [ ] 보상 삭제 실패 시 orphan 로그
+    [ ] 성능 계측 (saveMs)

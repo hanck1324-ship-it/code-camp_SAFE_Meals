@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ShieldAlert, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { getSupabaseClient } from '@/lib/supabase';
@@ -12,9 +11,10 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SafetyCardOnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useTranslation();
-  const language = useLanguageStore((state) => state.language);
   const { completeOnboarding } = useAppStore();
+  const isEditMode = searchParams.get('mode') === 'edit';
 
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -79,7 +79,7 @@ export default function SafetyCardOnboardingPage() {
     if (confirmPin.length !== 4) return;
 
     if (pin !== confirmPin) {
-      setError('PIN이 일치하지 않습니다. 다시 시도해주세요.');
+      setError(t.pinMismatch);
       setConfirmPin('');
       return;
     }
@@ -94,23 +94,57 @@ export default function SafetyCardOnboardingPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setError('로그인이 필요합니다.');
+        setError(t.loginRequired);
         return;
       }
 
-      // Safety card 생성
-      const { error: insertError } = await supabase.from('safety_cards').insert({
-        user_id: user.id,
-        pin_code: pin,
-        message_ko: '저는 알레르기가 있습니다.\n이 음식에 알레르기 성분이 들어있나요?',
-        message_en: 'I have allergies.\nDoes this food contain any allergens?',
-        message_ja: '私はアレルギーがあります。\nこの食べ物にアレルゲンが含まれていますか?',
-        message_zh: '我有过敏症。\n这种食物含有过敏原吗?',
-      });
+      const { data: existingCards, error: fetchError } = await supabase
+        .from('safety_cards')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
 
-      if (insertError) {
-        console.error('Safety card 저장 실패:', insertError);
-        setError('저장에 실패했습니다. 다시 시도해주세요.');
+      if (fetchError) {
+        console.error('Safety card 조회 실패:', fetchError);
+        setError(t.saveFailedRetry);
+        return;
+      }
+
+      if (existingCards && existingCards.length > 0) {
+        const { error: updateError } = await supabase
+          .from('safety_cards')
+          .update({ pin_code: pin })
+          .eq('user_id', user.id);
+
+        if (updateError) {
+          console.error('Safety card 업데이트 실패:', updateError);
+          setError(t.saveFailedRetry);
+          return;
+        }
+      } else {
+        // Safety card 생성
+        const { error: insertError } = await supabase
+          .from('safety_cards')
+          .insert({
+            user_id: user.id,
+            pin_code: pin,
+            message_ko:
+              '저는 알레르기가 있습니다.\n이 음식에 알레르기 성분이 들어있나요?',
+            message_en: 'I have allergies.\nDoes this food contain any allergens?',
+            message_ja:
+              '私はアレルギーがあります。\nこの食べ物にアレルゲンが含まれていますか?',
+            message_zh: '我有过敏症。\n这种食物含有过敏原吗?',
+          });
+
+        if (insertError) {
+          console.error('Safety card 저장 실패:', insertError);
+          setError(t.saveFailedRetry);
+          return;
+        }
+      }
+
+      if (isEditMode) {
+        router.replace('/profile/settings');
         return;
       }
 
@@ -144,7 +178,7 @@ export default function SafetyCardOnboardingPage() {
       }
     } catch (err) {
       console.error('Safety card 저장 중 에러:', err);
-      setError('저장에 실패했습니다. 다시 시도해주세요.');
+      setError(t.saveFailedRetry);
     } finally {
       setIsSaving(false);
     }
@@ -154,6 +188,11 @@ export default function SafetyCardOnboardingPage() {
    * 건너뛰기
    */
   const handleSkip = () => {
+    if (isEditMode) {
+      router.replace('/profile/settings');
+      return;
+    }
+
     completeOnboarding();
 
     // 네이티브 앱 감지: ReactNativeWebView 또는 isNativeApp 플래그 확인
@@ -184,6 +223,23 @@ export default function SafetyCardOnboardingPage() {
   };
 
   const currentPin = step === 'create' ? pin : confirmPin;
+  const title =
+    step === 'create'
+      ? isEditMode
+        ? t.safetyCardPinChangeTitle
+        : t.safetyCardPinSetupTitle
+      : t.safetyCardPinConfirmTitle;
+  const description =
+    step === 'create'
+      ? isEditMode
+        ? t.safetyCardPinChangeDesc
+        : t.safetyCardPinSetupDesc
+      : t.safetyCardPinConfirmDesc;
+  const actionLabel = isSaving
+    ? t.saving
+    : step === 'create'
+      ? t.next
+      : t.done;
 
   return (
     <RequireAuth>
@@ -197,12 +253,10 @@ export default function SafetyCardOnboardingPage() {
 
         {/* Title & Description */}
         <h1 className="mb-2 text-2xl font-bold text-gray-900">
-          {step === 'create' ? 'Safety Card PIN 설정' : 'PIN 확인'}
+          {title}
         </h1>
         <p className="mb-8 max-w-sm text-center text-gray-600">
-          {step === 'create'
-            ? '긴급 상황에서 사용할 4자리 PIN 번호를 설정해주세요.'
-            : '동일한 PIN 번호를 한 번 더 입력해주세요.'}
+          {description}
         </p>
 
         {/* Error message */}
@@ -240,15 +294,15 @@ export default function SafetyCardOnboardingPage() {
             }
             className="h-14 w-full rounded-2xl bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-lg font-semibold text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954] disabled:opacity-50"
           >
-            {isSaving ? '저장 중...' : step === 'create' ? '다음' : '완료'}
+            {actionLabel}
           </Button>
 
-          {step === 'create' && (
+          {step === 'create' && !isEditMode && (
             <button
               onClick={handleSkip}
               className="w-full rounded-2xl py-3 text-gray-500 hover:text-gray-700"
             >
-              나중에 설정하기
+              {t.setUpLater}
             </button>
           )}
 
@@ -261,7 +315,7 @@ export default function SafetyCardOnboardingPage() {
               }}
               className="w-full rounded-2xl py-3 text-gray-500 hover:text-gray-700"
             >
-              다시 입력
+              {t.reenterPin}
             </button>
           )}
         </div>
@@ -271,10 +325,10 @@ export default function SafetyCardOnboardingPage() {
           <Lock className="mt-1 h-5 w-5 flex-shrink-0 text-[#2ECC71]" />
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-900">
-              Safety Card란?
+              {t.safetyCardInfoTitle}
             </p>
             <p className="mt-1 text-sm leading-relaxed text-gray-600">
-              언어가 통하지 않는 상황에서 알레르기 정보를 빠르게 전달할 수 있는 카드입니다. PIN 번호로 보호되어 안전하게 관리됩니다.
+              {t.safetyCardInfoDesc}
             </p>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import {
   Shield,
-  Lock,
   CreditCard,
   Globe,
   HelpCircle,
@@ -12,10 +11,6 @@ import { LanguageSelector } from '@/components/language-selector';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface ProfileScreenProps {
-  userProfile: {
-    allergies: string[];
-    diets: string[];
-  };
   onNavigate: (
     screen:
       | 'safetyProfileEdit'
@@ -28,7 +23,6 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({
-  userProfile,
   onNavigate,
   onLogout,
 }: ProfileScreenProps) {
@@ -71,54 +65,8 @@ export function ProfileScreen({
         </div>
       </div>
 
-      {/* Safety Profile Summary */}
-      <div className="px-6 py-6">
-        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#2ECC71] to-[#27AE60] shadow-lg shadow-[#2ECC71]/20">
-              <Shield className="h-10 w-10 text-white" />
-            </div>
-          </div>
-
-          <div className="mb-4 text-center">
-            <h2 className="mb-1">{t.safetyProfile}</h2>
-            <p className="text-sm text-muted-foreground">
-              {userProfile.allergies.length} {t.allergies} • {userProfile.diets.length} {t.diets}
-            </p>
-          </div>
-
-          {/* Sample Badges */}
-          {(() => {
-            const sampleAllergies = userProfile.allergies.slice(0, 2);
-            const sampleDiets = userProfile.diets.slice(0, 2);
-            const sampleBadges = [...sampleAllergies, ...sampleDiets].slice(0, 4);
-            
-            return sampleBadges.length > 0 ? (
-              <div className="mb-6 flex flex-wrap justify-center gap-2">
-                {sampleBadges.map((badge, index) => (
-                  <div
-                    key={index}
-                    className="rounded-full bg-[#2ECC71]/10 px-3 py-1.5 text-sm text-[#2ECC71]"
-                  >
-                    {badge}
-                  </div>
-                ))}
-              </div>
-            ) : null;
-          })()}
-
-          <Button
-            onClick={() => onNavigate('safetyCard')}
-            className="h-14 w-full rounded-2xl bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
-          >
-            <Lock className="mr-2 h-5 w-5" />
-            {t.showSafetyCard || 'Show Safety Card to Staff'}
-          </Button>
-        </div>
-      </div>
-
       {/* Settings List */}
-      <div className="px-6">
+      <div className="mt-12 px-6">
         <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
           {settingsItems.map((item, index) => {
             const Icon = item.icon;

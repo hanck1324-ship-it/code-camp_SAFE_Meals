@@ -1,7 +1,9 @@
-import { Star, MapPin, Clock, ShieldCheck } from 'lucide-react';
+import { MapPin, Clock, ShieldCheck, RefreshCw, Camera } from 'lucide-react';
 import { LanguageSelector } from '@/components/language-selector';
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useRecentScans, SafetyLevel } from '@/features/dashboard/hooks/useRecentScans';
+import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
 
 interface HomeDashboardProps {
   onScanMenu: () => void;
@@ -10,37 +12,51 @@ interface HomeDashboardProps {
   error?: string | null; // 3. 에러 상태 추가
 }
 
+// Safety Level 색상 매핑
+const SAFETY_LEVEL_STYLES: Record<SafetyLevel, { bg: string; text: string; border: string }> = {
+  safe: {
+    bg: 'bg-green-50',
+    text: 'text-green-700',
+    border: 'border-green-200',
+  },
+  caution: {
+    bg: 'bg-yellow-50',
+    text: 'text-yellow-700',
+    border: 'border-yellow-200',
+  },
+  danger: {
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    border: 'border-red-200',
+  },
+  unknown: {
+    bg: 'bg-gray-50',
+    text: 'text-gray-700',
+    border: 'border-gray-200',
+  },
+};
+
+// Safety Level 라벨 매핑
+const SAFETY_LEVEL_LABELS: Record<SafetyLevel, { ko: string; en: string }> = {
+  safe: { ko: '안전', en: 'Safe' },
+  caution: { ko: '주의', en: 'Caution' },
+  danger: { ko: '위험', en: 'Danger' },
+  unknown: { ko: '확인필요', en: 'Unknown' },
+};
+
 export function HomeDashboard({
   onScanMenu,
   haccpList = [], // 기본값 설정
   isLoading = false,
   error = null,
 }: HomeDashboardProps) {
-  const { t } = useTranslation();
-
-  const recentScans = [
-    {
-      id: 1,
-      name: t.bibimbap,
-      image:
-        'https://images.unsplash.com/photo-1590301157890-4810ed352733?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxrb3JlYW4lMjBmb29kJTIwYmliaW1iYXB8ZW58MXx8fHwxNzY1Njc0NDAzfDA&ixlib=rb-4.1.0&q=80&w=1080',
-      time: '10 min ago',
-    },
-    {
-      id: 2,
-      name: t.kimchiJjigae,
-      image:
-        'https://images.unsplash.com/photo-1760228865341-675704c22a5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxrb3JlYW4lMjBraW1jaGklMjBzdGV3fGVufDF8fHx8MTc2NTc2MDk3OHww&ixlib=rb-4.1.0&q=80&w=1080',
-      time: '1 hour ago',
-    },
-    {
-      id: 3,
-      name: t.bulgogi,
-      image:
-        'https://images.unsplash.com/photo-1584278858536-52532423b9ea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxrb3JlYW4lMjBidWxnb2dpfGVufDF8fHx8MTc2NTc2MDk3OHww&ixlib=rb-4.1.0&q=80&w=1080',
-      time: '2 hours ago',
-    },
-  ];
+  const { t, language } = useTranslation();
+  const {
+    recentScans,
+    isLoading: isScansLoading,
+    error: scansError,
+    refetch: refetchScans,
+  } = useRecentScans();
 
   const restaurants = [
     {
@@ -83,29 +99,106 @@ export function HomeDashboard({
       </div>
 
       {/* Recent Scans */}
-      <div className="mb-8 px-6 pt-6">
+      <div className="mb-8 px-6 pt-6" data-testid="recent-scans-section">
         <div className="mb-4 flex items-center justify-between">
           <h2>{t.recentScans}</h2>
           <button className="text-sm text-[#2ECC71]">{t.seeAll}</button>
         </div>
-        <div className="scrollbar-hide -mx-6 flex gap-4 overflow-x-auto px-6 pb-2">
-          {recentScans.map((scan) => (
-            <div key={scan.id} className="w-32 flex-shrink-0">
-              <div className="mb-2 h-12 w-32 overflow-hidden rounded-2xl shadow-md">
-                <ImageWithFallback
-                  src={scan.image}
-                  alt={scan.name}
-                  className="h-full w-full object-cover"
-                />
+        
+        {/* 로딩 상태 */}
+        {isScansLoading && (
+          <div
+            className="scrollbar-hide -mx-6 flex gap-4 overflow-x-auto px-6 pb-2"
+            data-testid="recent-scans-loading"
+          >
+            {[0, 1, 2].map((index) => (
+              <div key={index} className="w-32 flex-shrink-0 animate-pulse">
+                <div className="mb-2 h-12 w-32 rounded-2xl bg-gray-200" />
+                <div className="mb-1 h-4 w-24 rounded bg-gray-200" />
+                <div className="h-3 w-16 rounded bg-gray-100" />
               </div>
-              <p className="truncate text-sm">{scan.name}</p>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span>{scan.time}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {/* 에러 상태 */}
+        {!isScansLoading && scansError && (
+          <div
+            className="flex flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50 p-6"
+            data-testid="recent-scans-error"
+          >
+            <p className="mb-2 text-sm text-red-700">{scansError}</p>
+            <button
+              onClick={refetchScans}
+              className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800"
+            >
+              <RefreshCw className="h-4 w-4" />
+              다시 시도
+            </button>
+          </div>
+        )}
+
+        {/* 빈 상태 */}
+        {!isScansLoading && !scansError && recentScans.length === 0 && (
+          <div
+            className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 p-6"
+            data-testid="recent-scans-empty"
+          >
+            <Camera className="mb-2 h-8 w-8 text-gray-400" />
+            <p className="mb-3 text-sm text-gray-600">
+              아직 스캔한 메뉴가 없습니다
+            </p>
+            <button
+              onClick={onScanMenu}
+              className="rounded-lg bg-[#2ECC71] px-4 py-2 text-sm text-white hover:bg-[#27AE60]"
+            >
+              메뉴 스캔하기
+            </button>
+          </div>
+        )}
+
+        {/* 스캔 데이터 표시 */}
+        {!isScansLoading && !scansError && recentScans.length > 0 && (
+          <div className="scrollbar-hide -mx-6 flex gap-4 overflow-x-auto px-6 pb-2">
+            {recentScans.map((scan, index) => {
+              const safetyStyles = SAFETY_LEVEL_STYLES[scan.representativeItem.safetyLevel];
+              const safetyLabel = SAFETY_LEVEL_LABELS[scan.representativeItem.safetyLevel];
+
+              return (
+                <div
+                  key={scan.id}
+                  className="w-32 flex-shrink-0"
+                  data-testid={`recent-scan-card-${index}`}
+                >
+                  <div className="relative mb-2 h-12 w-32 overflow-hidden rounded-2xl shadow-md">
+                    <ImageWithFallback
+                      src={scan.imageUrl || '/images/placeholder-food.png'}
+                      alt={scan.representativeItem.itemName}
+                      className="h-full w-full object-cover"
+                    />
+                    {/* Safety Level 뱃지 */}
+                    <div
+                      className={`absolute right-1 top-1 rounded px-1.5 py-0.5 text-xs font-medium ${safetyStyles.bg} ${safetyStyles.text} ${safetyStyles.border} border`}
+                    >
+                      {language === 'ko' ? safetyLabel.ko : safetyLabel.en}
+                    </div>
+                  </div>
+                  <p className="truncate text-sm">{scan.representativeItem.itemName}</p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>{formatRelativeTime(scan.scannedAt, language)}</span>
+                  </div>
+                  {/* 결과 개수 표시 */}
+                  {scan.representativeItem.totalCount > 1 && (
+                    <div className="mt-1 text-xs text-gray-500">
+                      총 {scan.representativeItem.totalCount}개 항목
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Safe Restaurants Nearby -> HACCP 인증 업소 리스트로 교체 */}

@@ -46,9 +46,36 @@ export default defineConfig({
 
   /* 테스트 프로젝트 설정 */
   projects: [
+    // Setup 프로젝트 - 인증 상태 저장
+    {
+      name: 'setup',
+      testMatch: /global-setup\.ts/,
+    },
+    // 기본 Chromium 프로젝트 (인증 없음)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: /\.(with-scans|without-scans)\.spec\.ts$|global-setup\.ts$/,
+    },
+    // 스캔 기록 있는 계정용 프로젝트
+    {
+      name: 'authenticated-with-scans',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/with-scans.json',
+      },
+      testMatch: /.*\.with-scans\.spec\.ts$/,
+      dependencies: ['setup'],
+    },
+    // 스캔 기록 없는 계정용 프로젝트
+    {
+      name: 'authenticated-without-scans',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/without-scans.json',
+      },
+      testMatch: /.*\.without-scans\.spec\.ts$/,
+      dependencies: ['setup'],
     },
   ],
 

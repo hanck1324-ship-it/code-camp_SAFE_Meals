@@ -36,6 +36,7 @@ const DIET_CODE_TO_ID: Record<string, string> = {
 function DietDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isEditMode = searchParams.get('mode') === 'edit';
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const { completeOnboarding } = useAppStore();
@@ -82,8 +83,12 @@ function DietDetailContent() {
   const handleComplete = async (diets: string[]) => {
     // 빈 배열이면 저장하지 않고 완료 (기존 데이터 유지)
     if (diets.length === 0) {
-      completeOnboarding();
-      router.replace('/dashboard');
+      if (isEditMode) {
+        router.replace('/profile/settings');
+      } else {
+        completeOnboarding();
+        router.replace('/dashboard');
+      }
       return;
     }
 
@@ -98,8 +103,12 @@ function DietDetailContent() {
       } = await supabase.auth.getUser();
       if (authError || !user) {
         console.error('로그인이 필요합니다.');
-        completeOnboarding();
-        router.replace('/dashboard');
+        if (isEditMode) {
+          router.replace('/profile/settings');
+        } else {
+          completeOnboarding();
+          router.replace('/dashboard');
+        }
         return;
       }
 
@@ -139,9 +148,13 @@ function DietDetailContent() {
       console.error('식단 저장 중 에러:', err);
     } finally {
       setIsSaving(false);
-      // 온보딩 완료는 Safety Card 설정 후에 처리
-      // Safety Card 설정 페이지로 이동
-      router.replace('/onboarding/safety-card');
+      if (isEditMode) {
+        router.replace('/profile/settings');
+      } else {
+        // 온보딩 완료는 Safety Card 설정 후에 처리
+        // Safety Card 설정 페이지로 이동
+        router.replace('/onboarding/safety-card');
+      }
     }
   };
 

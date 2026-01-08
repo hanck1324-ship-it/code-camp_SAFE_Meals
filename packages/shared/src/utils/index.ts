@@ -1,5 +1,8 @@
 // 공통 유틸리티 함수
 
+// 성능 계측 유틸리티
+export * from './performance-metrics';
+
 /**
  * 클래스명 병합 유틸리티
  */
@@ -33,7 +36,7 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (...args: Parameters<T>) => {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -50,7 +53,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle = false;
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
@@ -65,12 +68,13 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
  */
 export function isWebView(): boolean {
   if (typeof window === 'undefined') return false;
-  
+
   const userAgent = window.navigator.userAgent.toLowerCase();
   return (
     userAgent.includes('wv') || // Android WebView
     userAgent.includes('safemeals') || // 커스텀 UA
-    (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView !== undefined
+    (window as unknown as { ReactNativeWebView?: unknown })
+      .ReactNativeWebView !== undefined
   );
 }
 
@@ -79,9 +83,9 @@ export function isWebView(): boolean {
  */
 export function getPlatform(): 'ios' | 'android' | 'web' {
   if (typeof window === 'undefined') return 'web';
-  
+
   const userAgent = window.navigator.userAgent.toLowerCase();
-  
+
   if (/iphone|ipad|ipod/.test(userAgent)) {
     return 'ios';
   }

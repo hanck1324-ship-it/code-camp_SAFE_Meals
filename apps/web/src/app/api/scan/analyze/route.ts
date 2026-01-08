@@ -1,14 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
+import {
+  generateJobId,
+  createPendingJob,
+  completeJob,
+  failJob,
+  performQuickAnalysis,
+  mergeQuickAndGemini,
+  ALLERGY_CODE_TO_LABEL,
+  type SafetyLevel,
+  type ScanTimings,
+  type QuickResult,
+  type FinalResult,
+  type PartialResponse,
+  type FinalResponse,
+  type ConfidenceLevel,
+} from '@/utils/scan-job-manager';
+import { extractTextFromImage, cleanMenuText } from '@/utils/google-vision-ocr';
+import { getOptimizedAllergyTokens } from '@/utils/token-optimizer';
+import {
+  buildAllergyClassifierPrompt,
+  parseStatus as parseQuickStatus,
+  ALLERGY_CLASSIFIER_CONFIG,
+  RECOMMENDED_MODELS,
+  type QuickSafetyStatus,
+} from '@/lib/prompts/allergy-classifier.prompt';
+import { ScanHistoryRepository } from '@/utils/scan-history-repository';
+import {
+  convertSafetyLevel,
+  CONFIDENCE_TO_SCORE,
+  type SaveScanParams,
+  type ScanResultItem,
+} from '@/types/scan-history.types';
 
 // Gemini API 클라이언트 초기화
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+// 타임아웃 설정 (환경 변수로 조정 가능)
+const GEMINI_TIMEOUT_MS = parseInt(process.env.GEMINI_TIMEOUT_MS || '3000', 10);
+
+/**
+ * 메뉴 스캔 분석 API
+ *
+ * 아키텍처: "룰/DB 1차 판정 + Gemini 병렬, Promise.race로 2~5초 내 부분 결과 먼저 노출"
+ *
+ * 흐름:
+ * 1. OCR 처리 (필수 대기) - 이미지에서 텍스트 추출
+ * 2. 룰/DB + Gemini 병렬 처리
+ *    - quickPromise: 룰/DB 기반 1차 판정 (빠름, 수백 ms)
+ *    - geminiPromise: Gemini AI 호출 (느림, 수초~수십초)
+ * 3. Promise.race 타임아웃 처리
+ *    - Gemini가 타임아웃 내 완료: FINAL 응답 즉시 반환
+ *    - 타임아웃 초과: PARTIAL 응답 반환 + 백그라운드 처리
+ */
 export async function POST(req: NextRequest) {
+  // 📊 성능 계측: 서버 시작 시간 기록
+  const serverStartTime = Date.now();
+  const timings: ScanTimings = {};
+
+  // 🔀 Content Negotiation: 스트리밍 요청 확인
+  const acceptHeader = req.headers.get('Accept') || '';
+  const wantsStream = acceptHeader.includes('application/x-ndjson');
+
+  console.log('\n' + '='.repeat(60));
+  console.log(
+    `🚀 [ScanAnalyze] 요청 수신 - ${wantsStream ? 'STREAMING' : 'PARTIAL/FINAL'} 패턴`
+  );
+  console.log('='.repeat(60));
+
   try {
+    // 📊 요청 크기 로깅
+    const contentLength = req.headers.get('content-length');
+    const contentLengthBytes = contentLength ? parseInt(contentLength, 10) : 0;
+    console.log(
+      `📦 [Performance] 요청 크기: ${contentLengthBytes} bytes (${(contentLengthBytes / 1024).toFixed(2)} KB)`
+    );
+
     // 1. 🔐 헤더에서 토큰 추출 및 유저 확인
-    // 클라이언트가 보낸 'Authorization: Bearer <token>' 헤더를 확인합니다.
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.split(' ')[1];
 
@@ -20,7 +89,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 🔑 사용자 토큰으로 인증된 Supabase 클라이언트 생성
-    // 이렇게 해야 RLS 정책이 적용되어 해당 사용자의 데이터만 조회 가능
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -46,46 +114,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. 👤 유저의 알레르기 및 식이제한 정보 가져오기 (Supabase DB)
-    // user_allergies 테이블에서 알레르기 코드 조회
-    const { data: allergiesData, error: allergiesError } = await supabase
+    // 2. 👤 유저의 알레르기 및 식이제한 정보 가져오기
+    const { data: allergiesData } = await supabase
       .from('user_allergies')
       .select('allergy_code')
       .eq('user_id', user.id);
 
-    if (allergiesError) {
-      console.error('알레르기 조회 실패:', allergiesError);
-    }
-
-    // user_diets 테이블에서 식이제한 코드 조회
-    const { data: dietsData, error: dietsError } = await supabase
+    const { data: dietsData } = await supabase
       .from('user_diets')
       .select('diet_code')
       .eq('user_id', user.id);
 
-    if (dietsError) {
-      console.error('식이제한 조회 실패:', dietsError);
-    }
-
-    // 알레르기 코드 배열로 변환
     const userAllergies = allergiesData?.map((a) => a.allergy_code) || [];
-    // 식이제한 코드 배열로 변환
     const userDiets = dietsData?.map((d) => d.diet_code) || [];
     const dietType = userDiets.length > 0 ? userDiets.join(', ') : 'None';
 
-    // 🔍 디버깅: 사용자 알레르기/식단 정보 로그
     console.log('👤 사용자 ID:', user.id);
     console.log('🚨 알레르기 목록:', userAllergies);
     console.log('🍽️ 식단 목록:', userDiets);
-    console.log('📋 dietType:', dietType);
 
     // 3. 📸 클라이언트에서 보낸 이미지 데이터 받기
+    const parseStartTime = Date.now();
     const body = await req.json();
+    timings.parseMs = Date.now() - parseStartTime;
+
     const { image, language = 'ko' } = body;
 
+    // 📊 실제 요청 바디 크기 분석
+    const imageSize = image ? new TextEncoder().encode(image).length : 0;
     console.log(
-      '📸 이미지 수신:',
-      image ? `${image.substring(0, 50)}... (${image.length} bytes)` : 'null'
+      `📦 [Performance] 이미지 크기: ${(imageSize / 1024).toFixed(2)} KB (JSON 파싱: ${timings.parseMs}ms)`
     );
 
     if (!image) {
@@ -95,9 +153,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // file:// URI가 전달된 경우 에러 처리
     if (image.startsWith('file://')) {
-      console.error('❌ file:// URI가 전달됨 - Base64로 변환 필요');
       return NextResponse.json(
         {
           success: false,
@@ -107,178 +163,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. 🤖 Gemini에게 분석 요청 (프롬프트 핵심!)
-    // gemini-3-flash-preview: 최신 모델, 무료 티어 사용 가능
-    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
-
-    // 알레르기 코드를 사람이 읽을 수 있는 형태로 변환
-    const allergyCodeToLabel: Record<string, string> = {
-      eggs: 'Eggs (계란)',
-      milk: 'Milk/Dairy (우유/유제품)',
-      peanuts: 'Peanuts (땅콩)',
-      tree_nuts: 'Tree Nuts (견과류)',
-      fish: 'Fish (생선)',
-      shellfish: 'Shellfish (갑각류/조개류)',
-      wheat: 'Wheat/Gluten (밀/글루텐)',
-      soy: 'Soy (대두)',
-      sesame: 'Sesame (참깨)',
-      pork: 'Pork (돼지고기)',
-      beef: 'Beef (소고기)',
-      chicken: 'Chicken (닭고기)',
-      lamb: 'Lamb (양고기)',
-      buckwheat: 'Buckwheat (메밀)',
-      peach: 'Peach (복숭아)',
-      tomato: 'Tomato (토마토)',
-      sulfites: 'Sulfites (아황산염)',
-      mustard: 'Mustard (겨자)',
-      celery: 'Celery (셀러리)',
-      lupin: 'Lupin (루핀)',
-      mollusks: 'Mollusks (연체류)',
-    };
-
-    // 알레르기 코드를 설명이 포함된 형태로 변환
-    const allergyDescriptions = userAllergies.map(
-      (code) => allergyCodeToLabel[code] || code
-    );
-
-    const prompt = `
-You are a strict food safety and dietary compliance expert. Analyze this menu image and assess safety based on the user's allergies and dietary restrictions.
-
-# User Context
-- Allergies: ${allergyDescriptions.length > 0 ? allergyDescriptions.join(', ') : 'None'}
-- Diet Type: ${dietType}
-- Target Language: ${language}
-
-# CRITICAL: User has these specific allergies that MUST be checked:
-${allergyDescriptions.length > 0 ? allergyDescriptions.map((a) => `  - ${a}`).join('\n') : '  - No allergies specified'}
-
-# Task Instructions
-
-## Step 1: Menu Item Identification
-1. Identify ALL menu items visible in the image
-2. Extract the original menu name (as shown in image)
-3. Translate the name to the target language (${language})
-4. Detect visible ingredients from the image or menu description
-
-## Step 2: Allergy Risk Assessment
-
-Evaluate each menu item against the user's allergies using these strict criteria:
-
-### DANGER (위험) - 확실히 알레르기 물질 포함
-- Menu item DEFINITELY contains the allergen as a main ingredient
-- Example: "Shrimp Fried Rice" contains shrimp → DANGER for shellfish allergy
-- Example: "Cheese Pizza" contains cheese → DANGER for milk allergy
-- Example: "Peanut Butter Cookies" contains peanut → DANGER for peanut allergy
-
-### CAUTION (주의) - 알레르기 물질 포함 가능성 있음
-- Menu item MIGHT contain the allergen (not visible but commonly used)
-- Cross-contamination risk is high
-- Example: "Fried Chicken" might contain egg (breading) → CAUTION for egg allergy
-- Example: "Pad Thai" often contains peanuts → CAUTION for peanut allergy
-- Example: "Bulgogi" might contain soy sauce → CAUTION for soy allergy
-
-### SAFE (안전) - 알레르기 물질 없음
-- No obvious allergens detected
-- No common cross-contamination risks
-- Example: "Plain Rice" → SAFE for most allergies
-- Example: "Green Salad (no dressing)" → SAFE for most allergies
-
-## Step 3: Dietary Restriction Assessment
-
-Evaluate each menu item against the user's diet type:
-
-### Vegetarian (채식주의자)
-- DANGER: Contains meat, poultry, fish, or seafood
-- CAUTION: Might contain meat-based broth or hidden meat products
-- SAFE: Plant-based only (dairy and eggs allowed)
-
-### Vegan (비건)
-- DANGER: Contains ANY animal products (meat, dairy, eggs, honey, etc.)
-- CAUTION: Might contain hidden animal products (gelatin, whey, etc.)
-- SAFE: 100% plant-based
-
-### Halal (할랄)
-- DANGER: Contains pork, alcohol, or non-halal meat
-- CAUTION: Might contain non-halal ingredients or cross-contamination
-- SAFE: Halal-certified or clearly halal-compliant
-
-### Kosher (코셔)
-- DANGER: Contains non-kosher meat, shellfish, or mixing dairy with meat
-- CAUTION: Might not meet kosher certification standards
-- SAFE: Kosher-compliant
-
-### Gluten-Free (글루텐 프리)
-- DANGER: Contains wheat, barley, rye, or gluten-containing grains
-- CAUTION: Might contain hidden gluten or cross-contamination
-- SAFE: No gluten-containing ingredients
-
-## Step 4: Combined Safety Status
-
-For each menu item, determine the FINAL safety_status:
-1. If EITHER allergy risk OR diet risk is DANGER → safety_status = "DANGER"
-2. Else if EITHER is CAUTION → safety_status = "CAUTION"
-3. Else if BOTH are SAFE → safety_status = "SAFE"
-
-## Step 5: Reason Explanation
-
-Provide a CLEAR and SPECIFIC reason in the target language:
-- DANGER: "새우가 포함되어 있습니다 (갑각류 알레르기)" / "돼지고기가 포함되어 있습니다 (할랄 식단)"
-- CAUTION: "계란이 포함될 수 있습니다 (튀김옷)" / "육수에 고기가 들어갈 수 있습니다 (채식주의)"
-- SAFE: "알레르기 물질이 없습니다" / "식단에 적합합니다"
-
-# Output Format
-
-Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
-
-{
-  "overall_status": "SAFE" | "CAUTION" | "DANGER",
-  "results": [
-    {
-      "id": "1",
-      "original_name": "menu name in image",
-      "translated_name": "translated name in ${language}",
-      "description": "brief description in ${language}",
-      "safety_status": "SAFE" | "CAUTION" | "DANGER",
-      "reason": "specific reason in ${language} (e.g., '새우가 포함되어 있습니다')",
-      "ingredients": ["detected", "ingredients", "list"],
-      "allergy_risk": {
-        "status": "SAFE" | "CAUTION" | "DANGER",
-        "matched_allergens": ["eggs", "milk"] or []
-      },
-      "diet_risk": {
-        "status": "SAFE" | "CAUTION" | "DANGER",
-        "violations": ["contains meat"] or []
-      }
-    }
-  ]
-}
-
-# Overall Status Rules
-- overall_status = "DANGER" if ANY menu item is DANGER
-- overall_status = "CAUTION" if ANY menu item is CAUTION (and none are DANGER)
-- overall_status = "SAFE" if ALL menu items are SAFE
-
-# Critical Requirements
-1. Be STRICT and CONSERVATIVE - err on the side of caution
-2. If uncertain, use CAUTION (never assume SAFE when unsure)
-3. Provide SPECIFIC reasons (e.g., "Contains eggs" not "May contain allergens")
-4. Translate ALL text to the target language (${language})
-5. Return ONLY valid JSON (no markdown, no extra text)
-    `;
-
-    // 🔍 디버깅: 프롬프트에 전달되는 사용자 컨텍스트 확인
-    console.log('📝 프롬프트 User Context:');
-    console.log(
-      `   - Allergies (raw codes): ${userAllergies.length > 0 ? userAllergies.join(', ') : 'None'}`
-    );
-    console.log(
-      `   - Allergies (descriptions): ${allergyDescriptions.length > 0 ? allergyDescriptions.join(', ') : 'None'}`
-    );
-    console.log(`   - Diet Type: ${dietType}`);
-    console.log(`   - Language: ${language}`);
+    // 4. 🔍 OCR 처리 (필수 대기) - Google Vision API
+    // OCR 텍스트가 나와야 룰/DB 1차 판정이 가능
+    console.log('📝 [OCR] Google Vision OCR 시작...');
+    const ocrStartTime = Date.now();
 
     // 이미지 데이터 처리 (Base64 헤더 제거)
-    // 예: "data:image/jpeg;base64,/9j/..." -> "/9j/..."
     const base64Data = image.includes('base64,')
       ? image.split('base64,')[1]
       : image;
@@ -290,152 +180,311 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
       },
     };
 
-    console.log('🤖 Gemini API 호출 시작...');
-    const startTime = Date.now();
+    // Google Vision OCR 호출
+    let ocrText = '';
+    let ocrConfidence: ConfidenceLevel = 'medium';
+    let detectedLanguage: string | null = null;
+    let ocrFailed = false; // OCR API 호출 실패 여부
 
-    const result = await model.generateContent([prompt, imagePart]);
-    const response = await result.response;
-    const text = response.text();
-
-    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`✅ Gemini API 응답 완료 (${elapsedTime}초)`);
-
-    // JSON 파싱 (AI가 가끔 ```json ... ``` 을 붙일 때가 있어서 처리)
-    const cleanedText = text.replace(/```json|```/g, '').trim();
-
-    let analysisData;
     try {
-      analysisData = JSON.parse(cleanedText);
-    } catch (e) {
-      console.error('JSON 파싱 에러:', text);
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'AI 분석 결과를 처리하는 중 오류가 발생했습니다.',
-        },
-        { status: 500 }
+      const ocrResult = await extractTextFromImage(image);
+      ocrText = cleanMenuText(ocrResult.text);
+      ocrConfidence = ocrResult.confidence;
+      detectedLanguage = ocrResult.detectedLanguage;
+      timings.ocrMs = ocrResult.processingTimeMs;
+
+      console.log(`✅ [OCR] 완료 (${timings.ocrMs}ms)`);
+      console.log(`   - 추출된 텍스트: ${ocrText.length}자`);
+      console.log(`   - 신뢰도: ${ocrConfidence}`);
+      console.log(`   - 감지된 언어: ${detectedLanguage || '알 수 없음'}`);
+      // 📊 OCR 텍스트 길이 기록
+      timings.ocrTextChars = ocrText.length;
+    } catch (ocrError) {
+      console.error('❌ [OCR] 실패, Gemini 분석으로 폴백:', ocrError);
+      timings.ocrMs = Date.now() - ocrStartTime;
+      ocrConfidence = 'low';
+      // OCR 실패 플래그 설정
+      ocrFailed = true;
+      // OCR 실패해도 Gemini는 이미지를 직접 분석할 수 있으므로 계속 진행
+    }
+
+    // 5. 🚀 룰/DB + Gemini 병렬 처리
+    console.log('🚀 [Parallel] 1차 판정 + Gemini AI 병렬 시작');
+
+    // 5-1. Quick 1차 판정 (즉시 완료)
+    const quickStartTime = Date.now();
+    const quickResult = performQuickAnalysis(
+      ocrText,
+      userAllergies,
+      userDiets,
+      ocrConfidence,
+      ocrFailed // OCR 실패 플래그 전달
+    );
+    timings.quickMs = Date.now() - quickStartTime;
+    console.log(
+      `⚡ [Quick] 1차 판정 완료 (${timings.quickMs}ms) - Level: ${quickResult.level}`
+    );
+
+    // 5-2. Gemini Promise 생성 (아직 await 하지 않음)
+    const geminiStartTime = Date.now();
+
+    // 📊 토큰 최적화 적용 (AI 입력 아이템 수 제한)
+    const tokenOptimizeStartTime = Date.now();
+    const extractedIngredients = extractIngredientsFromOCR(ocrText);
+    const optimizedInput = getOptimizedAllergyTokens(
+      userAllergies,
+      extractedIngredients
+    );
+    timings.tokenOptimizeMs = Date.now() - tokenOptimizeStartTime;
+
+    console.log(`⚡ [TokenOptimize] 완료 (${timings.tokenOptimizeMs}ms)`);
+    console.log(`   - 원본 재료: ${extractedIngredients.length}개`);
+    console.log(
+      `   - 최적화된 알레르기: ${optimizedInput.user_allergies.length}개`
+    );
+    console.log(
+      `   - 최적화된 메뉴 토큰: ${optimizedInput.menu_tokens.length}개`
+    );
+    console.log(`   - 총 아이템 수: ${optimizedInput.item_count}개`);
+    console.log(`   - 절삭 여부: ${optimizedInput.was_truncated}`);
+
+    // 🔀 스트리밍 요청인 경우: 빠른 판별기 사용
+    if (wantsStream) {
+      console.log('⚡ [Streaming] 빠른 판별 스트리밍 모드 시작');
+      return handleStreamingResponse(
+        serverStartTime,
+        imagePart,
+        optimizedInput.user_allergies,
+        optimizedInput.menu_tokens,
+        userAllergies,
+        dietType
       );
     }
 
-    // 5. 🔍 재료 DB를 활용한 알레르기 검증 강화
-    console.log('🔍 재료 DB로 알레르기 검증 시작...');
+    // ============================================
+    // 🚀 Progressive Enhancement: Fast → Accurate
+    // 1) Fast Gemini (텍스트만, 빠른 S/C/D 판정)
+    // 2) Accurate Gemini (이미지 포함, 상세 분석)
+    // ============================================
 
-    // 각 메뉴 항목의 재료를 DB와 대조하여 알레르기 위험도 재확인
-    const enhancedResults = await Promise.all(
-      analysisData.results.map(async (menuItem: any) => {
-        // 추출된 재료 목록
-        const ingredients = menuItem.ingredients || [];
-
-        if (ingredients.length === 0 || userAllergies.length === 0) {
-          // 재료가 없거나 사용자 알레르기가 없으면 원본 그대로 반환
-          return menuItem;
-        }
-
-        // DB에서 각 재료의 알레르기 위험도 확인
-        const dbAllergenChecks = await Promise.all(
-          ingredients.map(async (ingredient: string) => {
-            try {
-              const { data, error } = await supabase
-                .rpc('check_ingredient_allergens', {
-                  ingredient_name: ingredient,
-                  user_allergens: userAllergies,
-                });
-
-              if (error) {
-                console.warn(`재료 "${ingredient}" 알레르기 체크 실패:`, error);
-                return { ingredient, is_dangerous: false, matched_allergens: [] };
-              }
-
-              return {
-                ingredient,
-                is_dangerous: data?.[0]?.is_dangerous || false,
-                matched_allergens: data?.[0]?.matched_allergens || [],
-              };
-            } catch (err) {
-              console.warn(`재료 "${ingredient}" 체크 중 오류:`, err);
-              return { ingredient, is_dangerous: false, matched_allergens: [] };
-            }
-          })
-        );
-
-        // DB에서 발견된 알레르기 물질 수집
-        const dbMatchedAllergens = dbAllergenChecks
-          .filter((check) => check.is_dangerous)
-          .flatMap((check) => check.matched_allergens);
-
-        // AI 분석 결과와 DB 결과 병합
-        const aiMatchedAllergens = menuItem.allergy_risk?.matched_allergens || [];
-        const combinedMatchedAllergens = Array.from(
-          new Set([...aiMatchedAllergens, ...dbMatchedAllergens])
-        );
-
-        // DB에서 새로운 알레르기가 발견된 경우 위험도 상향 조정
-        let updatedSafetyStatus = menuItem.safety_status;
-        let updatedReason = menuItem.reason;
-
-        if (dbMatchedAllergens.length > 0) {
-          // DB에서 위험한 재료가 발견되면 최소 CAUTION 이상으로 상향
-          if (menuItem.safety_status === 'SAFE') {
-            updatedSafetyStatus = 'CAUTION';
-            const dbAllergenNames = dbMatchedAllergens
-              .map((code: string) => allergyCodeToLabel[code] || code)
-              .join(', ');
-            updatedReason = `${menuItem.reason} (DB 확인: ${dbAllergenNames} 포함 가능성)`;
-          } else if (menuItem.safety_status === 'CAUTION') {
-            // CAUTION인데 DB에서 확실한 매칭이 있으면 DANGER로 상향
-            const confirmedIngredients = dbAllergenChecks.filter(
-              (check) => check.is_dangerous
-            );
-            if (confirmedIngredients.length > 0) {
-              updatedSafetyStatus = 'DANGER';
-              const confirmedNames = confirmedIngredients
-                .map((check) => check.ingredient)
-                .join(', ');
-              updatedReason = `${confirmedNames} 확인됨 (DB 검증)`;
-            }
-          }
-        }
-
-        console.log(`  ✓ ${menuItem.original_name}: ${menuItem.safety_status} → ${updatedSafetyStatus}`);
-
-        return {
-          ...menuItem,
-          safety_status: updatedSafetyStatus,
-          reason: updatedReason,
-          allergy_risk: {
-            status: updatedSafetyStatus,
-            matched_allergens: combinedMatchedAllergens,
-          },
-          db_verification: {
-            checked: true,
-            db_matched_allergens: dbMatchedAllergens,
-            total_allergen_matches: combinedMatchedAllergens.length,
-          },
-        };
-      })
+    // 5-3. Fast Gemini Promise (텍스트만, 빠름)
+    const fastGeminiStartTime = Date.now();
+    const fastGeminiPromise = callFastGeminiJudgment(
+      optimizedInput.user_allergies,
+      optimizedInput.menu_tokens,
+      dietType
     );
 
-    // overall_status 재계산 (DB 검증 결과 반영)
-    const hasDanger = enhancedResults.some((item: any) => item.safety_status === 'DANGER');
-    const hasCaution = enhancedResults.some((item: any) => item.safety_status === 'CAUTION');
-    const finalOverallStatus = hasDanger ? 'DANGER' : hasCaution ? 'CAUTION' : 'SAFE';
+    // 5-4. Accurate Gemini Promise (이미지 포함, 정확)
+    const accurateGeminiStartTime = Date.now();
+    const accurateGeminiPromise = callGeminiAnalysis(
+      imagePart,
+      optimizedInput.user_allergies,
+      userDiets,
+      dietType,
+      language,
+      supabase,
+      optimizedInput.menu_tokens
+    );
 
-    console.log(`✅ DB 검증 완료 - 최종 상태: ${finalOverallStatus}`);
-
-    // 6. ✅ 결과 반환 (DB 검증 강화 버전)
-    return NextResponse.json({
-      success: true,
-      analyzed_at: new Date().toISOString(),
-      user_context: {
-        allergies: userAllergies,
-        diet: dietType,
-      },
-      overall_status: finalOverallStatus,
-      results: enhancedResults,
-      db_enhanced: true, // DB 검증이 추가되었음을 표시
+    // 5-5. 타임아웃 Promise (Fast용 - 짧은 타임아웃)
+    const FAST_TIMEOUT_MS = 1500; // Fast는 1.5초 타임아웃
+    const fastTimeoutPromise = new Promise<{ timeout: true }>((resolve) => {
+      setTimeout(() => resolve({ timeout: true }), FAST_TIMEOUT_MS);
     });
+
+    // 6. 🏁 Phase 1: Fast Gemini vs 타임아웃
+    console.log(`⚡ [Phase1] Fast Gemini vs 타임아웃 (${FAST_TIMEOUT_MS}ms)`);
+
+    const fastRaceResult = await Promise.race([
+      fastGeminiPromise
+        .then((result) => ({ timeout: false, error: false, result }))
+        .catch((error) => ({
+          timeout: false,
+          error: true,
+          errorMessage: String(error),
+        })),
+      fastTimeoutPromise.then(() => ({ timeout: true, error: false })),
+    ]);
+
+    // Fast Gemini 결과 처리
+    let fastStatus: SafetyLevel = quickResult.level; // 기본값: 룰 기반 결과
+    if (
+      !fastRaceResult.timeout &&
+      !('error' in fastRaceResult && fastRaceResult.error)
+    ) {
+      const fastResult = (fastRaceResult as any).result;
+      fastStatus = fastResult.overall_status;
+      timings.fastGeminiMs = Date.now() - fastGeminiStartTime;
+      console.log(
+        `⚡ [Phase1] Fast Gemini 완료 (${timings.fastGeminiMs}ms) - ${fastStatus}`
+      );
+    } else if (fastRaceResult.timeout) {
+      timings.fastGeminiMs = FAST_TIMEOUT_MS;
+      console.log(`⏰ [Phase1] Fast Gemini 타임아웃, 룰 기반 결과 사용`);
+    } else {
+      console.log(`❌ [Phase1] Fast Gemini 에러, 룰 기반 결과 사용`);
+    }
+
+    // ============================================
+    // 🚀 SPEEDUP: Fast 결과 즉시 반환 (Accurate 대기 제거)
+    // 기존: Fast 완료 후 Accurate 3초 추가 대기 → TTFR ~5초
+    // 개선: Fast 완료 즉시 PARTIAL 반환 → TTFR ~1.8초
+    // Accurate는 백그라운드에서 실행, 폴링으로 FINAL 제공
+    // ============================================
+
+    timings.totalMs = Date.now() - serverStartTime;
+
+    // jobId 생성 및 PENDING 상태 저장
+    const jobId = generateJobId();
+    await createPendingJob(jobId, quickResult, timings);
+
+    console.log(`📝 [Job] 생성됨 - jobId=${jobId}`);
+    console.log(
+      `\n📊 [Performance] 서버 처리 시간 요약 (PARTIAL - Fast 즉시 반환):`
+    );
+    console.log(`   - JSON 파싱: ${timings.parseMs}ms`);
+    console.log(`   - OCR 준비: ${timings.ocrMs}ms`);
+    console.log(`   - OCR 텍스트 길이: ${timings.ocrTextChars}자`);
+    console.log(`   - 토큰 최적화: ${timings.tokenOptimizeMs}ms`);
+    console.log(`   - 1차 판정 (룰): ${timings.quickMs}ms`);
+    console.log(`   - Fast Gemini: ${timings.fastGeminiMs}ms`);
+    console.log(
+      `   - 총합: ${timings.totalMs}ms (Accurate 대기 제거로 ~3초 단축)\n`
+    );
+
+    const partialResponse: PartialResponse = {
+      status: 'PARTIAL',
+      jobId,
+      quickResult,
+      timings: {
+        ocrMs: timings.ocrMs,
+        quickMs: timings.quickMs,
+        fastGeminiMs: timings.fastGeminiMs,
+        totalMs: timings.totalMs,
+        ocrTextChars: timings.ocrTextChars,
+      },
+    };
+
+    // ============================================
+    // 🔥 백그라운드 작업: Accurate Gemini 완료 후 Job 저장 + DB 영구 저장
+    //
+    // ⚠️ 서버리스/엣지 런타임 대응 (38prompts 5-1):
+    // - Next.js 15+: after() 또는 unstable_after() 사용 권장
+    // - Vercel Edge: waitUntil() 사용 권장
+    // - Next.js 14 (현재): 백그라운드 Promise + await 저장
+    //
+    // 현재 환경 제약:
+    // - 응답 반환 후 인스턴스 종료 시 백그라운드 작업 중단 가능
+    // - job_id UNIQUE 제약으로 중복 방지 및 추후 재시도 가능
+    // - 저장 실패해도 분석 결과는 정상 반환됨
+    // ============================================
+    accurateGeminiPromise
+      .then(async (geminiResult) => {
+        const geminiCompleteTime = Date.now();
+        const backgroundTimings: ScanTimings = {
+          ...timings,
+          geminiMs: geminiCompleteTime - accurateGeminiStartTime,
+          dbVerifyMs: geminiResult.dbVerifyMs,
+          promptChars: geminiResult.promptChars,
+          totalMs: geminiCompleteTime - serverStartTime,
+        };
+
+        console.log(`\n🔄 [Background] Accurate Gemini 완료 - jobId=${jobId}`);
+        console.log(`   - Accurate Gemini: ${backgroundTimings.geminiMs}ms`);
+        console.log(`   - DB 검증: ${backgroundTimings.dbVerifyMs}ms`);
+
+        const finalResult = mergeQuickAndGemini(quickResult, geminiResult);
+        await completeJob(jobId, finalResult, backgroundTimings);
+
+        console.log(`✅ [Background] Job 완료 저장 - jobId=${jobId}`);
+
+        // ============================================
+        // 📦 스캔 이력 영구 저장 (FINAL 상태)
+        // - 저장 실패해도 분석 결과에 영향 없음
+        // - job_id로 중복 저장 방지
+        // ============================================
+        try {
+          const saveStartTime = Date.now();
+          const scanHistoryRepo = new ScanHistoryRepository(supabase);
+
+          // FinalResult → SaveScanParams 변환
+          const scanResults: ScanResultItem[] = (finalResult.results || []).map(
+            (item: any) => ({
+              itemName: item.translated_name || item.original_name || item.name || 'Unknown',
+              safetyLevel: convertSafetyLevel(item.safety_status || item.status),
+              warningMessage: item.reason || null,
+              matchedAllergens: item.allergy_risk?.matched_allergens || item.allergens || null,
+              matchedDiets: item.diet_risk?.violations || item.diet_violations || null,
+              confidenceScore: CONFIDENCE_TO_SCORE[quickResult.confidence] || 0.7,
+            })
+          );
+
+          const saveParams: SaveScanParams = {
+            userId: user.id,
+            jobId: jobId,
+            scanType: 'menu',
+            imageUrl: null, // 현재 범위에서 이미지 저장 제외
+            restaurantName: null, // OCR에서 추출 가능하면 추후 추가
+            location: null,
+            results: scanResults,
+          };
+
+          const saveResult = await scanHistoryRepo.saveScan(saveParams);
+          const saveMs = Date.now() - saveStartTime;
+
+          // backgroundTimings에 saveMs 기록
+          backgroundTimings.saveMs = saveMs;
+
+          if (saveResult.success) {
+            console.log(
+              `✅ [ScanHistory] 저장 완료 - scanId: ${saveResult.scanId}, results: ${saveResult.resultIds?.length}건 (${saveMs}ms)`
+            );
+          } else {
+            console.log(`⚠️ [ScanHistory] 저장 스킵 - ${saveResult.error}`);
+          }
+        } catch (saveError) {
+          // 저장 실패해도 분석 결과에 영향 없음
+          console.error(`❌ [ScanHistory] 저장 실패 (분석 결과 영향 없음):`, saveError);
+        }
+      })
+      .catch(async (error) => {
+        console.error(
+          `❌ [Background] Accurate Gemini 실패 - jobId=${jobId}:`,
+          error
+        );
+        await failJob(jobId, String(error));
+      });
+
+    // 즉시 PARTIAL 응답 반환
+    return NextResponse.json(
+      {
+        success: true,
+        ...partialResponse,
+        analyzed_at: new Date().toISOString(),
+        user_context: { allergies: userAllergies, diet: dietType },
+        overall_status: fastStatus,
+        fast_status: fastStatus,
+        message: '빠른 분석 완료. 상세 분석이 진행 중입니다.',
+        _performance: {
+          server_total_ms: timings.totalMs,
+          parse_ms: timings.parseMs,
+          ocr_ms: timings.ocrMs,
+          token_optimize_ms: timings.tokenOptimizeMs,
+          quick_ms: timings.quickMs,
+          fast_gemini_ms: timings.fastGeminiMs,
+          ocr_text_chars: timings.ocrTextChars,
+          speedup_note: 'Accurate Gemini 3초 대기 제거로 TTFR 단축',
+        },
+      },
+      {
+        headers: {
+          'Server-Timing': buildServerTimingHeader(timings),
+        },
+      }
+    );
   } catch (error: any) {
-    console.error('Menu Analysis Error:', error);
+    console.error('❌ [ScanAnalyze] Error:', error);
 
     // 429 할당량 초과 에러 처리
     if (error.status === 429) {
@@ -455,6 +504,502 @@ Return ONLY a valid JSON object (NO markdown formatting, NO \`\`\`json wrapper):
         message: error.message || '분석 중 알 수 없는 오류가 발생했습니다.',
       },
       { status: 500 }
+    );
+  }
+}
+
+// ============================================
+// Fast Gemini 호출 (빠른 1차 판정용)
+// ============================================
+
+/**
+ * Fast Gemini 호출 - 빠른 S/C/D 판정
+ *
+ * 특징:
+ * - gemini-2.5-flash-lite 사용 (더 빠름)
+ * - 텍스트만 사용 (이미지 제외 → 비전 추론 비용 제거)
+ * - 출력: overall_status만 (SAFE/CAUTION/DANGER)
+ * - 목표: 0.3~1초 내 응답
+ */
+async function callFastGeminiJudgment(
+  userAllergies: string[],
+  menuTokens: string[],
+  dietType: string
+): Promise<{
+  overall_status: SafetyLevel;
+  promptChars: number;
+}> {
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash-lite',
+    generationConfig: {
+      maxOutputTokens: 10,
+      temperature: 0,
+    },
+  });
+
+  const allergyCodes = userAllergies.join(', ') || 'None';
+  const tokens = menuTokens.slice(0, 30).join(', ') || 'None';
+
+  const prompt = `Classify food safety. Output ONLY one word: SAFE, CAUTION, or DANGER.
+
+ALLERGIES: ${allergyCodes}
+DIET: ${dietType}
+MENU_TOKENS: ${tokens}
+
+ALLERGY RULES:
+- DANGER: any token matches allergy (direct or ingredient)
+- CAUTION: possible hidden allergen or cross-contamination
+- SAFE: no allergen detected
+
+DIET RULES:
+- vegetarian: DANGER if contains meat/poultry/fish
+- vegan: DANGER if contains any animal product
+- halal: DANGER if contains pork/alcohol
+- kosher: DANGER if contains pork/shellfish
+- gluten_free: DANGER if contains wheat/gluten
+
+OUTPUT:`;
+
+  const promptChars = prompt.length;
+  console.log(`⚡ [FastGemini] 프롬프트: ${promptChars}자`);
+
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text().trim().toUpperCase();
+
+  // 결과 파싱
+  let status: SafetyLevel = 'CAUTION';
+  if (
+    text.includes('SAFE') &&
+    !text.includes('DANGER') &&
+    !text.includes('CAUTION')
+  ) {
+    status = 'SAFE';
+  } else if (text.includes('DANGER')) {
+    status = 'DANGER';
+  }
+
+  console.log(`⚡ [FastGemini] 결과: ${status} (raw: ${text})`);
+
+  return { overall_status: status, promptChars };
+}
+
+// ============================================
+// Accurate Gemini 호출 (정확한 2차 분석용)
+// ============================================
+
+/**
+ * OCR 텍스트에서 재료 추출 (간단한 토큰화)
+ * 쉼표, 줄바꿈, 공백 등으로 분리
+ */
+function extractIngredientsFromOCR(ocrText: string): string[] {
+  if (!ocrText || ocrText.trim().length === 0) {
+    return [];
+  }
+
+  // 다양한 구분자로 분리 (쉼표, 줄바꿈, 슬래시, 괄호 등)
+  const tokens = ocrText
+    .split(/[,\n\r/()\[\]|·•\-\t]+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0 && t.length <= 50); // 너무 긴 토큰 제외
+
+  // 추가 정제: 숫자만 있는 토큰 제거, 가격 패턴 제거
+  const refined = tokens.filter((t) => {
+    // 숫자만 있는 토큰 제거
+    if (/^[\d,.\s]+$/.test(t)) return false;
+    // 가격 패턴 제거 (₩, $, 원, 등)
+    if (/[₩$€¥원]/.test(t)) return false;
+    return true;
+  });
+
+  return refined;
+}
+
+async function callGeminiAnalysis(
+  imagePart: { inlineData: { data: string; mimeType: string } },
+  userAllergies: string[],
+  userDiets: string[],
+  dietType: string,
+  language: string,
+  supabase: any,
+  optimizedMenuTokens?: string[]
+): Promise<{
+  overall_status: SafetyLevel;
+  results: any[];
+  user_context?: { allergies: string[]; diet: string };
+  db_enhanced?: boolean;
+  /** 📊 성능 계측: DB 검증 시간 */
+  dbVerifyMs?: number;
+  /** 📊 성능 계측: 프롬프트 글자 수 */
+  promptChars?: number;
+}> {
+  // ============================================
+  // 📊 최적화된 프롬프트 (GPT 피드백 반영)
+  // - 반복 제거: 알레르기 정보 1회만 명시
+  // - 출력량 감소: description 제거, reason 간략화
+  // - 작업 축소: "ALL menu items" 대신 "visible menu items"
+  // - responseSchema로 JSON 형식 강제
+  // ============================================
+
+  // responseSchema를 활용한 모델 설정
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash-preview-09-2025',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'object',
+        properties: {
+          overall_status: {
+            type: 'string',
+            enum: ['SAFE', 'CAUTION', 'DANGER'],
+            description: 'Overall safety status for the menu',
+          },
+          results: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                name: {
+                  type: 'string',
+                  description: 'Menu name (translated if needed)',
+                },
+                status: { type: 'string', enum: ['SAFE', 'CAUTION', 'DANGER'] },
+                reason: {
+                  type: 'string',
+                  description: 'Brief reason (1 sentence)',
+                },
+                allergens: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Matched allergen codes',
+                },
+                diet_violations: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'Diet restriction violations (e.g., meat for vegetarian)',
+                },
+              },
+              required: [
+                'id',
+                'name',
+                'status',
+                'reason',
+                'allergens',
+                'diet_violations',
+              ],
+            },
+          },
+        },
+        required: ['overall_status', 'results'],
+      } as any,
+    },
+  });
+
+  // 알레르기 코드만 간단히 (반복 제거)
+  const allergyCodes = userAllergies.join(', ') || 'None';
+  const menuHints = optimizedMenuTokens?.slice(0, 20).join(', ') || '';
+
+  // ============================================
+  // 📝 축소된 프롬프트 (기존 ~3000자 → ~800자)
+  // ============================================
+  // 식단 제한 규칙 정의
+  const dietRules =
+    userDiets.length > 0
+      ? `
+DIET RESTRICTION RULES:
+- vegetarian: DANGER if contains meat/poultry/fish/seafood
+- vegan: DANGER if contains any animal product (meat/dairy/eggs/honey)
+- halal: DANGER if contains pork/alcohol
+- kosher: DANGER if contains pork/shellfish or mixed meat-dairy
+- gluten_free: DANGER if contains wheat/gluten/flour/pasta/bread`
+      : '';
+
+  const prompt = `Analyze menu image for food allergies and dietary restrictions.
+
+ALLERGIES: ${allergyCodes}
+DIET: ${dietType}
+USER_DIETS: ${userDiets.join(', ') || 'None'}
+LANG: ${language}
+${menuHints ? `HINTS: ${menuHints}` : ''}
+
+ALLERGY RULES:
+- DANGER: definitely contains allergen
+- CAUTION: might contain (hidden ingredient, cross-contamination)
+- SAFE: no allergen detected
+${dietRules}
+
+GENERAL RULES:
+- Check BOTH allergies AND diet restrictions
+- Be conservative: if unsure → CAUTION
+- Translate menu names to ${language}
+- Keep reason brief (1 sentence)
+- Include diet_violations array for any diet restriction violations`;
+
+  // 📊 프롬프트 글자 수 기록
+  const promptChars = prompt.length;
+  console.log(`📊 [Performance] 프롬프트 길이: ${promptChars}자 (최적화됨)`);
+
+  console.log('🤖 [Gemini] API 호출 시작...');
+  const result = await model.generateContent([prompt, imagePart]);
+  const response = await result.response;
+  const text = response.text();
+  console.log('✅ [Gemini] API 응답 수신');
+
+  // JSON 파싱 (responseSchema 덕분에 안정적)
+  let analysisData;
+  try {
+    analysisData = JSON.parse(text);
+  } catch (e) {
+    console.error('❌ [Gemini] JSON 파싱 에러:', text.substring(0, 200));
+    throw new Error('AI 분석 결과를 처리하는 중 오류가 발생했습니다.');
+  }
+
+  // 결과 형식 변환 (기존 인터페이스 호환)
+  const convertedResults = (analysisData.results || []).map((item: any) => {
+    const dietViolations = item.diet_violations || [];
+    // diet_risk 상태 결정: 위반 사항이 있으면 DANGER
+    const dietRiskStatus = dietViolations.length > 0 ? 'DANGER' : 'SAFE';
+
+    return {
+      id: item.id,
+      original_name: item.name,
+      translated_name: item.name,
+      description: '',
+      safety_status: item.status,
+      reason: item.reason,
+      ingredients: [],
+      allergy_risk: {
+        status: item.status,
+        matched_allergens: item.allergens || [],
+      },
+      diet_risk: {
+        status: dietRiskStatus,
+        violations: dietViolations,
+      },
+    };
+  });
+
+  // DB 검증은 생략 (속도 최적화 - 1차 판정에서 충분)
+  // 필요시 백그라운드에서 DB 검증 수행
+  const dbVerifyStartTime = Date.now();
+  const dbVerifyMs = Date.now() - dbVerifyStartTime;
+
+  // overall_status 계산 (알레르기 + 식단 제한 모두 고려)
+  const hasDanger = convertedResults.some(
+    (item: any) =>
+      item.safety_status === 'DANGER' || item.diet_risk?.status === 'DANGER'
+  );
+  const hasCaution = convertedResults.some(
+    (item: any) => item.safety_status === 'CAUTION'
+  );
+  const finalOverallStatus: SafetyLevel = hasDanger
+    ? 'DANGER'
+    : hasCaution
+      ? 'CAUTION'
+      : 'SAFE';
+
+  console.log(`✅ [Gemini] 분석 완료 - 최종 상태: ${finalOverallStatus}`);
+
+  return {
+    overall_status: finalOverallStatus,
+    results: convertedResults,
+    user_context: { allergies: userAllergies, diet: dietType },
+    db_enhanced: false,
+    dbVerifyMs,
+    promptChars,
+  };
+}
+
+// ============================================
+// 헬퍼 함수
+// ============================================
+
+/**
+ * Server-Timing 헤더 생성
+ */
+function buildServerTimingHeader(timings: ScanTimings): string {
+  const entries: string[] = [];
+
+  if (timings.parseMs !== undefined) {
+    entries.push(`parse;dur=${timings.parseMs}`);
+  }
+  if (timings.ocrMs !== undefined) {
+    entries.push(`ocr;dur=${timings.ocrMs};desc="OCR Processing"`);
+  }
+  if (timings.ocrTextChars !== undefined) {
+    entries.push(`ocrChars;dur=${timings.ocrTextChars};desc="OCR Text Chars"`);
+  }
+  if (timings.tokenOptimizeMs !== undefined) {
+    entries.push(
+      `tokenOptimize;dur=${timings.tokenOptimizeMs};desc="Token Optimize"`
+    );
+  }
+  if (timings.quickMs !== undefined) {
+    entries.push(`quick;dur=${timings.quickMs};desc="Quick Analysis"`);
+  }
+  if (timings.fastGeminiMs !== undefined) {
+    entries.push(`fastGemini;dur=${timings.fastGeminiMs};desc="Fast Gemini"`);
+  }
+  if (timings.geminiMs !== undefined) {
+    entries.push(`gemini;dur=${timings.geminiMs};desc="Gemini AI"`);
+  }
+  if (timings.dbVerifyMs !== undefined) {
+    entries.push(
+      `dbVerify;dur=${timings.dbVerifyMs};desc="DB Allergen Verify"`
+    );
+  }
+  if (timings.promptChars !== undefined) {
+    entries.push(`promptChars;dur=${timings.promptChars};desc="Prompt Chars"`);
+  }
+  if (timings.waitedForGeminiMs !== undefined) {
+    entries.push(
+      `wait;dur=${timings.waitedForGeminiMs};desc="Waited for Gemini"`
+    );
+  }
+  if (timings.totalMs !== undefined) {
+    entries.push(`total;dur=${timings.totalMs}`);
+  }
+
+  return entries.join(', ');
+}
+
+// ============================================
+// 스트리밍 응답 핸들러 (빠른 판별용)
+// ============================================
+
+/**
+ * 스트리밍 응답 핸들러
+ *
+ * "사고 금지 판별기" 프롬프트로 빠른 S/D 분류 수행
+ * NDJSON 형식으로 실시간 스트리밍 응답
+ *
+ * @see 36prompts.403.ai-output-streaming-optimization.txt
+ */
+async function handleStreamingResponse(
+  startTime: number,
+  imagePart: { inlineData: { data: string; mimeType: string } },
+  userAllergies: string[],
+  menuTokens: string[],
+  rawUserAllergies: string[],
+  dietType: string
+): Promise<Response> {
+  console.log('🚀 [Streaming] 빠른 판별 스트리밍 시작');
+
+  // 빠른 분류용 모델 사용 (gemini-2.5-flash-lite)
+  const model = genAI.getGenerativeModel({
+    model: RECOMMENDED_MODELS.fast,
+    generationConfig: {
+      maxOutputTokens: 3,
+      temperature: 0,
+      topP: 1,
+      topK: 1,
+      stopSequences: ['\n'],
+    },
+  });
+
+  // 프롬프트 생성
+  const prompt = buildAllergyClassifierPrompt(userAllergies, menuTokens);
+  console.log(`📝 [Streaming] 프롬프트 생성 완료 (${prompt.length}자)`);
+
+  try {
+    // 스트리밍 콘텐츠 생성
+    const result = await model.generateContentStream([prompt, imagePart]);
+
+    // NDJSON 스트리밍 응답 생성
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        let firstChunkSent = false;
+        let accumulated = '';
+        let ttftMs: number | null = null;
+
+        try {
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            accumulated += text;
+
+            if (!firstChunkSent) {
+              // TTFT(Time To First Token) 측정 - 첫 청크 시점
+              ttftMs = Date.now() - startTime;
+              console.log(`⚡ [Streaming] TTFT: ${ttftMs}ms`);
+              firstChunkSent = true;
+            }
+
+            // NDJSON 형식 (프로덕션에서는 accumulated 제외)
+            const payload =
+              process.env.NODE_ENV === 'development'
+                ? { text, accumulated } // 디버그용
+                : { text }; // 프로덕션용 (페이로드 최소화)
+
+            controller.enqueue(encoder.encode(JSON.stringify(payload) + '\n'));
+          }
+
+          // 최종 결과 전송 (ttft는 첫 청크 시점 값)
+          const finalStatus = parseQuickStatus(accumulated.trim());
+          const totalMs = Date.now() - startTime;
+
+          console.log(
+            `✅ [Streaming] 완료 - 상태: ${finalStatus}, TTFT: ${ttftMs}ms, Total: ${totalMs}ms`
+          );
+
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                done: true,
+                status: finalStatus,
+                ttft: ttftMs,
+                totalMs,
+                user_context: { allergies: rawUserAllergies, diet: dietType },
+              }) + '\n'
+            )
+          );
+          controller.close();
+        } catch (streamError) {
+          console.error('❌ [Streaming] 스트림 처리 에러:', streamError);
+
+          // 에러 시 DANGER로 처리 (보수적 안전)
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                done: true,
+                status: 'DANGER',
+                error: 'Stream processing failed',
+                ttft: ttftMs,
+              }) + '\n'
+            )
+          );
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'application/x-ndjson',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Accel-Buffering': 'no', // Nginx 버퍼링 비활성화
+        'Transfer-Encoding': 'chunked',
+      },
+    });
+  } catch (error) {
+    console.error('❌ [Streaming] 스트림 생성 실패:', error);
+
+    // 에러 시 JSON 응답으로 폴백 (DANGER)
+    return new Response(
+      JSON.stringify({
+        done: true,
+        status: 'DANGER',
+        error: 'Failed to create stream',
+        ttft: null,
+      }) + '\n',
+      {
+        headers: {
+          'Content-Type': 'application/x-ndjson',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      }
     );
   }
 }

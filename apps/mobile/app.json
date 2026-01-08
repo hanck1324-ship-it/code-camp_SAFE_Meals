@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "safemeals",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -38,8 +38,8 @@
     },
     "plugins": [
       "@portone/react-native-sdk/plugin",
-      
-          "expo-router",
+      "@react-native-google-signin/google-signin",
+      "expo-router",
       [
         "expo-camera",
         {
@@ -51,6 +51,7 @@
     "extra": {
       "webviewUrl": "http://172.16.2.168:3000",
       "googleAndroidClientId": "90298941939-2fajkrcm5hal978812ut42nb7lgtfvou.apps.googleusercontent.com",
+      "googleIosClientId": "90298941939-iOS클라이언트ID를여기에입력하세요.apps.googleusercontent.com",
       "googleWebClientId": "90298941939-27osmtlm0v9ps2ss5jk3eg389135pn21.apps.googleusercontent.com",
       "router": {
         "origin": false
@@ -62,6 +63,6 @@
     "experiments": {
       "typedRoutes": true
     },
-    "owner": "gharam1234"
+    "owner": "safemeals"
   }
 }

@@ -1,0 +1,2 @@
+# 이 디렉토리는 Playwright 인증 상태 파일을 저장합니다.
+# with-scans.json과 without-scans.json 파일은 global-setup.ts에서 자동 생성됩니다.

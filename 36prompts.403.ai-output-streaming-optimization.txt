@@ -1,0 +1,608 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+
+조건-파일경로) 수정될 API 파일경로: apps/web/src/app/api/scan/analyze/route.ts
+조건-파일경로) 구현될 프롬프트 파일경로: apps/web/src/lib/prompts/allergy-classifier.prompt.ts
+조건-파일경로) 구현될 훅 파일경로: apps/web/src/features/scan/components/menu-scan/hooks/useStreamingResult.hook.ts
+조건-파일경로) 구현될 테스트 파일경로: apps/web/tests/streaming-result.spec.ts
+
+==============================================
+
+핵심요구사항) AI 출력을 최소화하고 스트리밍으로 첫 토큰 UX를 최적화할 것.
+
+목표:
+- "완료 속도"가 아니라 "첫 판단 시간" 단축
+- UX 체감 속도에 직접 영향
+- 스트리밍 UX와 반드시 병행 적용
+
+==============================================
+
+핵심요구사항-1) "사고 금지 판별기" 프롬프트 설계
+
+1) 프롬프트 원칙
+   - LLM에게 "생각하지 말고 분류만 하게" 강제
+   - 설명/분석/추론 금지
+   - **단일 문자(S/C/D) 출력으로 토큰 1개 보장**
+
+2) 프롬프트 템플릿 (allergy-classifier.prompt.ts)
+
+   ```typescript
+   export const ALLERGY_CLASSIFIER_PROMPT = `
+   You are an allergy classifier.
+   
+   DECISION RULES (strictly follow):
+   - D: 사용자 알레르기와 직접 매칭 토큰이 1개라도 있으면
+   - S: 직접 매칭이 하나도 없으면
+   
+   **주의**: 1차 판정은 2분류(S/D)만 사용.
+   CAUTION(C)은 2차 상세 분석에서만 사용 (교차오염/may_contain 정보 필요)
+   
+   OUTPUT RULES:
+   - Output ONLY one character: S or D
+   - S = SAFE, D = DANGER
+   - NO explanation, NO reasoning, NO additional text
+   
+   User allergies: {user_allergies}
+   Menu ingredients: {menu_tokens}
+   
+   Classification:`;
+   ```
+
+   **클라이언트 매핑**:
+   ```typescript
+   const STATUS_MAP: Record<string, 'SAFE' | 'DANGER'> = {
+     'S': 'SAFE',
+     'D': 'DANGER',
+   };
+   ```
+
+3) ❌ 금지 패턴 (느림)
+   - "분석해서 설명해줘"
+   - "왜 위험한지 알려줘"
+   - "각 재료별로 평가해줘"
+   - "SAFE/CAUTION/DANGER 단어로 출력" (토크나이저가 여러 토큰으로 분할 가능)
+
+4) ✅ 권장 패턴 (빠름)
+   - "S/D 중 하나만 출력" (enum 강제로 확정적 출력)
+   - "설명 금지"
+   - **결정 규칙을 명시** (일관성 확보)
+   
+   **주의**: "단일 문자 = 단일 토큰"은 토크나이저에 따라 다를 수 있음.
+   하지만 text/x.enum + responseSchema로 enum 강제하면 UX 목적 달성.
+
+==============================================
+
+핵심요구사항-2) 모델 파라미터 최적화
+
+**중요**: Gemini API에서 logit_bias는 공식 미지원. text/x.enum + responseSchema로 대체.
+
+1) 필수 설정
+   ```typescript
+   const generationConfig = {
+     maxOutputTokens: 3,        // S/D + 여유 (1개는 잘림 위험)
+     temperature: 0,            // 결정론적 출력 (일관성)
+     topP: 1,                   // nucleus sampling 비활성화
+     topK: 1,                   // greedy decoding
+     stopSequences: ["\n"],     // 줄바꿈에서만 중단 (공백 제외 - 빈 응답 위험)
+   };
+   ```
+
+2) 응답 형식 강제 (**text/x.enum 사용 - 가장 안정적**)
+   ```typescript
+   const generationConfig = {
+     responseMimeType: "text/x.enum",  // enum 출력 전용 MIME 타입
+     responseSchema: {
+       type: "string",
+       enum: ["S", "D"]  // 2분류로 단순화
+     },
+     stopSequences: ["\n"],  // 공백 제외 (빈 응답 위험)
+   };
+   ```
+   
+   **주의**: 
+   - ❌ responseMimeType: "text/plain" + responseSchema 조합은 불안정
+   - ✅ responseMimeType: "text/x.enum" + responseSchema.enum 조합이 가장 강력
+
+3) thinkingConfig (Gemini 2.0+ 지원 시)
+   ```typescript
+   // "생각" 기능이 있는 모델에서 thinking budget 최소화
+   const generationConfig = {
+     thinkingConfig: {
+       thinkingBudget: 0,  // 분류 태스크에는 thinking 불필요
+     },
+     // ... 기타 설정
+   };
+   ```
+
+4) ❌ 사용 금지 (Gemini 미지원 또는 불안정)
+   - logit_bias: Gemini API 공식 미지원
+   - maxOutputTokens: 1 (토큰 잘림 위험)
+
+==============================================
+
+핵심요구사항-3) 스트리밍 응답 구현
+
+**프로토콜 선택**: fetch streaming + NDJSON (SSE 아님)
+- SSE(EventSource)는 GET 기반이라 POST body 전송 불가
+- fetch streaming + NDJSON이 더 단순하고 안정적
+
+1) API 라우트 스트리밍 설정 (/api/scan/analyze)
+   **주의**: 기존 route.ts를 수정. 별도 엔드포인트 생성 아님.
+   
+   **호환성 유지 (Content Negotiation)**:
+   - `Accept: application/x-ndjson` → 스트리밍 응답
+   - 그 외 → 기존 JSON 응답 (호환성 유지)
+   
+   ```typescript
+   // apps/web/src/app/api/scan/analyze/route.ts
+   export async function POST(req: NextRequest) {
+     const startTime = Date.now();
+     const acceptHeader = req.headers.get('Accept') || '';
+     const wantsStream = acceptHeader.includes('application/x-ndjson');
+     
+     // ... 토큰 최적화 후
+     
+     // 스트리밍 요청이 아니면 기존 JSON 응답
+     if (!wantsStream) {
+       const result = await model.generateContent([prompt, imagePart]);
+       const text = result.response.text().trim();
+       const status = parseStatus(text);
+       return NextResponse.json({ status, ttft: Date.now() - startTime });
+     }
+     
+     // 스트리밍 응답
+     const result = await model.generateContentStream([prompt, imagePart]);
+     
+     // NDJSON 스트리밍 응답 생성
+     const encoder = new TextEncoder();
+     const stream = new ReadableStream({
+       async start(controller) {
+         let firstChunkSent = false;
+         let accumulated = '';
+         let ttftMs: number | null = null;  // TTFT는 첫 청크에서 측정
+         
+         for await (const chunk of result.stream) {
+           const text = chunk.text();
+           accumulated += text;
+           
+           if (!firstChunkSent) {
+             // TTFT(Time To First Token) 측정 - 첫 청크 시점
+             ttftMs = Date.now() - startTime;
+             console.log(`⚡ TTFT: ${ttftMs}ms`);
+             firstChunkSent = true;
+           }
+           
+           // NDJSON 형식 (프로덕션에서는 accumulated 제외)
+           const payload = process.env.NODE_ENV === 'development'
+             ? { text, accumulated }  // 디버그용
+             : { text };              // 프로덕션용 (페이로드 최소화)
+           controller.enqueue(
+             encoder.encode(JSON.stringify(payload) + '\n')
+           );
+         }
+         
+         // 최종 결과 전송 (ttft는 첫 청크 시점 값)
+         const finalStatus = parseStatus(accumulated.trim());
+         controller.enqueue(
+           encoder.encode(JSON.stringify({ 
+             done: true, 
+             status: finalStatus,
+             ttft: ttftMs  // TTFT (총 소요 시간 아님!)
+           }) + '\n')
+         );
+         controller.close();
+       }
+     });
+     
+     return new Response(stream, {
+       headers: {
+         'Content-Type': 'application/x-ndjson',
+         'Cache-Control': 'no-cache, no-store, must-revalidate',
+         'X-Accel-Buffering': 'no',  // Nginx 버퍼링 비활성화
+         'Transfer-Encoding': 'chunked',
+       }
+     });
+   }
+   
+   // S/D → SAFE/DANGER 매핑 (2분류)
+   // **치명적 안전 규칙**: fallback은 반드시 DANGER
+   // 알레르기 도메인에서 "false SAFE"는 사고로 이어짐
+   function parseStatus(raw: string): 'SAFE' | 'DANGER' {
+     const match = raw.toUpperCase().match(/[SD]/);
+     if (!match) return 'DANGER';  // ⚠️ 보수적 안전: 판정 실패 시 DANGER
+     return match[0] === 'S' ? 'SAFE' : 'DANGER';
+   }
+   ```
+   
+   **❌ 금지 패턴 (fallback: SAFE)**:
+   ```typescript
+   // 위험! 빈 문자열/예외 출력 시 "안전"으로 판정
+   return char.toUpperCase() === 'D' ? 'DANGER' : 'SAFE';  // ❌ 절대 금지
+   ```
+
+2) 응답 구조 (NDJSON - 줄 단위 JSON)
+   ```
+   {"text":"D"}
+   {"done":true,"status":"DANGER","ttft":723}
+   ```
+   
+   **프로덕션 vs 개발**:
+   - 개발: `{"text":"D","accumulated":"D"}` (디버깅용)
+   - 프로덕션: `{"text":"D"}` (페이로드 최소화)
+   
+   **SSE 형식 사용 안 함**:
+   - ❌ `data: {"text": "D"}\n\n` (SSE)
+   - ✅ `{"text":"D"}\n` (NDJSON)
+
+==============================================
+
+핵심요구사항-4) 클라이언트 스트리밍 훅 구현
+
+**핵심**: 청크 경계 문제 해결 + useRef로 레이스 조건 방지 + AbortController로 연속 요청 관리
+
+**중요**: 
+- useRef는 훅 최상위에서 선언! (startStreaming 내부 ❌)
+- startStreaming은 payload를 인자로 받음 (stale closure 방지)
+
+1) 훅 시그니처
+   ```typescript
+   // (CR-2 해결) startStreaming이 모든 필요 데이터를 인자로 받음
+   interface StreamingPayload {
+     image: string;
+     userAllergies: string[];
+     menuTokens: string[];
+   }
+   
+   interface UseStreamingResultReturn {
+     status: 'SAFE' | 'DANGER' | null;  // 2분류
+     isStreaming: boolean;
+     firstTokenTime: number | null;  // ms (TTFT)
+     error: string | null;
+     startStreaming: (payload: StreamingPayload) => Promise<void>;
+     abort: () => void;  // (H-1) 수동 취소 지원
+   }
+   
+   function useStreamingResult(): UseStreamingResultReturn
+   ```
+
+2) 스트리밍 처리 로직 (모든 레이스 조건 해결)
+   
+   **❌ 잘못된 예 (stale closure + Hooks 규칙 위반)**:
+   ```typescript
+   const startStreaming = useCallback(async (image: string) => {
+     // ❌ user_allergies, menu_tokens가 어디서 오는지 불명확
+     // ❌ deps가 []이므로 최신 값 반영 안 됨
+     body: JSON.stringify({ image, user_allergies, menu_tokens }),
+   }, []);  // ❌ 빈 deps
+   ```
+   
+   **✅ 올바른 예 (payload 인자 + AbortController)**:
+   ```typescript
+   function useStreamingResult(): UseStreamingResultReturn {
+     const [status, setStatus] = useState<'SAFE' | 'DANGER' | null>(null);
+     const [isStreaming, setIsStreaming] = useState(false);
+     const [firstTokenTime, setFirstTokenTime] = useState<number | null>(null);
+     const [error, setError] = useState<string | null>(null);
+     
+     // ✅ 훅 최상위에서 선언
+     const firstTokenCapturedRef = useRef(false);
+     const abortControllerRef = useRef<AbortController | null>(null);
+     const requestIdRef = useRef(0);  // (H-1) 연속 요청 레이스 방지
+     
+     // (H-1) 이전 요청 취소
+     const abort = useCallback(() => {
+       abortControllerRef.current?.abort();
+     }, []);
+     
+     const startStreaming = useCallback(async (payload: StreamingPayload) => {
+       const { image, userAllergies, menuTokens } = payload;
+       
+       // (H-1) 이전 요청 취소 + 새 requestId
+       abort();
+       const currentRequestId = ++requestIdRef.current;
+       abortControllerRef.current = new AbortController();
+       
+       setIsStreaming(true);
+       setError(null);
+       setStatus(null);
+       firstTokenCapturedRef.current = false;
+       
+       const startTime = Date.now();
+       let localFirstTokenTime: number | null = null;
+       let buffer = '';
+       
+       try {
+         const response = await fetch('/api/scan/analyze', {
+           method: 'POST',
+           headers: { 
+             'Content-Type': 'application/json',
+             'Accept': 'application/x-ndjson',  // (H-2) 스트리밍 요청 명시
+           },
+           body: JSON.stringify({ 
+             image, 
+             user_allergies: userAllergies, 
+             menu_tokens: menuTokens 
+           }),
+           signal: abortControllerRef.current.signal,  // (H-1) 취소 지원
+         });
+         
+         if (!response.ok) throw new Error('Stream failed');
+         
+         const reader = response.body?.getReader();
+         const decoder = new TextDecoder();
+         
+         while (true) {
+           const { done, value } = await reader!.read();
+           if (done) break;
+           
+           // (H-1) 이미 취소된 요청이면 무시
+           if (currentRequestId !== requestIdRef.current) return;
+           
+           buffer += decoder.decode(value, { stream: true });
+           
+           const lines = buffer.split('\n');
+           buffer = lines.pop() || '';
+           
+           for (const line of lines) {
+             if (!line.trim()) continue;
+             
+             try {
+               const data = JSON.parse(line);
+               
+               if (!firstTokenCapturedRef.current && data.text) {
+                 localFirstTokenTime = Date.now() - startTime;
+                 firstTokenCapturedRef.current = true;
+               }
+               
+               if (data.done && data.status) {
+                 // (H-1) 최신 요청만 상태 업데이트
+                 if (currentRequestId === requestIdRef.current) {
+                   setStatus(data.status);
+                 }
+               }
+               }
+             } catch (e) {
+               // JSON 파싱 실패 - 무시
+             }
+           }
+         }
+         
+         // (H-1) 최신 요청만 상태 업데이트
+         if (currentRequestId === requestIdRef.current) {
+           setFirstTokenTime(localFirstTokenTime);
+         }
+         
+       } catch (err) {
+         // AbortError는 정상 취소이므로 에러로 처리하지 않음
+         if (err instanceof Error && err.name === 'AbortError') {
+           return;
+         }
+         if (currentRequestId === requestIdRef.current) {
+           setError(err instanceof Error ? err.message : 'Unknown error');
+         }
+       } finally {
+         if (currentRequestId === requestIdRef.current) {
+           setIsStreaming(false);
+         }
+       }
+     }, [abort]);  // abort만 deps에 포함 (payload는 인자로 받음)
+     
+     return { status, isStreaming, firstTokenTime, error, startStreaming, abort };
+   }
+   ```
+
+3) 핵심 해결 포인트
+   
+   **① 청크 경계 문제 해결**:
+   - buffer 누적 → `\n` 단위 프레임 분리
+   - 불완전 라인은 buffer에 유지하고 다음 청크와 합침
+   
+   **② 레이스 조건 방지 (firstTokenTime)**:
+   - `firstTokenTime === null` state 비교 ❌
+   - `useRef` + 로컬 변수로 먼저 캡처 ✅
+   - 루프 종료 후 한 번만 state 반영
+   
+   **③ 연속 요청 레이스 방지 (H-1)**:
+   - `AbortController`로 이전 요청 취소
+   - `requestIdRef`로 최신 요청만 상태 업데이트
+   - 취소된 요청의 응답은 무시
+   
+   **④ stale closure 방지 (CR-2)**:
+   - `startStreaming(payload)`가 모든 데이터를 인자로 받음
+   - `useCallback` deps가 `[]`이어도 안전
+   - 컴포넌트에서: `startStreaming({ image, userAllergies, menuTokens })`
+
+4) 컴포넌트 사용 예시
+   ```typescript
+   const { status, firstTokenTime, isStreaming, startStreaming, abort } = useStreamingResult();
+   
+   const handleScan = async () => {
+     // (CR-2) payload로 모든 데이터 전달
+     await startStreaming({ 
+       image: imageData, 
+       userAllergies: ['shellfish', 'eggs'], 
+       menuTokens: ['shrimp', 'pasta'] 
+     });
+   };
+   
+   // 컴포넌트 언마운트 시 요청 취소
+   useEffect(() => {
+     return () => abort();
+   }, [abort]);
+   
+   useEffect(() => {
+     if (status === 'DANGER') {
+       showWarningBanner();
+     }
+   }, [status]);
+   ```
+
+==============================================
+
+핵심요구사항-5) 2단계 스트리밍 전략 (선택적 확장)
+
+1) 1단계: 빠른 판정 (0.5~1초)
+   - 출력: S 또는 D (2분류)
+   - 프롬프트: 사고 금지 판별기
+   - 즉시 UI 반영
+
+2) 2단계: 상세 분석 (백그라운드, 2~5초)
+   - 출력: 위험 재료, 이유, 대안, CAUTION 판정 등
+   - 기존 프롬프트 사용
+   - 폴링 또는 병렬 스트리밍
+
+3) 타임라인 예시
+   ```
+   0.0초  요청 전송
+   0.7초  ⚠️ "위험" 배너 표시 (1단계 완료)
+   1.5초  "우유 성분 포함" 상세 정보 (2단계 진행 중)
+   3.0초  전체 분석 완료 (2단계 완료)
+   ```
+
+==============================================
+
+핵심요구사항-6) 테스트 시나리오
+
+**중요 (H-3)**: 시간 기반 테스트("<1초")는 CI에서 플래키함.
+- 네트워크/런타임/부하에 따라 시간이 흔들림
+- **가짜 ReadableStream + vitest fake timers로 논리만 검증**
+
+1) 첫 토큰 로직 테스트 (시간 아닌 로직 검증)
+   - 조건: 가짜 ReadableStream으로 청크 전송
+   - 기대: 첫 청크 도착 시 firstTokenCapturedRef.current = true
+   - 검증: **시간이 아닌 로직** 동작 확인
+   
+   ```typescript
+   // Mock ReadableStream 예시
+   const mockStream = new ReadableStream({
+     start(controller) {
+       controller.enqueue(new TextEncoder().encode('{"text":"D"}\n'));
+       controller.close();
+     }
+   });
+   ```
+
+2) 출력 형식 테스트
+   - 조건: 다양한 입력 조합
+   - 기대: S 또는 D만 출력 (2분류)
+   - 검증: text/x.enum + responseSchema로 강제, 추가 텍스트 없음
+
+3) 스트리밍 연결 테스트
+   - 조건: fetch streaming + NDJSON
+   - 기대: 줄 단위 JSON 수신
+   - 검증: buffer 누적 → `\n` 분리 → JSON.parse 성공
+
+4) 청크 경계 테스트
+   - 조건: 인위적으로 청크를 분할하여 전송
+   - 기대: `{"tex` + `t":"D"}` 분리되어도 파싱 성공
+   - 검증: buffer 누적 로직 정상 동작
+
+5) 일관성 테스트
+   - 조건: 동일 입력 10회 반복
+   - 기대: 동일 출력 (temperature=0)
+   - 검증: 결과 일치율 100%
+
+6) 연속 요청 레이스 테스트 (H-1)
+   - 조건: 요청 A 시작 → 요청 B 시작 → A 응답 도착
+   - 기대: A 응답 무시, B 응답만 상태에 반영
+   - 검증: requestIdRef 로직 + AbortController 동작
+
+7) parseStatus fallback 테스트 (CR-1)
+   - 조건: 빈 문자열, "X", "123", undefined 입력
+   - 기대: 모두 DANGER 반환
+   - 검증: **fallback이 SAFE가 아님** 확인 (치명적!)
+
+8) Content Negotiation 테스트 (H-2)
+   - 조건: Accept 헤더 없는 요청
+   - 기대: 기존 JSON 응답 (호환성 유지)
+   - 검증: Content-Type이 application/json
+
+9) 에러 처리 테스트
+   - 조건: 네트워크 끊김, 타임아웃, AbortError
+   - 기대: graceful degradation, AbortError는 에러 표시 안 함
+   - 검증: 에러 상태 정상 표시
+
+==============================================
+
+참고사항) 성능 목표
+
+1) 첫 토큰 시간 (Time to First Token, TTFT)
+   - 목표: < 1초
+   - 현재 예상: 0.3~0.5초 (gemini-2.0-flash + enum 강제)
+
+2) 전체 응답 시간
+   - 목표: < 1초 (S/D 2분류)
+   - 상세 분석(CAUTION 포함)은 2단계에서 처리
+
+3) 토큰 사용량
+   - 입력: 60개 아이템 이하 (35번 프롬프트 연동)
+   - 출력: 1개 (S 또는 D)
+
+==============================================
+
+참고사항) 배포 환경 주의사항 (H5)
+
+**Next.js Route Handler 스트리밍 버퍼링 이슈**:
+- Route Handlers는 Web Streams API로 스트리밍 지원
+- 하지만 배포 환경(프록시/CDN)에 따라 버퍼링될 수 있음
+- 첫 토큰이 클라이언트에 늦게 도착할 수 있음
+
+**해결 방법**:
+- 헤더에 `X-Accel-Buffering: no` 추가 (Nginx)
+- `Cache-Control: no-cache, no-store, must-revalidate`
+- Vercel: 기본적으로 스트리밍 지원
+- AWS/Cloudflare: 버퍼링 설정 확인 필요
+
+==============================================
+
+참고사항) 모델 선택 가이드
+
+1) 빠른 판별용 (1단계)
+   - gemini-2.0-flash (권장)
+   - gpt-4o-mini
+   - claude-3-haiku
+
+2) 상세 분석용 (2단계)
+   - gemini-2.5-flash (현재 사용 중)
+   - gpt-4o
+   - claude-3.5-sonnet
+
+3) 모델별 예상 TTFT
+   | 모델 | 예상 TTFT |
+   |------|----------|
+   | gemini-2.0-flash | 0.3~0.5초 |
+   | gpt-4o-mini | 0.4~0.6초 |
+   | gemini-2.5-flash | 0.5~0.8초 |
+
+==============================================
+
+참고사항) 치명적 이슈 체크리스트 (구현 시 필수 확인)
+
+**⚠️ CRITICAL (구현 전 반드시 확인)**:
+| # | 이슈 | 해결 방법 | 확인 |
+|---|------|----------|------|
+| CR-1 | parseStatus fallback이 SAFE → 알레르기 사고 가능 | fallback: DANGER (모르면 위험으로 판정) | ☐ |
+| CR-2 | startStreaming stale closure → 이전 데이터로 요청 | payload 파라미터로 모든 데이터 전달 | ☐ |
+
+**🔴 HIGH (구현 시 필수 확인)**:
+| # | 이슈 | 해결 방법 | 확인 |
+|---|------|----------|------|
+| H-1 | 연속 요청 레이스 → 이전 응답이 상태 덮어씀 | AbortController + requestIdRef | ☐ |
+| H-2 | 스트리밍 호환성 깨짐 → 기존 클라이언트 에러 | Content Negotiation (Accept 헤더 확인) | ☐ |
+| H-3 | 시간 기반 테스트 CI 플래키 → 불안정한 빌드 | Mock ReadableStream + fake timers | ☐ |
+
+**🟡 MEDIUM (구현 품질)**:
+| # | 이슈 | 해결 방법 | 확인 |
+|---|------|----------|------|
+| C1 | responseMimeType 불일치 | text/x.enum + responseSchema.enum 조합 | ☐ |
+| C2 | useRef 훅 규칙 위반 | 훅 최상위에서 선언 (startStreaming 내부 ❌) | ☐ |
+| C3 | ttft가 총 소요 시간으로 측정됨 | 첫 청크 시점에 ttftMs 저장 | ☐ |
+| C4 | 단일 토큰 보장 과장 | text/x.enum으로 enum 강제 | ☐ |
+| C5 | CAUTION 규칙 모호 | 2분류(S/D)로 단순화, C는 2단계에서 | ☐ |
+| C6 | stopSequences에 공백 → 빈 응답 | stopSequences: ["\n"]만 사용 | ☐ |
+| C7 | accumulated 페이로드 증가 | 개발 환경에서만 포함 (process.env 분기) | ☐ |
+| C8 | 배포 환경 버퍼링 | X-Accel-Buffering: no 헤더 추가 | ☐ |
+| C9 | firstTokenTime 레이스 | useRef + 로컬 변수 | ☐ |

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -10,6 +10,7 @@ interface SafetyProfileEditScreenProps {
   onBack: () => void;
   onEditAllergies: () => void;
   onEditDiets: () => void;
+  onEditSafetyCardPin: () => void;
 }
 
 export function SafetyProfileEditScreen({
@@ -17,6 +18,7 @@ export function SafetyProfileEditScreen({
   onBack,
   onEditAllergies,
   onEditDiets,
+  onEditSafetyCardPin,
 }: SafetyProfileEditScreenProps) {
   const { t } = useTranslation();
 
@@ -123,6 +125,33 @@ export function SafetyProfileEditScreen({
             className="h-12 w-full rounded-2xl border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
           >
             {t.editDietaryPreferences || 'Edit Dietary Preferences'}
+            <ChevronRight className="ml-auto h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Safety Card PIN Section */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="mb-1">
+                {t.safetyCardPin || 'Safety Card PIN'}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {t.safetyCardPinDesc ||
+                  'Set or update your Safety Card PIN'}
+              </p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2ECC71]/10">
+              <Lock className="h-6 w-6 text-[#2ECC71]" />
+            </div>
+          </div>
+
+          <Button
+            onClick={onEditSafetyCardPin}
+            variant="outline"
+            className="h-12 w-full rounded-2xl border-2 border-gray-200 hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
+          >
+            {t.editSafetyCardPin || 'Set PIN'}
             <ChevronRight className="ml-auto h-5 w-5" />
           </Button>
         </div>

@@ -58,6 +58,7 @@ export default function WebViewScreen({
 
   const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
   const supabaseStorageKey = getSupabaseAuthStorageKey();
+  const safeAreaEdges: Array<'top'> = ['top'];
 
   // AsyncStorage에서 저장된 언어 로드
   useEffect(() => {
@@ -249,9 +250,44 @@ export default function WebViewScreen({
           try {
             const { language } = message.payload;
             await AsyncStorage.setItem('app_language', language);
+            setSavedLanguage(language);
             console.log('[LANGUAGE_CHANGE] 언어 저장됨:', language);
           } catch (error) {
             console.error('Failed to save language:', error);
+          }
+          break;
+
+        case 'CONSOLE_LOG':
+          // WebView 콘솔 로그를 React Native 콘솔에 출력 (성능 계측용)
+          {
+            const { level, message: logMessage } = message.payload;
+            const prefix = '[WebView]';
+            if (level === 'error') {
+              console.error(prefix, logMessage);
+            } else if (level === 'warn') {
+              console.warn(prefix, logMessage);
+            } else {
+              console.log(prefix, logMessage);
+            }
+          }
+          break;
+
+        case 'PERFORMANCE_METRICS':
+          // 성능 메트릭 수신 (개발 모드)
+          {
+            const metrics = message.payload;
+            console.log('\n📊 [Performance Metrics from WebView]');
+            console.log('Request ID:', metrics.requestId);
+            console.log('Network:', metrics.phases?.network?.toFixed(2), 'ms');
+            console.log('Parsing:', metrics.phases?.parsing?.toFixed(2), 'ms');
+            console.log('Mapping:', metrics.phases?.mapping?.toFixed(2), 'ms');
+            console.log(
+              'Rendering:',
+              metrics.phases?.rendering?.toFixed(2),
+              'ms'
+            );
+            console.log('Total:', metrics.phases?.total?.toFixed(2), 'ms');
+            console.log('Response Size:', metrics.responseSize, 'bytes\n');
           }
           break;
 
@@ -288,8 +324,89 @@ export default function WebViewScreen({
         },
         close: function() {
           this.postMessage({ type: 'CLOSE_WEBVIEW' });
+        },
+        // 성능 메트릭 전송 (개발 모드용)
+        sendMetrics: function(metrics) {
+          this.postMessage({ type: 'PERFORMANCE_METRICS', payload: metrics });
         }
       };
+      
+      // 개발 모드에서 콘솔 로그를 네이티브로 전달 (중복 방지)
+      (function setupConsoleForward() {
+        // 이미 설정되었으면 스킵 (중복 방지)
+        if (window.__consoleForwardSetup) return;
+        window.__consoleForwardSetup = true;
+
+        const originalConsole = {
+          log: console.log,
+          warn: console.warn,
+          error: console.error,
+          info: console.info
+        };
+
+        // 이미 전달한 메시지 캐시 (중복 방지)
+        const sentMessages = new Set();
+        const MESSAGE_CACHE_SIZE = 50;
+
+        function shouldForward(message) {
+          // 성능 계측 관련 메시지만 전달
+          if (!message.includes('[Metrics:') && 
+              !message.includes('Performance Metrics') && 
+              !message.includes('📊') && 
+              !message.includes('📈')) {
+            return false;
+          }
+          // 중복 메시지 방지
+          const msgHash = message.substring(0, 100);
+          if (sentMessages.has(msgHash)) return false;
+          sentMessages.add(msgHash);
+          // 캐시 크기 제한
+          if (sentMessages.size > MESSAGE_CACHE_SIZE) {
+            const first = sentMessages.values().next().value;
+            sentMessages.delete(first);
+          }
+          return true;
+        }
+        
+        console.log = function(...args) {
+          originalConsole.log.apply(console, args);
+          const message = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+          if (shouldForward(message)) {
+            try {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'CONSOLE_LOG',
+                payload: { level: 'log', message: message }
+              }));
+            } catch (e) {}
+          }
+        };
+        
+        console.warn = function(...args) {
+          originalConsole.warn.apply(console, args);
+          const message = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+          if (shouldForward(message)) {
+            try {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'CONSOLE_LOG',
+                payload: { level: 'warn', message: message }
+              }));
+            } catch (e) {}
+          }
+        };
+        
+        console.error = function(...args) {
+          originalConsole.error.apply(console, args);
+          const message = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+          if (shouldForward(message)) {
+            try {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'CONSOLE_LOG',
+                payload: { level: 'error', message: message }
+              }));
+            } catch (e) {}
+          }
+        };
+      })();
       
       // 분석용 이미지 데이터 주입
       ${pendingImageData ? `window.pendingAnalyzeImage = "${pendingImageData.replace(/"/g, '\\"')}";` : 'window.pendingAnalyzeImage = null;'}
@@ -367,7 +484,7 @@ export default function WebViewScreen({
   // 이미지 로딩 중이면 로딩 표시
   if (!isImageLoaded || !isAuthSessionLoaded) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={safeAreaEdges}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#22c55e" />
         </View>
@@ -376,7 +493,7 @@ export default function WebViewScreen({
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={showHeader ? ['top'] : []}>
+    <SafeAreaView style={styles.container} edges={safeAreaEdges}>
       {showHeader && (
         <View style={styles.header}>
           <TouchableOpacity
@@ -396,6 +513,17 @@ export default function WebViewScreen({
         ref={webViewRef}
         source={{ uri: url }}
         style={styles.webview}
+        originWhitelist={[
+          'http://*',
+          'https://*',
+          'file://*',
+          'data:*',
+          'blob:*',
+          'sms://*',
+          'tel://*',
+          'mailto:*',
+          'geo:*',
+        ]}
         onMessage={handleMessage}
         injectedJavaScriptBeforeContentLoaded={injectedJavaScript}
         injectedJavaScript={injectedJavaScript}

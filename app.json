@@ -2,11 +2,11 @@
   "expo": {
     "extra": {
       "eas": {
-        "projectId": "894e265a-72c3-44f3-94cf-3e4a8841ad1d"
+        "projectId": "a2b1f40f-c82a-40b3-ab9b-85d4e3e0d9c4"
       }
     },
     "android": {
-      "package": "com.gharam1234.safemealsmonorepo"
+      "package": "com.safemeals.app"
     }
   }
 }
