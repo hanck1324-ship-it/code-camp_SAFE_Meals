@@ -85,6 +85,8 @@ export interface ScanTimings {
   promptChars?: number;
   /** 토큰 최적화 시간 (ms) */
   tokenOptimizeMs?: number;
+  /** 스캔 이력 저장 시간 (ms) */
+  saveMs?: number;
   /** 에러 메시지 */
   error?: string;
 }

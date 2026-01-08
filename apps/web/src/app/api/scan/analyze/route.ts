@@ -26,6 +26,13 @@ import {
   RECOMMENDED_MODELS,
   type QuickSafetyStatus,
 } from '@/lib/prompts/allergy-classifier.prompt';
+import { ScanHistoryRepository } from '@/utils/scan-history-repository';
+import {
+  convertSafetyLevel,
+  CONFIDENCE_TO_SCORE,
+  type SaveScanParams,
+  type ScanResultItem,
+} from '@/types/scan-history.types';
 
 // Gemini API 클라이언트 초기화
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -359,7 +366,19 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    // 🔥 백그라운드 작업: Accurate Gemini 완료 후 Job 저장
+    // ============================================
+    // 🔥 백그라운드 작업: Accurate Gemini 완료 후 Job 저장 + DB 영구 저장
+    //
+    // ⚠️ 서버리스/엣지 런타임 대응 (38prompts 5-1):
+    // - Next.js 15+: after() 또는 unstable_after() 사용 권장
+    // - Vercel Edge: waitUntil() 사용 권장
+    // - Next.js 14 (현재): 백그라운드 Promise + await 저장
+    //
+    // 현재 환경 제약:
+    // - 응답 반환 후 인스턴스 종료 시 백그라운드 작업 중단 가능
+    // - job_id UNIQUE 제약으로 중복 방지 및 추후 재시도 가능
+    // - 저장 실패해도 분석 결과는 정상 반환됨
+    // ============================================
     accurateGeminiPromise
       .then(async (geminiResult) => {
         const geminiCompleteTime = Date.now();
@@ -379,6 +398,55 @@ export async function POST(req: NextRequest) {
         await completeJob(jobId, finalResult, backgroundTimings);
 
         console.log(`✅ [Background] Job 완료 저장 - jobId=${jobId}`);
+
+        // ============================================
+        // 📦 스캔 이력 영구 저장 (FINAL 상태)
+        // - 저장 실패해도 분석 결과에 영향 없음
+        // - job_id로 중복 저장 방지
+        // ============================================
+        try {
+          const saveStartTime = Date.now();
+          const scanHistoryRepo = new ScanHistoryRepository(supabase);
+
+          // FinalResult → SaveScanParams 변환
+          const scanResults: ScanResultItem[] = (finalResult.results || []).map(
+            (item: any) => ({
+              itemName: item.translated_name || item.original_name || item.name || 'Unknown',
+              safetyLevel: convertSafetyLevel(item.safety_status || item.status),
+              warningMessage: item.reason || null,
+              matchedAllergens: item.allergy_risk?.matched_allergens || item.allergens || null,
+              matchedDiets: item.diet_risk?.violations || item.diet_violations || null,
+              confidenceScore: CONFIDENCE_TO_SCORE[quickResult.confidence] || 0.7,
+            })
+          );
+
+          const saveParams: SaveScanParams = {
+            userId: user.id,
+            jobId: jobId,
+            scanType: 'menu',
+            imageUrl: null, // 현재 범위에서 이미지 저장 제외
+            restaurantName: null, // OCR에서 추출 가능하면 추후 추가
+            location: null,
+            results: scanResults,
+          };
+
+          const saveResult = await scanHistoryRepo.saveScan(saveParams);
+          const saveMs = Date.now() - saveStartTime;
+
+          // backgroundTimings에 saveMs 기록
+          backgroundTimings.saveMs = saveMs;
+
+          if (saveResult.success) {
+            console.log(
+              `✅ [ScanHistory] 저장 완료 - scanId: ${saveResult.scanId}, results: ${saveResult.resultIds?.length}건 (${saveMs}ms)`
+            );
+          } else {
+            console.log(`⚠️ [ScanHistory] 저장 스킵 - ${saveResult.error}`);
+          }
+        } catch (saveError) {
+          // 저장 실패해도 분석 결과에 영향 없음
+          console.error(`❌ [ScanHistory] 저장 실패 (분석 결과 영향 없음):`, saveError);
+        }
       })
       .catch(async (error) => {
         console.error(
