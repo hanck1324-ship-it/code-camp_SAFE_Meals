@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import {
   X,
   CheckCircle,
@@ -16,6 +17,7 @@ import { useAnalyzeResult } from '@/features/scan/context/analyze-result-context
 import { useTranslation } from '@/hooks/useTranslation';
 import { translations } from '@/lib/translations';
 import { MAIN_URLS } from '@/commons/constants/url';
+import { getGlobalCollector } from '@/utils/performance-metrics';
 
 // ============================================
 // 타입 정의
@@ -178,19 +180,28 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   const { analysisResult, clearAnalysisResult } = useAnalyzeResult();
 
   /**
-   * 아이템 상세정보 토글
+   * [계측] 렌더링 완료 시점 기록
+   * - 분석 결과가 있고 화면이 마운트되었을 때 렌더링 완료로 간주
    */
-  const toggleItemExpanded = (itemId: string) => {
-    setExpandedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  };
+  useEffect(() => {
+    if (analysisResult) {
+      // 브라우저의 다음 프레임에서 렌더링 완료로 기록
+      requestAnimationFrame(() => {
+        // 전역 윈도우 객체에서 현재 트래커 가져오기
+        if (
+          typeof window !== 'undefined' &&
+          (window as any).__currentPerformanceTracker
+        ) {
+          const tracker = (window as any).__currentPerformanceTracker;
+          tracker.end('rendering');
+          const metrics = tracker.finalize();
+          tracker.printSummary();
+          getGlobalCollector().add(metrics);
+          delete (window as any).__currentPerformanceTracker;
+        }
+      });
+    }
+  }, [analysisResult]);
 
   /**
    * 재촬영 버튼 클릭 핸들러
@@ -261,6 +272,8 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   const { overall_status, detected_ingredients, results } =
     analysisResult;
   const statusStyle = STATUS_STYLES[overall_status];
+  const isPartial = analysisResult._isPartial === true;
+  const questionForStaff = analysisResult._questionForStaff;
 
   // 위험도 순으로 정렬 (DANGER > CAUTION > SAFE)
   const sortedResults = results
@@ -320,6 +333,21 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
 
       {/* Bottom Section - Results */}
       <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+        {/* PARTIAL 상태 표시 (분석 진행 중) */}
+        {isPartial && (
+          <div
+            className="flex items-center gap-2 border-b border-blue-200 bg-blue-50 p-3"
+            data-testid="partial-status-banner"
+          >
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <p className="text-sm text-blue-700">
+              {language === 'ko'
+                ? '1차 분석 결과입니다. AI 상세 분석 중...'
+                : 'Preliminary result. AI analysis in progress...'}
+            </p>
+          </div>
+        )}
+
         {/* Overall Status Banner */}
         <div
           className={`flex items-center gap-3 border-b px-4 py-3 ${statusStyle.bg} ${statusStyle.border}`}
@@ -344,6 +372,23 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
             )}
           </div>
         </div>
+
+        {/* 직원에게 물어볼 질문 (PARTIAL 상태에서만) */}
+        {isPartial && questionForStaff && (
+          <div
+            className="border-b border-amber-200 bg-amber-50 p-4"
+            data-testid="staff-question"
+          >
+            <p className="mb-1 text-xs font-medium text-amber-600">
+              {language === 'ko'
+                ? '💬 직원에게 물어보세요'
+                : '💬 Ask the staff'}
+            </p>
+            <p className="text-sm font-medium text-amber-800">
+              {questionForStaff}
+            </p>
+          </div>
+        )}
 
         {/* Scrollable Content */}
         <div className="flex-1 space-y-3 overflow-y-auto p-3">

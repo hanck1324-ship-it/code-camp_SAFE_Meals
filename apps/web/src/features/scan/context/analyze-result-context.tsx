@@ -69,6 +69,16 @@ export interface AnalysisResult {
   message_en: string;
   /** 개별 메뉴 분석 결과 목록 */
   results?: MenuAnalysisItem[];
+
+  // ========================================
+  // PARTIAL 응답용 추가 필드
+  // ========================================
+  /** PARTIAL 응답 여부 (1차 판정 결과만 있는 경우) */
+  _isPartial?: boolean;
+  /** 백그라운드 작업 ID (FINAL 폴링용) */
+  _jobId?: string | null;
+  /** 직원에게 물어볼 질문 */
+  _questionForStaff?: string;
 }
 
 // ============================================

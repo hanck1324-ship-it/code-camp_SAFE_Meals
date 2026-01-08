@@ -2,6 +2,9 @@
 -- 재료 및 알레르기 필터링 시스템 스키마
 -- ============================================
 
+-- gen_random_uuid 사용을 위한 확장
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- 1. ingredients 테이블 (한식진흥원 API 데이터)
 CREATE TABLE IF NOT EXISTS ingredients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -24,11 +27,37 @@ CREATE TABLE IF NOT EXISTS ingredients (
   UNIQUE(recipe_id, name)
 );
 
--- ingredients 테이블 인덱스
-CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name);
-CREATE INDEX IF NOT EXISTS idx_ingredients_recipe_id ON ingredients(recipe_id);
-CREATE INDEX IF NOT EXISTS idx_ingredients_is_allergen ON ingredients(is_allergen);
-CREATE INDEX IF NOT EXISTS idx_ingredients_allergen_keywords ON ingredients USING GIN(allergen_keywords);
+-- ingredients 테이블 인덱스 (컬럼 존재 시에만 생성)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'ingredients' AND column_name = 'name'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'ingredients' AND column_name = 'recipe_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_ingredients_recipe_id ON ingredients(recipe_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'ingredients' AND column_name = 'is_allergen'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_ingredients_is_allergen ON ingredients(is_allergen);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'ingredients' AND column_name = 'allergen_keywords'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_ingredients_allergen_keywords ON ingredients USING GIN(allergen_keywords);
+  END IF;
+END $$;
 
 -- 2. allergen_mappings 테이블 (재료명 → 알레르기 매핑)
 CREATE TABLE IF NOT EXISTS allergen_mappings (
@@ -68,14 +97,14 @@ CREATE POLICY "Anyone can view allergen mappings" ON allergen_mappings
 DROP POLICY IF EXISTS "Service role can manage ingredients" ON ingredients;
 CREATE POLICY "Service role can manage ingredients" ON ingredients
   FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
 
 DROP POLICY IF EXISTS "Service role can manage allergen mappings" ON allergen_mappings;
 CREATE POLICY "Service role can manage allergen mappings" ON allergen_mappings
   FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
 
 -- 4. 트리거: updated_at 자동 업데이트
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -99,6 +128,7 @@ CREATE TRIGGER update_allergen_mappings_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 -- 5. 기본 알레르기 매핑 데이터 삽입
+-- allergen_type 값은 docs/schema.md의 allergy_types 코드와 일치시킴
 INSERT INTO allergen_mappings (ingredient_keyword, allergen_type) VALUES
   -- 우유/유제품
   ('우유', 'milk'),
@@ -114,63 +144,62 @@ INSERT INTO allergen_mappings (ingredient_keyword, allergen_type) VALUES
   ('난백', 'eggs'),
   ('난황', 'eggs'),
 
-  -- 땅콩
+  -- 땅콩/견과류
   ('땅콩', 'peanuts'),
-  ('호두', 'treeNuts'),
-  ('아몬드', 'treeNuts'),
-  ('잣', 'treeNuts'),
-  ('캐슈넛', 'treeNuts'),
+  ('호두', 'walnuts'),
+  ('아몬드', 'pine_nuts'),
+  ('잣', 'pine_nuts'),
+  ('캐슈넛', 'pine_nuts'),
+  ('피스타치오', 'pine_nuts'),
 
-  -- 갑각류
-  ('새우', 'shellfish'),
-  ('게', 'shellfish'),
+  -- 갑각류/조개류
+  ('새우', 'shrimp'),
+  ('게', 'crab'),
+  ('꽃게', 'crab'),
   ('랍스터', 'shellfish'),
   ('가재', 'shellfish'),
-
-  -- 조개류
   ('굴', 'shellfish'),
   ('전복', 'shellfish'),
   ('조개', 'shellfish'),
   ('홍합', 'shellfish'),
 
   -- 생선
-  ('고등어', 'fish'),
-  ('연어', 'fish'),
-  ('참치', 'fish'),
-  ('명태', 'fish'),
-  ('멸치', 'fish'),
+  ('고등어', 'mackerel'),
+  ('연어', 'mackerel'),
+  ('참치', 'mackerel'),
+  ('명태', 'mackerel'),
+  ('멸치', 'mackerel'),
 
   -- 콩
-  ('대두', 'soy'),
-  ('된장', 'soy'),
-  ('간장', 'soy'),
-  ('두부', 'soy'),
-  ('콩나물', 'soy'),
+  ('대두', 'soybeans'),
+  ('된장', 'soybeans'),
+  ('간장', 'soybeans'),
+  ('두부', 'soybeans'),
+  ('콩나물', 'soybeans'),
+  ('고추장', 'soybeans'),
 
-  -- 밀
+  -- 밀/메밀
   ('밀가루', 'wheat'),
   ('빵', 'wheat'),
   ('면', 'wheat'),
   ('파스타', 'wheat'),
-
-  -- 메밀
   ('메밀', 'buckwheat'),
 
-  -- 돼지고기
+  -- 육류
   ('돼지고기', 'pork'),
   ('삼겹살', 'pork'),
   ('목살', 'pork'),
   ('베이컨', 'pork'),
-
-  -- 소고기
   ('소고기', 'beef'),
   ('등심', 'beef'),
   ('안심', 'beef'),
-
-  -- 닭고기
   ('닭고기', 'chicken'),
   ('닭가슴살', 'chicken'),
-  ('닭다리', 'chicken')
+  ('닭다리', 'chicken'),
+
+  -- 과일/채소 (라벨링 대상)
+  ('복숭아', 'peaches'),
+  ('토마토', 'tomatoes')
 ON CONFLICT (ingredient_keyword) DO NOTHING;
 
 -- 6. 알레르기 필터링 함수

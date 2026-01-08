@@ -1,0 +1,319 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+
+==============================================
+
+조건-파일경로) 구현될 유틸리티 파일경로: apps/web/src/utils/token-optimizer.ts
+조건-파일경로) 구현될 테스트 파일경로: apps/web/tests/token-optimizer.spec.ts
+조건-파일경로) 수정될 API 파일경로: apps/web/src/app/api/scan/analyze/route.ts
+
+==============================================
+
+핵심요구사항) AI 호출 시 입력 아이템 수를 60개 이하로 최적화하는 유틸리티를 구현할 것.
+
+목표:
+- 모든 LLM 호출에 100% 적용
+- 아이템 수 ↓ → attention 비용 ↓ → 첫 토큰 지연 ↓
+- 부작용 없이 순수 성능 개선
+
+**아이템 수 정의**:
+- item_count = user_allergies.length + menu_tokens.length
+- 배열 요소 개수 기준 (LLM 토크나이저 기반 토큰 수 아님)
+- 목표: item_count ≤ 60 (user_allergies 최대 10 + menu_tokens 최대 50)
+- 참고: 실제 LLM 토큰 수는 모델마다 다르고 측정에 <5ms 보장 불가
+
+==============================================
+
+핵심요구사항-1) 중복 토큰 제거 함수 구현
+
+1) 함수 시그니처
+   function removeDuplicateTokens(tokens: string[]): string[]
+
+2) 처리 로직
+   2-1) 완전 중복 제거
+        - 대소문자 정규화 후 Set으로 중복 제거
+        - 예: ["Milk", "milk", "MILK"] → ["milk"]
+
+   2-2) 부분 중복 제거 (**알고리즘 명확화**)
+        
+        **처리 순서** (결정론적 결과 보장):
+        1. 토큰을 길이 내림차순으로 정렬
+        2. 빈 Set(confirmedTokens) 생성
+        3. 긴 토큰부터 순회하며:
+           - 해당 토큰이 이미 확정된 긴 토큰의 "단어로 포함"되면 → 제거
+           - 아니면 → confirmedTokens에 추가
+        4. 단, 보호 키워드는 무조건 confirmedTokens에 추가 (제거 금지)
+        
+        **"단어로 포함" 정의**:
+        - 공백 단어 경계 기준으로만 판단 (substring 매칭 금지)
+        - 예: "cream cheese"는 "cheese"를 단어로 포함
+        - 예: "ice cream"은 "cream"을 단어로 포함
+        - 예: "cream"은 "screaming"을 포함하지 않음 (공백 경계 아님)
+        
+        **예시**:
+        - ["cheese", "cream cheese"] → ["cream cheese"] (cheese는 cream cheese에 단어로 포함)
+        - ["shrimp", "fried shrimp"] → ["fried shrimp"]
+        
+        **예외 (보호 키워드)**:
+        - ["cream", "ice cream"] → ["cream", "ice cream"] (cream은 알레르기 핵심어이므로 유지)
+        - ["fish", "fish sauce"] → ["fish", "fish sauce"] (fish는 알레르기 핵심어이므로 유지)
+
+   2-3) 동의어 중복 제거 (코드 변환 아님!)
+        **중요**: 메뉴 토큰은 구체어(shrimp, crab)로 유지. 알레르기 코드(shellfish)로 변환하지 않음.
+        - 동의어끼리만 중복 제거 (대표 토큰 1개 유지)
+        - 예: ["우유", "milk", "dairy"] → ["milk"] (동의어 중복 제거)
+        - 예: ["새우", "shrimp"] → ["shrimp"] (동의어 중복 제거, shellfish로 변환 ❌)
+        - 예: ["새우", "게", "shrimp", "crab"] → ["shrimp", "crab"] (각각 다른 재료이므로 둘 다 유지)
+        
+        **변환 금지 이유**:
+        - 구체어를 코드로 뭉개면 정보 손실 (게/새우 차이 소실)
+        - 2단계 상세 분석에서 "무슨 재료가 문제인지" 표시 불가
+        - toStandardCode()는 우선순위 점수 계산에만 사용
+
+==============================================
+
+핵심요구사항-2) Stemming/Lemmatization 함수 구현
+
+**역할 명확화**: 이 함수는 표면 재료 토큰(ingredient tokens) 정규화 전용.
+DB allergy_code로 변환하는 단계가 아님. toStandardCode()와 역할이 다름.
+
+1) 함수 시그니처
+   function normalizeIngredients(ingredients: string[]): string[]
+
+2) 처리 로직
+   2-1) 복수형 → 단수형
+        - "eggs" → "egg"
+        - "nuts" → "nut"
+        - "shrimps" → "shrimp"
+        - **주의**: 이건 표면 정규화. DB 코드(eggs)와 다를 수 있음.
+
+   2-2) 조리법/수식어 접두어 제거 (명시된 목록만, 통합됨)
+        **영문 접두어 목록**:
+        - fried, grilled, steamed, roasted, baked, boiled, sautéed, smoked, marinated, breaded, battered, spicy, raw, fresh, organic, crispy, deep-fried
+        
+        **한글 접두어 목록**:
+        - 튀김, 구이, 찜, 볶음, 훈제, 양념, 매콤, 바삭, 신선한, 생, 유기농
+        
+        **처리 규칙**:
+        - 정규식: /^(접두어 목록)\s+/i 패턴으로 제거
+        - 접두어가 연속 2개 이상일 때도 반복 제거 (예: "fresh organic milk" → "milk")
+        - 예: "fried chicken" → "chicken"
+        - 예: "grilled pork" → "pork"
+        - 예: "매콤 새우" → "새우"
+        - 예: "fresh organic eggs" → "egg" (연속 접두어 제거 + 복수형 처리)
+        - **단, 결과가 알레르기 핵심 키워드만 남으면 보존**
+        - "nuts" → "nut"
+        - "shrimps" → "shrimp"
+
+   2-2) 조리법 접두어 제거 (명시된 목록만)
+        **영문 접두어 목록**:
+        - fried, grilled, steamed, roasted, baked, boiled, sautéed, smoked, marinated, breaded, battered, spicy, raw, fresh, organic, crispy, deep-fried
+        
+        **한글 접두어 목록**:
+        - 튀김, 구이, 찜, 볶음, 훈제, 양념, 매콤, 바삭, 신선한, 생, 유기농
+        
+        **처리 규칙**:
+        - 정규식: /^(접두어 목록)\s+/i 패턴으로 제거
+        - 예: "fried chicken" → "chicken"
+        - 예: "grilled pork" → "pork"
+        - 예: "매콤 새우" → "새우"
+        - **단, 결과가 알레르기 핵심 키워드만 남으면 보존**
+
+   2-3) 불필요한 수식어 제거
+        - "fresh milk" → "milk"
+        - "organic eggs" → "egg"
+        - "raw fish" → "fish"
+
+3) 보존해야 할 키워드 (제거 금지) - **알레르기 핵심 키워드**
+   - 이 키워드들은 어떤 처리에서도 삭제되면 안 됨
+   - 부분 중복 제거, 조리법 제거 등 모든 단계에서 보존
+   
+   **영문 (단수형 통일)**:
+   - egg, milk, cream, cheese, butter, peanut, nut, almond, walnut, cashew
+   - fish, shrimp, crab, lobster, oyster, shellfish
+   - wheat, gluten, flour, soy, tofu, sesame
+   - alcohol, pork, beef
+   
+   **한글**:
+   - 계란, 달걀, 우유, 크림, 치즈, 버터, 땅콩, 견과류, 아몬드, 호두
+   - 생선, 새우, 게, 랍스터, 굴, 갑각류, 조개
+   - 밀, 글루텐, 밀가루, 콩, 대두, 두부, 참깨
+   - 알코올, 돼지고기, 소고기
+
+==============================================
+
+핵심요구사항-3) 토큰 필터링 및 우선순위화 시스템 구현
+
+**중요**: "캐싱"이 아님. 런타임 Map 저장 없이, 정적 사전 기반 필터링만 수행.
+
+1) 함수 시그니처
+   function getOptimizedAllergyTokens(
+     userAllergies: string[],
+     menuIngredients: string[]
+   ): OptimizedInput
+
+2) 출력 구조
+   interface OptimizedInput {
+     user_allergies: string[];    // 정규화된 알레르기 코드
+     menu_tokens: string[];       // 최적화된 재료 토큰
+     item_count: number;          // 배열 요소 개수 (user_allergies.length + menu_tokens.length)
+     was_truncated: boolean;      // 아이템 잘림 여부
+   }
+
+   **토큰 수 정의 (명확화)**:
+   - item_count = user_allergies.length + menu_tokens.length
+   - 배열 요소 개수 기준 (LLM 토크나이저 기준 아님)
+   - 목표: item_count ≤ 60 (user_allergies 최대 10 + menu_tokens 최대 50)
+   - 이유: 실제 LLM 토큰화는 모델 의존적이고 <5ms 보장 불가
+
+3) 최적화 파이프라인
+   3-1) 1단계: 중복 제거
+        - removeDuplicateTokens() 적용
+
+   3-2) 2단계: 정규화
+        - normalizeIngredients() 적용
+
+   3-3) 3단계: 우선순위 정렬 (**점수 기반, 결정론적**)
+        
+        **점수 규칙**:
+        | 조건 | 점수 |
+        |------|------|
+        | toStandardCode(token)가 user_allergies에 포함 | 100 |
+        | token이 위험 키워드 (alcohol, pork, beef) | 50 |
+        | token이 보호 키워드 (핵심 알레르기 단어) | 10 |
+        | 그 외 | 0 |
+        
+        **동점 처리 (타이브레이커)**:
+        - 1순위: 점수 높은 것 우선
+        - 2순위: 토큰 길이 긴 것 우선 (더 구체적)
+        - 3순위: 사전순 (알파벳/가나다)
+        
+        **구현 예시**:
+        ```typescript
+        tokens.sort((a, b) => {
+          const scoreA = getScore(a, userAllergies);
+          const scoreB = getScore(b, userAllergies);
+          if (scoreA !== scoreB) return scoreB - scoreA;  // 점수 내림차순
+          if (a.length !== b.length) return b.length - a.length;  // 길이 내림차순
+          return a.localeCompare(b);  // 사전순
+        });
+        ```
+
+   3-4) 4단계: 아이템 수 제한
+        - menu_tokens 50개 초과 시 후순위 토큰 절삭
+        - user_allergies 10개 초과 시 절삭 (실제로는 거의 없음)
+        - was_truncated = true 표시
+
+==============================================
+
+핵심요구사항-4) API 라우트 통합
+
+1) 기존 프롬프트 입력 방식 (❌ 비효율)
+   {
+     "menu_description": "크림 파스타 - 신선한 생크림과 치즈, 버터로 만든...",
+     "user_allergies": ["milk", "우유", "dairy", "유제품"],
+     "detected_ingredients": ["cream", "cheese", "butter", "pasta", "garlic", ...]
+   }
+
+2) 최적화된 입력 방식 (✅ 효율)
+   {
+     "user_allergies": ["milk"],
+     "menu_tokens": ["cream", "cheese", "butter"]
+   }
+
+3) route.ts 수정 사항
+   - Gemini 호출 전 getOptimizedAllergyTokens() 적용
+   - 프롬프트에 최적화된 토큰만 전달
+   - 토큰 수 로깅 추가
+
+==============================================
+
+핵심요구사항-5) 동의어 매핑 테이블
+
+**중요**: 표준 코드는 프로젝트 DB의 allergy_code와 동일하게 유지.
+현재 DB 코드: eggs, milk, peanuts, tree_nuts, fish, shellfish, wheat, soy, sesame
+(복수형/스네이크케이스 그대로 사용 - DB 호환성 우선)
+
+1) 알레르기 코드별 동의어
+   const ALLERGY_SYNONYMS: Record<string, string[]> = {
+     // 표준코드(DB): 동의어 목록 (모두 소문자 정규화)
+     milk: ["우유", "dairy", "유제품", "cream", "크림", "cheese", "치즈", "butter", "버터", "lactose", "whey", "유청"],
+     eggs: ["계란", "egg", "달걀", "난류", "mayonnaise", "마요네즈", "meringue", "머랭"],
+     peanuts: ["땅콩", "peanut", "peanut butter", "땅콩버터"],
+     tree_nuts: ["견과류", "nut", "nuts", "아몬드", "호두", "캐슈넛", "almond", "walnut", "cashew", "pistachio", "피스타치오", "hazelnut", "헤이즐넛", "macadamia"],
+     fish: ["생선", "어류", "salmon", "tuna", "cod", "연어", "참치", "대구", "고등어", "mackerel", "anchovy", "멸치"],
+     shellfish: ["갑각류", "조개류", "shrimp", "새우", "crab", "게", "lobster", "랍스터", "oyster", "굴", "mussel", "홍합", "clam", "조개", "scallop", "가리비", "prawn"],
+     wheat: ["밀", "글루텐", "gluten", "flour", "밀가루", "bread", "빵", "pasta", "파스타", "noodle", "면"],
+     soy: ["대두", "콩", "soybean", "두부", "tofu", "간장", "soy sauce", "된장", "miso", "edamame"],
+     sesame: ["참깨", "깨", "sesame oil", "참기름", "tahini", "타히니"],
+   };
+
+2) 동의어 → 표준 코드 역매핑 함수 (우선순위 점수 계산용)
+   function toStandardCode(token: string): string | null
+   
+   **용도**: 메뉴 토큰을 알레르기 코드로 "변환"하는 게 아님!
+   - 우선순위 점수 계산에 사용
+   - userAllergies 정규화에 사용
+   - 메뉴 토큰 자체는 구체어(shrimp, crab)로 유지
+   
+   // 입력: "cream", "치즈", "shrimp" 등
+   // 출력: "milk", "milk", "shellfish" 등 (DB 코드 반환)
+   // 매칭 안 되면: null
+   
+3) 정규화 규칙
+   - 입력 토큰은 trim() + toLowerCase() 후 매칭
+   - 연속 공백을 1개로 정리 ("soy  sauce" → "soy sauce")
+   - 표준 코드는 DB 코드 그대로 반환 (eggs, milk 등)
+
+==============================================
+
+핵심요구사항-6) 테스트 시나리오
+
+1) 중복 제거 테스트
+   - 입력: ["milk", "Milk", "MILK", "우유"]
+   - 기대 출력: ["milk"] (동의어 중복 제거, 대표 토큰 유지)
+
+2) Stemming 테스트
+   - 입력: ["fried eggs", "grilled shrimps", "fresh milk"]
+   - 기대 출력: ["egg", "shrimp", "milk"]
+   - **주의**: 이건 표면 정규화 결과. DB 코드(eggs, shellfish)가 아님.
+   - normalizeIngredients()는 재료 토큰 정규화 전용.
+
+3) 아이템 수 제한 테스트
+   - 입력: menu_tokens 80개
+   - 기대 출력: menu_tokens 50개 이하, was_truncated = true
+   - 검증: item_count = user_allergies.length + menu_tokens.length ≤ 60
+
+4) 우선순위 테스트
+   - 사용자 알레르기: ["shellfish"]
+   - 입력 토큰: ["pasta", "garlic", "shrimp", "olive oil", "crab"]
+   - 기대 출력: ["shrimp", "crab", ...] (shrimp/crab가 상위, 구체어 유지)
+   - **검증 방법**: toStandardCode("shrimp") === "shellfish" → 점수 100
+
+5) 통합 테스트
+   - 전체 파이프라인 item_count ≤ 60 보장
+   - 구체어(shrimp, crab) 유지 확인 (shellfish로 변환되면 실패)
+
+==============================================
+
+참고사항) 성능 기준
+
+1) 아이템 수 목표 (배열 요소 개수 기준)
+   - user_allergies: 최대 10개
+   - menu_tokens: 최대 50개
+   - 총 item_count: 60개 이하
+   
+   **주의**: LLM 토크나이저 기반 토큰 수가 아님.
+   실제 프롬프트 토큰 수는 모델마다 다르고, 측정 시 <5ms 보장 불가.
+   따라서 "배열 요소 개수"로 제한하는 것이 실용적.
+
+2) 처리 시간 목표
+   - 최적화 함수 실행: < 5ms
+   - 동기 처리 (async 불필요)
+   - 외부 API/토크나이저 호출 금지
+
+3) 메모리 사용
+   - 동의어 테이블: 정적 상수로 선언 (모듈 로드 시 1회)
+   - **런타임 Map 캐싱 없음** (입력이 매번 다르므로 캐시 히트율 낮음)
+   - "캐싱"이 아닌 "정적 사전 기반 필터링"임을 명확히 함
