@@ -32,7 +32,7 @@ const ALLERGY_ID_TO_CODE: Record<string, string> = {
   beef: 'beef',
   pork: 'pork',
   chicken: 'chicken',
-  lamb: 'beef', // DB에 없음 → beef로 매핑
+  lamb: 'lamb',
   // Dairy & Eggs
   milk: 'milk',
   cheese: 'milk', // DB에 없음 → milk로 매핑
@@ -65,6 +65,7 @@ const ALLERGY_CODE_TO_ID: Record<string, string> = {
   beef: 'beef',
   pork: 'pork',
   chicken: 'chicken',
+  lamb: 'lamb',
   milk: 'milk',
   eggs: 'egg',
   peaches: 'peach',
@@ -120,16 +121,6 @@ function AllergyDetailContent() {
   }, []);
 
   const handleAllergySelect = async (allergies: string[]) => {
-    // 빈 배열이면 저장하지 않고 다음으로 진행 (기존 데이터 유지)
-    if (allergies.length === 0) {
-      if (isEditMode) {
-        router.replace('/profile/settings');
-      } else {
-        router.push('/onboarding/diet');
-      }
-      return;
-    }
-
     setIsSaving(true);
     try {
       const supabase = getSupabaseClient();
@@ -156,7 +147,7 @@ function AllergyDetailContent() {
       console.log('UI allergies:', allergies);
       console.log('변환된 allergy codes:', allergyCodes);
 
-      // 기존 알레르기 데이터 삭제
+      // 기존 알레르기 데이터 삭제 (선택 없음 포함)
       await supabase.from('user_allergies').delete().eq('user_id', user.id);
 
       // 새 알레르기 데이터 삽입

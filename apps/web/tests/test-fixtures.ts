@@ -74,7 +74,9 @@ export async function seedRecentScans(
     safety_level: i === 0 ? safetyLevel : 'safe', // 첫 번째 결과에만 지정된 safety_level 적용
   }));
 
-  const { error: resultError } = await client.from('scan_results').insert(results);
+  const { error: resultError } = await client
+    .from('scan_results')
+    .insert(results);
 
   if (resultError) {
     throw new Error(`scan_results 삽입 실패: ${resultError.message}`);
@@ -168,6 +170,61 @@ export async function cleanupScans(scanIds: string[]): Promise<void> {
 
   // 2. 부모 테이블 삭제
   await client.from('scan_history').delete().in('id', scanIds);
+}
+
+/**
+ * 테스트용 Storage 이미지 정리
+ *
+ * @param userId - 사용자 UUID
+ * @param testRunId - 테스트 실행 고유 ID (병렬 실행 충돌 방지)
+ */
+export async function cleanupTestImages(
+  userId: string,
+  testRunId: string
+): Promise<void> {
+  const client = getServiceClient();
+
+  try {
+    // 사용자 폴더 전체에서 테스트 이미지 검색
+    // Storage 경로 구조: {user_id}/{year}/{month}/{scan_id}_{timestamp}.webp
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const basePath = `${userId}/${year}/${month}`;
+
+    const { data: files, error } = await client.storage
+      .from('scan-images')
+      .list(basePath);
+
+    if (error) {
+      console.error(`Storage 이미지 목록 조회 실패: ${error.message}`);
+      return;
+    }
+
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    // testRunId가 포함된 파일 또는 최근 테스트 파일 정리
+    // (실제로는 testRunId로 필터링하기 어려우므로, 전체 삭제 또는 시간 기반 필터링)
+    const paths = files.map((f) => `${basePath}/${f.name}`);
+
+    if (paths.length > 0) {
+      const { error: deleteError } = await client.storage
+        .from('scan-images')
+        .remove(paths);
+
+      if (deleteError) {
+        console.error(`Storage 이미지 삭제 실패: ${deleteError.message}`);
+      } else {
+        console.log(
+          `🗑️ [TestFixtures] ${paths.length}개 테스트 이미지 정리 완료`
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Storage 이미지 정리 실패:', error);
+  }
 }
 
 /**

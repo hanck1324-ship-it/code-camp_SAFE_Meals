@@ -8,7 +8,6 @@ import {
   failJob,
   performQuickAnalysis,
   mergeQuickAndGemini,
-  ALLERGY_CODE_TO_LABEL,
   type SafetyLevel,
   type ScanTimings,
   type QuickResult,
@@ -217,6 +216,7 @@ export async function POST(req: NextRequest) {
       ocrText,
       userAllergies,
       userDiets,
+      language,
       ocrConfidence,
       ocrFailed // OCR 실패 플래그 전달
     );
@@ -411,12 +411,21 @@ export async function POST(req: NextRequest) {
           // FinalResult → SaveScanParams 변환
           const scanResults: ScanResultItem[] = (finalResult.results || []).map(
             (item: any) => ({
-              itemName: item.translated_name || item.original_name || item.name || 'Unknown',
-              safetyLevel: convertSafetyLevel(item.safety_status || item.status),
+              itemName:
+                item.translated_name ||
+                item.original_name ||
+                item.name ||
+                'Unknown',
+              safetyLevel: convertSafetyLevel(
+                item.safety_status || item.status
+              ),
               warningMessage: item.reason || null,
-              matchedAllergens: item.allergy_risk?.matched_allergens || item.allergens || null,
-              matchedDiets: item.diet_risk?.violations || item.diet_violations || null,
-              confidenceScore: CONFIDENCE_TO_SCORE[quickResult.confidence] || 0.7,
+              matchedAllergens:
+                item.allergy_risk?.matched_allergens || item.allergens || null,
+              matchedDiets:
+                item.diet_risk?.violations || item.diet_violations || null,
+              confidenceScore:
+                CONFIDENCE_TO_SCORE[quickResult.confidence] || 0.7,
             })
           );
 
@@ -424,7 +433,8 @@ export async function POST(req: NextRequest) {
             userId: user.id,
             jobId: jobId,
             scanType: 'menu',
-            imageUrl: null, // 현재 범위에서 이미지 저장 제외
+            imageUrl: null, // imageData가 있으면 Repository에서 Storage에 업로드 후 URL 설정
+            imageData: image, // Base64 이미지 데이터 (Storage 업로드용)
             restaurantName: null, // OCR에서 추출 가능하면 추후 추가
             location: null,
             results: scanResults,
@@ -433,19 +443,25 @@ export async function POST(req: NextRequest) {
           const saveResult = await scanHistoryRepo.saveScan(saveParams);
           const saveMs = Date.now() - saveStartTime;
 
-          // backgroundTimings에 saveMs 기록
+          // backgroundTimings에 saveMs 및 imageUploadMs 기록
           backgroundTimings.saveMs = saveMs;
+          if (saveResult.imageUploadMs) {
+            backgroundTimings.imageUploadMs = saveResult.imageUploadMs;
+          }
 
           if (saveResult.success) {
             console.log(
-              `✅ [ScanHistory] 저장 완료 - scanId: ${saveResult.scanId}, results: ${saveResult.resultIds?.length}건 (${saveMs}ms)`
+              `✅ [ScanHistory] 저장 완료 - scanId: ${saveResult.scanId}, results: ${saveResult.resultIds?.length}건 (${saveMs}ms, imageUpload: ${saveResult.imageUploadMs || 0}ms)`
             );
           } else {
             console.log(`⚠️ [ScanHistory] 저장 스킵 - ${saveResult.error}`);
           }
         } catch (saveError) {
           // 저장 실패해도 분석 결과에 영향 없음
-          console.error(`❌ [ScanHistory] 저장 실패 (분석 결과 영향 없음):`, saveError);
+          console.error(
+            `❌ [ScanHistory] 저장 실패 (분석 결과 영향 없음):`,
+            saveError
+          );
         }
       })
       .catch(async (error) => {
@@ -554,9 +570,17 @@ ALLERGY RULES:
 DIET RULES:
 - vegetarian: DANGER if contains meat/poultry/fish
 - vegan: DANGER if contains any animal product
+- lacto_vegetarian: DANGER if contains meat/poultry/fish/eggs
+- ovo_vegetarian: DANGER if contains meat/poultry/fish/dairy
+- pesco_vegetarian: DANGER if contains meat/poultry
+- flexitarian: DANGER if contains meat/poultry/fish
 - halal: DANGER if contains pork/alcohol
 - kosher: DANGER if contains pork/shellfish
+- buddhist_vegetarian: DANGER if contains meat/poultry/fish/garlic/onion
 - gluten_free: DANGER if contains wheat/gluten
+- pork_free: DANGER if contains pork
+- alcohol_free: DANGER if contains alcohol
+- garlic_onion_free: DANGER if contains garlic/onion
 
 OUTPUT:`;
 
@@ -643,7 +667,7 @@ async function callGeminiAnalysis(
 
   // responseSchema를 활용한 모델 설정
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash-preview-09-2025',
+    model: 'gemini-3-flash-preview',
     generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: {
@@ -660,9 +684,14 @@ async function callGeminiAnalysis(
               type: 'object',
               properties: {
                 id: { type: 'string' },
-                name: {
+                original_name: {
                   type: 'string',
-                  description: 'Menu name (translated if needed)',
+                  description:
+                    'Original menu name as shown in the image (in original language)',
+                },
+                translated_name: {
+                  type: 'string',
+                  description: 'Menu name translated to user language',
                 },
                 status: { type: 'string', enum: ['SAFE', 'CAUTION', 'DANGER'] },
                 reason: {
@@ -683,7 +712,8 @@ async function callGeminiAnalysis(
               },
               required: [
                 'id',
-                'name',
+                'original_name',
+                'translated_name',
                 'status',
                 'reason',
                 'allergens',
@@ -711,17 +741,35 @@ async function callGeminiAnalysis(
 DIET RESTRICTION RULES:
 - vegetarian: DANGER if contains meat/poultry/fish/seafood
 - vegan: DANGER if contains any animal product (meat/dairy/eggs/honey)
+- lacto_vegetarian: DANGER if contains meat/poultry/fish/seafood/eggs
+- ovo_vegetarian: DANGER if contains meat/poultry/fish/seafood/dairy
+- pesco_vegetarian: DANGER if contains meat/poultry
+- flexitarian: DANGER if contains meat/poultry/fish/seafood
 - halal: DANGER if contains pork/alcohol
 - kosher: DANGER if contains pork/shellfish or mixed meat-dairy
-- gluten_free: DANGER if contains wheat/gluten/flour/pasta/bread`
+- buddhist_vegetarian: DANGER if contains meat/poultry/fish/seafood/garlic/onion
+- gluten_free: DANGER if contains wheat/gluten/flour/pasta/bread
+- pork_free: DANGER if contains pork
+- alcohol_free: DANGER if contains alcohol
+- garlic_onion_free: DANGER if contains garlic/onion`
       : '';
+
+  // 언어 코드를 AI가 이해하기 쉬운 전체 언어 이름으로 변환
+  const languageNames: Record<string, string> = {
+    ko: 'Korean',
+    en: 'English',
+    ja: 'Japanese',
+    zh: 'Chinese',
+    es: 'Spanish',
+  };
+  const targetLanguage = languageNames[language] || 'English';
 
   const prompt = `Analyze menu image for food allergies and dietary restrictions.
 
 ALLERGIES: ${allergyCodes}
 DIET: ${dietType}
 USER_DIETS: ${userDiets.join(', ') || 'None'}
-LANG: ${language}
+TARGET_LANGUAGE: ${targetLanguage}
 ${menuHints ? `HINTS: ${menuHints}` : ''}
 
 ALLERGY RULES:
@@ -733,8 +781,9 @@ ${dietRules}
 GENERAL RULES:
 - Check BOTH allergies AND diet restrictions
 - Be conservative: if unsure → CAUTION
-- Translate menu names to ${language}
-- Keep reason brief (1 sentence)
+- original_name: Keep the EXACT menu name as shown in the image (in original language, e.g., Japanese, Chinese, etc.)
+- translated_name: Translate menu name to ${targetLanguage}. MUST be in ${targetLanguage}, not English or Korean unless that is the target.
+- Keep reason brief (1 sentence, in ${targetLanguage})
 - Include diet_violations array for any diet restriction violations`;
 
   // 📊 프롬프트 글자 수 기록
@@ -764,8 +813,8 @@ GENERAL RULES:
 
     return {
       id: item.id,
-      original_name: item.name,
-      translated_name: item.name,
+      original_name: item.original_name || item.name || '',
+      translated_name: item.translated_name || item.name || '',
       description: '',
       safety_status: item.status,
       reason: item.reason,

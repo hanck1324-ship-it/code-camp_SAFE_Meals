@@ -11,26 +11,32 @@ import { getSupabaseClient } from '@/lib/supabase';
 // UI diet ID를 DB diet_code로 변환하는 매핑
 const DIET_ID_TO_CODE: Record<string, string> = {
   strictVegan: 'vegan',
-  lactoVegetarian: 'vegetarian',
-  ovoVegetarian: 'vegetarian',
-  pescoVegetarian: 'vegetarian',
-  flexitarian: 'vegetarian',
+  lactoVegetarian: 'lacto_vegetarian',
+  ovoVegetarian: 'ovo_vegetarian',
+  pescoVegetarian: 'pesco_vegetarian',
+  flexitarian: 'flexitarian',
   halal: 'halal',
   kosher: 'kosher',
-  buddhistVegetarian: 'vegetarian',
-  porkFree: 'halal', // 돼지고기 회피는 할랄과 유사
-  alcoholFree: 'halal', // 알코올 회피도 할랄과 유사
-  garlicOnionFree: 'vegetarian', // 오신채 회피는 채식과 유사
+  buddhistVegetarian: 'buddhist_vegetarian',
+  porkFree: 'pork_free',
+  alcoholFree: 'alcohol_free',
+  garlicOnionFree: 'garlic_onion_free',
 };
 
 // DB diet_code를 UI diet ID로 변환하는 매핑 (역변환)
 const DIET_CODE_TO_ID: Record<string, string> = {
   vegan: 'strictVegan',
   vegetarian: 'lactoVegetarian',
+  lacto_vegetarian: 'lactoVegetarian',
+  ovo_vegetarian: 'ovoVegetarian',
+  pesco_vegetarian: 'pescoVegetarian',
+  flexitarian: 'flexitarian',
   halal: 'halal',
   kosher: 'kosher',
-  gluten_free: 'porkFree',
-  lactose_free: 'porkFree',
+  buddhist_vegetarian: 'buddhistVegetarian',
+  pork_free: 'porkFree',
+  alcohol_free: 'alcoholFree',
+  garlic_onion_free: 'garlicOnionFree',
 };
 
 function DietDetailContent() {
@@ -81,16 +87,7 @@ function DietDetailContent() {
   }, []);
 
   const handleComplete = async (diets: string[]) => {
-    // 빈 배열이면 저장하지 않고 완료 (기존 데이터 유지)
-    if (diets.length === 0) {
-      if (isEditMode) {
-        router.replace('/profile/settings');
-      } else {
-        completeOnboarding();
-        router.replace('/dashboard');
-      }
-      return;
-    }
+    const isEmptySelection = diets.length === 0;
 
     setIsSaving(true);
     try {
@@ -103,12 +100,6 @@ function DietDetailContent() {
       } = await supabase.auth.getUser();
       if (authError || !user) {
         console.error('로그인이 필요합니다.');
-        if (isEditMode) {
-          router.replace('/profile/settings');
-        } else {
-          completeOnboarding();
-          router.replace('/dashboard');
-        }
         return;
       }
 
@@ -124,7 +115,7 @@ function DietDetailContent() {
       console.log('UI diets:', diets);
       console.log('변환된 diet codes:', dietCodes);
 
-      // 기존 식단 데이터 삭제
+      // 기존 식단 데이터 삭제 (선택 없음 포함)
       await supabase.from('user_diets').delete().eq('user_id', user.id);
 
       // 새 식단 데이터 삽입
@@ -150,6 +141,9 @@ function DietDetailContent() {
       setIsSaving(false);
       if (isEditMode) {
         router.replace('/profile/settings');
+      } else if (isEmptySelection) {
+        completeOnboarding();
+        router.replace('/dashboard');
       } else {
         // 온보딩 완료는 Safety Card 설정 후에 처리
         // Safety Card 설정 페이지로 이동

@@ -4,8 +4,55 @@
  * scan_history + scan_results 테이블에 저장하기 위한 타입 정의
  *
  * @see 38prompts.401.scan-history-save.txt
+ * @see 39prompts.401.scan-image-storage.txt
  * @see docs/schema.md
  */
+
+// ============================================
+// 이미지 스토리지 관련 타입 정의
+// ============================================
+
+/**
+ * 이미지 업로드 파라미터
+ */
+export interface ImageUploadParams {
+  /** 사용자 ID (Storage 경로에 사용) */
+  userId: string;
+  /** 스캔 ID (파일명에 사용) */
+  scanId: string;
+  /** Base64 또는 Data URL 형식의 이미지 데이터 */
+  imageData: string;
+  /** 이미지 MIME 타입 (기본값: image/webp) */
+  contentType?: 'image/jpeg' | 'image/png' | 'image/webp';
+}
+
+/**
+ * 이미지 업로드 결과
+ */
+export interface ImageUploadResult {
+  /** 업로드 성공 여부 */
+  success: boolean;
+  /** 공개 접근 가능한 URL (성공 시) */
+  publicUrl?: string;
+  /** Storage 내 파일 경로 (성공 시) */
+  storagePath?: string;
+  /** 에러 메시지 (실패 시) */
+  error?: string;
+}
+
+/**
+ * 이미지 처리 옵션 (클라이언트 사이드 리사이징 권장)
+ */
+export interface ImageProcessOptions {
+  /** 최대 너비 (기본값: 1200) */
+  maxWidth?: number;
+  /** 최대 높이 (기본값: 1200) */
+  maxHeight?: number;
+  /** 압축 품질 0-100 (기본값: 80) */
+  quality?: number;
+  /** 출력 포맷 (기본값: webp) */
+  format?: 'webp' | 'jpeg';
+}
 
 // ============================================
 // 타입 정의
@@ -77,6 +124,8 @@ export interface SaveScanParams {
   jobId?: string | null; // 중복 저장 방지용
   scanType: ScanType;
   imageUrl?: string | null;
+  /** Base64 이미지 데이터 (Storage 업로드용) */
+  imageData?: string | null;
   restaurantName?: string | null;
   location?: LocationData | null;
   results: ScanResultItem[];
@@ -90,6 +139,8 @@ export interface SaveScanResult {
   scanId?: string;
   resultIds?: string[];
   error?: string;
+  /** 이미지 업로드 소요 시간 (ms) */
+  imageUploadMs?: number;
 }
 
 // ============================================

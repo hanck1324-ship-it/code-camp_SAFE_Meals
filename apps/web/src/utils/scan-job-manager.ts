@@ -15,6 +15,7 @@
  */
 
 import { randomUUID } from 'crypto';
+import type { Language } from '@/lib/translations';
 
 // ============================================
 // 타입 정의
@@ -25,6 +26,9 @@ export type SafetyLevel = 'SAFE' | 'CAUTION' | 'DANGER';
 
 /** 신뢰도 등급 */
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
+
+const QUICK_LANGUAGES = ['ko', 'en', 'ja', 'zh', 'es'] as const;
+type QuickLanguage = (typeof QUICK_LANGUAGES)[number];
 
 /** Job 상태 */
 export type JobStatus = 'PENDING' | 'FINAL' | 'ERROR';
@@ -87,6 +91,8 @@ export interface ScanTimings {
   tokenOptimizeMs?: number;
   /** 스캔 이력 저장 시간 (ms) */
   saveMs?: number;
+  /** 이미지 Storage 업로드 시간 (ms) */
+  imageUploadMs?: number;
   /** 에러 메시지 */
   error?: string;
 }
@@ -448,9 +454,450 @@ export const ALLERGY_CODE_TO_LABEL: Record<string, string> = {
 export const DIET_CODE_TO_LABEL: Record<string, string> = {
   vegetarian: '채식주의',
   vegan: '비건',
+  lacto_vegetarian: '락토 채식',
+  ovo_vegetarian: '오보 채식',
+  pesco_vegetarian: '페스코 채식',
+  flexitarian: '플렉시테리언',
   halal: '할랄',
   kosher: '코셔',
+  buddhist_vegetarian: '불교 채식',
   gluten_free: '글루텐 프리',
+  pork_free: '돼지고기 제외',
+  alcohol_free: '무알코올',
+  garlic_onion_free: '마늘/양파 제외',
+};
+
+const ALLERGY_CODE_TO_LABEL_EN: Record<string, string> = {
+  eggs: 'Eggs',
+  milk: 'Milk/Dairy',
+  peanuts: 'Peanuts',
+  tree_nuts: 'Tree nuts',
+  fish: 'Fish',
+  shellfish: 'Shellfish',
+  wheat: 'Wheat/Gluten',
+  soy: 'Soy',
+  sesame: 'Sesame',
+  pork: 'Pork',
+  beef: 'Beef',
+  chicken: 'Chicken',
+  lamb: 'Lamb',
+  buckwheat: 'Buckwheat',
+  peach: 'Peach',
+  tomato: 'Tomato',
+  sulfites: 'Sulfites',
+  mustard: 'Mustard',
+  celery: 'Celery',
+  lupin: 'Lupin',
+  mollusks: 'Mollusks',
+  alcohol: 'Alcohol',
+};
+
+const ALLERGY_CODE_TO_LABEL_JA: Record<string, string> = {
+  eggs: '卵',
+  milk: '牛乳/乳製品',
+  peanuts: 'ピーナッツ',
+  tree_nuts: 'ナッツ類',
+  fish: '魚',
+  shellfish: '甲殻類/貝類',
+  wheat: '小麦/グルテン',
+  soy: '大豆',
+  sesame: 'ごま',
+  pork: '豚肉',
+  beef: '牛肉',
+  chicken: '鶏肉',
+  lamb: '羊肉',
+  buckwheat: 'そば',
+  peach: '桃',
+  tomato: 'トマト',
+  sulfites: '亜硫酸塩',
+  mustard: 'からし',
+  celery: 'セロリ',
+  lupin: 'ルピナス',
+  mollusks: '軟体類',
+  alcohol: 'アルコール',
+};
+
+const ALLERGY_CODE_TO_LABEL_ZH: Record<string, string> = {
+  eggs: '鸡蛋',
+  milk: '牛奶/乳制品',
+  peanuts: '花生',
+  tree_nuts: '树坚果',
+  fish: '鱼',
+  shellfish: '甲壳类/贝类',
+  wheat: '小麦/麸质',
+  soy: '大豆',
+  sesame: '芝麻',
+  pork: '猪肉',
+  beef: '牛肉',
+  chicken: '鸡肉',
+  lamb: '羊肉',
+  buckwheat: '荞麦',
+  peach: '桃子',
+  tomato: '番茄',
+  sulfites: '亚硫酸盐',
+  mustard: '芥末',
+  celery: '芹菜',
+  lupin: '羽扇豆',
+  mollusks: '软体类',
+  alcohol: '酒精',
+};
+
+const ALLERGY_CODE_TO_LABEL_ES: Record<string, string> = {
+  eggs: 'Huevos',
+  milk: 'Leche/Lácteos',
+  peanuts: 'Cacahuetes',
+  tree_nuts: 'Frutos secos',
+  fish: 'Pescado',
+  shellfish: 'Mariscos',
+  wheat: 'Trigo/Gluten',
+  soy: 'Soja',
+  sesame: 'Sésamo',
+  pork: 'Cerdo',
+  beef: 'Carne de res',
+  chicken: 'Pollo',
+  lamb: 'Cordero',
+  buckwheat: 'Trigo sarraceno',
+  peach: 'Melocotón',
+  tomato: 'Tomate',
+  sulfites: 'Sulfitos',
+  mustard: 'Mostaza',
+  celery: 'Apio',
+  lupin: 'Altramuz',
+  mollusks: 'Moluscos',
+  alcohol: 'Alcohol',
+};
+
+const DIET_CODE_TO_LABEL_EN: Record<string, string> = {
+  vegetarian: 'Vegetarian',
+  vegan: 'Vegan',
+  lacto_vegetarian: 'Lacto-vegetarian',
+  ovo_vegetarian: 'Ovo-vegetarian',
+  pesco_vegetarian: 'Pescatarian',
+  flexitarian: 'Flexitarian',
+  halal: 'Halal',
+  kosher: 'Kosher',
+  buddhist_vegetarian: 'Buddhist vegetarian',
+  gluten_free: 'Gluten-free',
+  pork_free: 'Pork-free',
+  alcohol_free: 'Alcohol-free',
+  garlic_onion_free: 'Garlic/onion-free',
+};
+
+const DIET_CODE_TO_LABEL_JA: Record<string, string> = {
+  vegetarian: 'ベジタリアン',
+  vegan: 'ヴィーガン',
+  lacto_vegetarian: 'ラクト・ベジタリアン',
+  ovo_vegetarian: 'オボ・ベジタリアン',
+  pesco_vegetarian: 'ペスコ・ベジタリアン',
+  flexitarian: 'フレキシタリアン',
+  halal: 'ハラール',
+  kosher: 'コーシャ',
+  buddhist_vegetarian: '仏教菜食',
+  gluten_free: 'グルテンフリー',
+  pork_free: '豚肉不使用',
+  alcohol_free: 'アルコール不使用',
+  garlic_onion_free: 'にんにく/玉ねぎ不使用',
+};
+
+const DIET_CODE_TO_LABEL_ZH: Record<string, string> = {
+  vegetarian: '素食',
+  vegan: '纯素',
+  lacto_vegetarian: '奶素',
+  ovo_vegetarian: '蛋素',
+  pesco_vegetarian: '鱼素',
+  flexitarian: '弹性素食',
+  halal: '清真',
+  kosher: '犹太洁食',
+  buddhist_vegetarian: '佛教素食',
+  gluten_free: '无麸质',
+  pork_free: '不含猪肉',
+  alcohol_free: '无酒精',
+  garlic_onion_free: '不含大蒜/洋葱',
+};
+
+const DIET_CODE_TO_LABEL_ES: Record<string, string> = {
+  vegetarian: 'Vegetariano',
+  vegan: 'Vegano',
+  lacto_vegetarian: 'Lacto-vegetariano',
+  ovo_vegetarian: 'Ovo-vegetariano',
+  pesco_vegetarian: 'Pescetariano',
+  flexitarian: 'Flexitariano',
+  halal: 'Halal',
+  kosher: 'Kosher',
+  buddhist_vegetarian: 'Vegetariano budista',
+  gluten_free: 'Sin gluten',
+  pork_free: 'Sin cerdo',
+  alcohol_free: 'Sin alcohol',
+  garlic_onion_free: 'Sin ajo/cebolla',
+};
+
+const ALLERGY_CODE_TO_LABELS: Record<QuickLanguage, Record<string, string>> = {
+  ko: ALLERGY_CODE_TO_LABEL,
+  en: ALLERGY_CODE_TO_LABEL_EN,
+  ja: ALLERGY_CODE_TO_LABEL_JA,
+  zh: ALLERGY_CODE_TO_LABEL_ZH,
+  es: ALLERGY_CODE_TO_LABEL_ES,
+};
+
+const DIET_CODE_TO_LABELS: Record<QuickLanguage, Record<string, string>> = {
+  ko: DIET_CODE_TO_LABEL,
+  en: DIET_CODE_TO_LABEL_EN,
+  ja: DIET_CODE_TO_LABEL_JA,
+  zh: DIET_CODE_TO_LABEL_ZH,
+  es: DIET_CODE_TO_LABEL_ES,
+};
+
+const normalizeQuickLanguage = (language: Language): QuickLanguage =>
+  QUICK_LANGUAGES.includes(language) ? language : 'en';
+
+const getAllergyLabel = (code: string, language: Language): string => {
+  const quickLanguage = normalizeQuickLanguage(language);
+  const labels =
+    ALLERGY_CODE_TO_LABELS[quickLanguage] || ALLERGY_CODE_TO_LABEL_EN;
+  return labels[code] || ALLERGY_CODE_TO_LABEL_EN[code] || code;
+};
+
+const getDietLabel = (code: string, language: Language): string => {
+  const quickLanguage = normalizeQuickLanguage(language);
+  const labels = DIET_CODE_TO_LABELS[quickLanguage] || DIET_CODE_TO_LABEL_EN;
+  return labels[code] || DIET_CODE_TO_LABEL_EN[code] || code;
+};
+
+const formatLabelList = (labels: string[], language: Language): string => {
+  const quickLanguage = normalizeQuickLanguage(language);
+  const separator =
+    quickLanguage === 'ja' || quickLanguage === 'zh' ? '、' : ', ';
+  return labels.join(separator);
+};
+
+const SUMMARY_TEXTS: Record<
+  QuickLanguage,
+  {
+    ocrFailed: string;
+    textTooShort: string;
+    cautionKeyword: string;
+    ocrLow: string;
+    safe: string;
+  }
+> = {
+  ko: {
+    ocrFailed: '텍스트 인식에 실패했습니다. AI 분석 결과를 기다려주세요.',
+    textTooShort: '메뉴 정보가 충분하지 않습니다. 직원에게 확인하세요.',
+    cautionKeyword: '숨겨진 재료가 있을 수 있습니다. 직원에게 확인하세요.',
+    ocrLow: '메뉴 정보가 명확하지 않습니다. 직원에게 확인을 권장합니다.',
+    safe: '1차 검사 결과 위험 요소가 감지되지 않았습니다. 최종 분석을 기다려주세요.',
+  },
+  en: {
+    ocrFailed: 'Text recognition failed. Please wait for the AI analysis.',
+    textTooShort: 'Menu information is insufficient. Please ask the staff.',
+    cautionKeyword: 'Hidden ingredients may be present. Please ask the staff.',
+    ocrLow:
+      'Menu information is unclear. We recommend confirming with the staff.',
+    safe: 'No risk factors detected in the preliminary check. Please wait for the final analysis.',
+  },
+  ja: {
+    ocrFailed: 'テキストの認識に失敗しました。AI分析の結果をお待ちください。',
+    textTooShort:
+      'メニュー情報が十分ではありません。スタッフに確認してください。',
+    cautionKeyword:
+      '隠れた材料が含まれている可能性があります。スタッフに確認してください。',
+    ocrLow: 'メニュー情報が不明確です。スタッフへの確認をおすすめします。',
+    safe: '一次検査で危険要素は検出されませんでした。最終分析をお待ちください。',
+  },
+  zh: {
+    ocrFailed: '文本识别失败。请等待 AI 分析结果。',
+    textTooShort: '菜单信息不足。请向店员确认。',
+    cautionKeyword: '可能含有隐藏配料。请向店员确认。',
+    ocrLow: '菜单信息不清晰，建议向店员确认。',
+    safe: '初步检查未发现风险因素。请等待最终分析。',
+  },
+  es: {
+    ocrFailed: 'No se pudo reconocer el texto. Espera el análisis de la IA.',
+    textTooShort:
+      'La información del menú es insuficiente. Consulta al personal.',
+    cautionKeyword: 'Puede haber ingredientes ocultos. Consulta al personal.',
+    ocrLow:
+      'La información del menú no es clara. Se recomienda confirmar con el personal.',
+    safe: 'No se detectaron riesgos en la revisión preliminar. Espera el análisis final.',
+  },
+};
+
+const DANGER_SUMMARY_TEMPLATES: Record<
+  QuickLanguage,
+  (labels: string) => string
+> = {
+  ko: (labels) => `${labels} 포함 가능성이 높습니다. 직원에게 확인하세요.`,
+  en: (labels) => `Likely contains ${labels}. Please ask the staff.`,
+  ja: (labels) =>
+    `${labels}が含まれている可能性が高いです。スタッフに確認してください。`,
+  zh: (labels) => `很可能包含${labels}。请向店员确认。`,
+  es: (labels) => `Es probable que contenga ${labels}. Consulta al personal.`,
+};
+
+const DEFAULT_STAFF_QUESTIONS: Record<
+  QuickLanguage,
+  {
+    allergy: (labels: string) => string;
+    diet: (label: string) => string;
+    general: string;
+  }
+> = {
+  ko: {
+    allergy: (labels) => `이 요리에 ${labels} 등이 들어가나요?`,
+    diet: (label) => `이 요리가 ${label} 식단에 적합한가요?`,
+    general: '이 요리의 주요 재료를 알려주시겠어요?',
+  },
+  en: {
+    allergy: (labels) => `Does this dish contain ${labels}?`,
+    diet: (label) => `Is this dish suitable for a ${label} diet?`,
+    general: 'Could you tell me the main ingredients of this dish?',
+  },
+  ja: {
+    allergy: (labels) => `この料理に${labels}が入っていますか？`,
+    diet: (label) => `この料理は${label}の食事に適していますか？`,
+    general: 'この料理の主な材料を教えていただけますか？',
+  },
+  zh: {
+    allergy: (labels) => `这道菜里有${labels}吗？`,
+    diet: (label) => `这道菜适合${label}饮食吗？`,
+    general: '可以告诉我这道菜的主要配料吗？',
+  },
+  es: {
+    allergy: (labels) => `¿Este plato contiene ${labels}?`,
+    diet: (label) => `¿Este plato es adecuado para una dieta ${label}?`,
+    general: '¿Podría decirme los ingredientes principales de este plato?',
+  },
+};
+
+const ALLERGY_QUESTION_DEFAULT: Record<
+  QuickLanguage,
+  (label: string) => string
+> = {
+  ko: (label) => `이 요리에 ${label}이(가) 들어가나요?`,
+  en: (label) => `Does this dish contain ${label}?`,
+  ja: (label) => `この料理に${label}が入っていますか？`,
+  zh: (label) => `这道菜里有${label}吗？`,
+  es: (label) => `¿Este plato contiene ${label}?`,
+};
+
+const ALLERGY_QUESTION_OVERRIDES: Record<
+  QuickLanguage,
+  Record<string, string>
+> = {
+  ko: {
+    shellfish: '이 요리에 새우, 게, 랍스터 등 갑각류가 들어가나요?',
+    pork: '육수나 조미료에 돼지고기가 들어가나요?',
+    eggs: '이 요리에 계란이 들어가나요?',
+    milk: '이 요리에 우유나 유제품이 들어가나요?',
+  },
+  en: {
+    shellfish:
+      'Does this dish contain shellfish like shrimp, crab, or lobster?',
+    pork: 'Does the broth or seasoning contain pork?',
+    eggs: 'Does this dish contain eggs?',
+    milk: 'Does this dish contain milk or dairy?',
+  },
+  ja: {
+    shellfish: 'この料理にエビ、カニ、ロブスターなどの甲殻類が入っていますか？',
+    pork: 'だしや調味料に豚肉が使われていますか？',
+    eggs: 'この料理に卵が入っていますか？',
+    milk: 'この料理に牛乳や乳製品が入っていますか？',
+  },
+  zh: {
+    shellfish: '这道菜里有虾、蟹、龙虾等甲壳类吗？',
+    pork: '高汤或调味料里有猪肉吗？',
+    eggs: '这道菜里有鸡蛋吗？',
+    milk: '这道菜里有牛奶或乳制品吗？',
+  },
+  es: {
+    shellfish:
+      '¿Este plato contiene mariscos como camarón, cangrejo o langosta?',
+    pork: '¿El caldo o el condimento contiene cerdo?',
+    eggs: '¿Este plato contiene huevo?',
+    milk: '¿Este plato contiene leche o lácteos?',
+  },
+};
+
+const DIET_QUESTION_OVERRIDES: Record<QuickLanguage, Record<string, string>> = {
+  ko: {
+    halal: '이 요리는 할랄 인증을 받았나요? 돼지고기나 알코올이 없나요?',
+    vegan: '이 요리에 동물성 재료(고기/달걀/우유/꿀)가 전혀 없나요?',
+    vegetarian: '이 요리에 고기나 해산물이 들어가나요?',
+    lacto_vegetarian: '이 요리에 고기, 생선, 계란이 들어가나요?',
+    ovo_vegetarian: '이 요리에 고기, 생선, 유제품이 들어가나요?',
+    pesco_vegetarian: '이 요리에 고기나 닭고기가 들어가나요?',
+    flexitarian: '이 요리에 고기나 해산물이 들어가나요?',
+    kosher: '이 요리는 코셔 규정을 따르나요?',
+    buddhist_vegetarian: '이 요리에 고기나 마늘/양파가 들어가나요?',
+    gluten_free: '이 요리에 밀가루나 글루텐이 들어가나요?',
+    pork_free: '이 요리에 돼지고기나 돼지 육수가 들어가나요?',
+    alcohol_free: '이 요리에 알코올(술, 와인 등)이 들어가나요?',
+    garlic_onion_free: '이 요리에 마늘이나 양파가 들어가나요?',
+  },
+  en: {
+    halal: 'Is this dish halal? Does it contain pork or alcohol?',
+    vegan:
+      'Does this dish contain any animal products (meat/eggs/dairy/honey)?',
+    vegetarian: 'Does this dish contain meat or seafood?',
+    lacto_vegetarian: 'Does this dish contain meat, fish, or eggs?',
+    ovo_vegetarian: 'Does this dish contain meat, fish, or dairy?',
+    pesco_vegetarian: 'Does this dish contain meat or poultry?',
+    flexitarian: 'Does this dish contain meat or seafood?',
+    kosher: 'Does this dish follow kosher guidelines?',
+    buddhist_vegetarian: 'Does this dish contain meat, garlic, or onion?',
+    gluten_free: 'Does this dish contain wheat or gluten?',
+    pork_free: 'Does this dish contain pork or pork-based broth?',
+    alcohol_free: 'Does this dish contain alcohol (wine, spirits, etc.)?',
+    garlic_onion_free: 'Does this dish contain garlic or onion?',
+  },
+  ja: {
+    halal: 'この料理はハラール認証ですか？豚肉やアルコールは含まれていますか？',
+    vegan:
+      'この料理に動物性食材（肉・卵・乳製品・はちみつ）は一切含まれていませんか？',
+    vegetarian: 'この料理に肉や魚介類が入っていますか？',
+    lacto_vegetarian: 'この料理に肉、魚、卵が入っていますか？',
+    ovo_vegetarian: 'この料理に肉、魚、乳製品が入っていますか？',
+    pesco_vegetarian: 'この料理に肉や鶏肉が入っていますか？',
+    flexitarian: 'この料理に肉や魚介類が入っていますか？',
+    kosher: 'この料理はコーシャの規定に従っていますか？',
+    buddhist_vegetarian: 'この料理に肉やにんにく/玉ねぎが入っていますか？',
+    gluten_free: 'この料理に小麦やグルテンが入っていますか？',
+    pork_free: 'この料理に豚肉や豚骨だしが入っていますか？',
+    alcohol_free:
+      'この料理にアルコール（ワイン、蒸留酒など）が入っていますか？',
+    garlic_onion_free: 'この料理ににんにくや玉ねぎが入っていますか？',
+  },
+  zh: {
+    halal: '这道菜是清真的吗？是否含有猪肉或酒精？',
+    vegan: '这道菜完全不含动物性食材（肉/蛋/奶/蜂蜜）吗？',
+    vegetarian: '这道菜里有肉或海鲜吗？',
+    lacto_vegetarian: '这道菜里有肉、鱼或鸡蛋吗？',
+    ovo_vegetarian: '这道菜里有肉、鱼或乳制品吗？',
+    pesco_vegetarian: '这道菜里有肉或禽肉吗？',
+    flexitarian: '这道菜里有肉或海鲜吗？',
+    kosher: '这道菜符合犹太洁食规定吗？',
+    buddhist_vegetarian: '这道菜里有肉或大蒜/洋葱吗？',
+    gluten_free: '这道菜里有小麦或麸质吗？',
+    pork_free: '这道菜里有猪肉或猪骨高汤吗？',
+    alcohol_free: '这道菜里含有酒精（葡萄酒、烈酒等）吗？',
+    garlic_onion_free: '这道菜里有大蒜或洋葱吗？',
+  },
+  es: {
+    halal: '¿Este plato es halal? ¿Contiene cerdo o alcohol?',
+    vegan:
+      '¿Este plato no contiene ningún producto animal (carne/huevo/lácteos/miel)?',
+    vegetarian: '¿Este plato contiene carne o mariscos?',
+    lacto_vegetarian: '¿Este plato contiene carne, pescado o huevo?',
+    ovo_vegetarian: '¿Este plato contiene carne, pescado o lácteos?',
+    pesco_vegetarian: '¿Este plato contiene carne o aves?',
+    flexitarian: '¿Este plato contiene carne o mariscos?',
+    kosher: '¿Este plato cumple con las normas kosher?',
+    buddhist_vegetarian: '¿Este plato contiene carne o ajo/cebolla?',
+    gluten_free: '¿Este plato contiene trigo o gluten?',
+    pork_free: '¿Este plato contiene cerdo o caldo de cerdo?',
+    alcohol_free: '¿Este plato contiene alcohol (vino, licores, etc.)?',
+    garlic_onion_free: '¿Este plato contiene ajo o cebolla?',
+  },
 };
 
 // ============================================
@@ -518,18 +965,40 @@ export const CAUTION_KEYWORDS = [
   '조림',
 ];
 
+const VEGETARIAN_BASE_KEYWORDS = [
+  '고기',
+  '육류',
+  'meat',
+  '소고기',
+  '돼지',
+  '닭',
+  '생선',
+  '해산물',
+];
+const EGG_KEYWORDS = ['계란', '달걀', 'egg', '에그'];
+const DAIRY_KEYWORDS = [
+  '우유',
+  '치즈',
+  '버터',
+  'milk',
+  'cheese',
+  'cream',
+  '크림',
+  '유제품',
+];
+const GARLIC_ONION_KEYWORDS = [
+  '마늘',
+  '양파',
+  '파',
+  '대파',
+  '쪽파',
+  'garlic',
+  'onion',
+];
+
 /** 식단별 위험 키워드 */
 export const DIET_DANGER_KEYWORDS: Record<string, string[]> = {
-  vegetarian: [
-    '고기',
-    '육류',
-    'meat',
-    '소고기',
-    '돼지',
-    '닭',
-    '생선',
-    '해산물',
-  ],
+  vegetarian: VEGETARIAN_BASE_KEYWORDS,
   vegan: [
     '고기',
     '육류',
@@ -541,9 +1010,26 @@ export const DIET_DANGER_KEYWORDS: Record<string, string[]> = {
     '유제품',
     'dairy',
   ],
+  lacto_vegetarian: [...VEGETARIAN_BASE_KEYWORDS, ...EGG_KEYWORDS],
+  ovo_vegetarian: [...VEGETARIAN_BASE_KEYWORDS, ...DAIRY_KEYWORDS],
+  pesco_vegetarian: ['고기', '육류', 'meat', '소고기', '돼지', '닭'],
+  flexitarian: VEGETARIAN_BASE_KEYWORDS,
   halal: ['돼지', 'pork', '베이컨', '햄', '알코올', 'alcohol', '술', '와인'],
   kosher: ['돼지', 'pork', '갑각류', 'shellfish', '새우', '게'],
+  buddhist_vegetarian: [...VEGETARIAN_BASE_KEYWORDS, ...GARLIC_ONION_KEYWORDS],
   gluten_free: ['밀', 'wheat', '글루텐', 'gluten', '빵', '면', '파스타'],
+  pork_free: ['돼지', 'pork', '베이컨', '햄'],
+  alcohol_free: [
+    '알코올',
+    '술',
+    '맥주',
+    '와인',
+    '소주',
+    'alcohol',
+    'beer',
+    'wine',
+  ],
+  garlic_onion_free: GARLIC_ONION_KEYWORDS,
 };
 
 // ============================================
@@ -567,18 +1053,25 @@ export function performQuickAnalysis(
   ocrText: string,
   userAllergies: string[],
   userDiets: string[],
+  language: Language = 'ko',
   ocrConfidence: ConfidenceLevel = 'medium',
   ocrFailed: boolean = false
 ): QuickResult {
+  const quickLanguage = normalizeQuickLanguage(language);
+  const summaryTextByLanguage = SUMMARY_TEXTS[quickLanguage];
   // 🚨 OCR API 완전 실패 시 조기 반환
   // 이 경우 텍스트가 없어 1차 판정 불가 → Gemini AI 분석에 의존해야 함
   if (ocrFailed && ocrText.trim().length === 0) {
     return {
       level: 'CAUTION',
-      summaryText: '텍스트 인식에 실패했습니다. AI 분석 결과를 기다려주세요.',
+      summaryText: summaryTextByLanguage.ocrFailed,
       triggerCodes: ['_OCR_FAILED'],
       triggerLabels: [],
-      questionForStaff: generateDefaultStaffQuestion(userAllergies, userDiets),
+      questionForStaff: generateDefaultStaffQuestion(
+        userAllergies,
+        userDiets,
+        language
+      ),
       confidence: 'low',
     };
   }
@@ -587,10 +1080,14 @@ export function performQuickAnalysis(
   if (ocrText.trim().length < 10) {
     return {
       level: 'CAUTION',
-      summaryText: '메뉴 정보가 충분하지 않습니다. 직원에게 확인하세요.',
+      summaryText: summaryTextByLanguage.textTooShort,
       triggerCodes: ['_TEXT_TOO_SHORT'],
       triggerLabels: [],
-      questionForStaff: generateDefaultStaffQuestion(userAllergies, userDiets),
+      questionForStaff: generateDefaultStaffQuestion(
+        userAllergies,
+        userDiets,
+        language
+      ),
       confidence: ocrConfidence,
     };
   }
@@ -606,7 +1103,7 @@ export function performQuickAnalysis(
       if (lowerText.includes(keyword.toLowerCase())) {
         if (!triggerCodes.includes(allergyCode)) {
           triggerCodes.push(allergyCode);
-          triggerLabels.push(ALLERGY_CODE_TO_LABEL[allergyCode] || allergyCode);
+          triggerLabels.push(getAllergyLabel(allergyCode, language));
         }
         break;
       }
@@ -621,7 +1118,7 @@ export function performQuickAnalysis(
       if (lowerText.includes(keyword.toLowerCase())) {
         if (!dietTriggers.includes(dietCode)) {
           dietTriggers.push(dietCode);
-          triggerLabels.push(DIET_CODE_TO_LABEL[dietCode] || dietCode);
+          triggerLabels.push(getDietLabel(dietCode, language));
         }
         break;
       }
@@ -644,20 +1141,21 @@ export function performQuickAnalysis(
   if (triggerCodes.length > 0 || dietTriggers.length > 0) {
     // 명확한 위험 키워드 발견 → DANGER
     level = 'DANGER';
-    summaryText = `${triggerLabels.join(', ')} 포함 가능성이 높습니다. 직원에게 확인하세요.`;
+    summaryText = DANGER_SUMMARY_TEMPLATES[quickLanguage](
+      formatLabelList(triggerLabels, language)
+    );
   } else if (hasCautionKeyword) {
     // 의심스러운 키워드 발견 → CAUTION
     level = 'CAUTION';
-    summaryText = '숨겨진 재료가 있을 수 있습니다. 직원에게 확인하세요.';
+    summaryText = summaryTextByLanguage.cautionKeyword;
   } else if (ocrConfidence === 'low') {
     // OCR 품질이 낮음 → CAUTION
     level = 'CAUTION';
-    summaryText = '메뉴 정보가 명확하지 않습니다. 직원에게 확인을 권장합니다.';
+    summaryText = summaryTextByLanguage.ocrLow;
   } else {
     // 모든 조건 만족 → SAFE (보수적)
     level = 'SAFE';
-    summaryText =
-      '1차 검사 결과 위험 요소가 감지되지 않았습니다. 최종 분석을 기다려주세요.';
+    summaryText = summaryTextByLanguage.safe;
   }
 
   // 5. 질문 생성
@@ -665,7 +1163,8 @@ export function performQuickAnalysis(
     triggerCodes,
     dietTriggers,
     userAllergies,
-    userDiets
+    userDiets,
+    language
   );
 
   return {
@@ -683,25 +1182,27 @@ export function performQuickAnalysis(
  */
 function generateDefaultStaffQuestion(
   userAllergies: string[],
-  userDiets: string[]
+  userDiets: string[],
+  language: Language
 ): string {
+  const quickLanguage = normalizeQuickLanguage(language);
+  const templates = DEFAULT_STAFF_QUESTIONS[quickLanguage];
   // 사용자 알레르기 기반 질문
   if (userAllergies.length > 0) {
     const allergyLabels = userAllergies
       .slice(0, 2)
-      .map((code) => ALLERGY_CODE_TO_LABEL[code] || code)
-      .join(', ');
-    return `이 요리에 ${allergyLabels} 등이 들어가나요?`;
+      .map((code) => getAllergyLabel(code, language));
+    return templates.allergy(formatLabelList(allergyLabels, language));
   }
 
   // 사용자 식단 기반 질문
   if (userDiets.length > 0) {
-    const dietLabel = DIET_CODE_TO_LABEL[userDiets[0]] || userDiets[0];
-    return `이 요리가 ${dietLabel} 식단에 적합한가요?`;
+    const dietLabel = getDietLabel(userDiets[0], language);
+    return templates.diet(dietLabel);
   }
 
   // 프로필 없으면 일반 질문
-  return '이 요리의 주요 재료를 알려주시겠어요?';
+  return templates.general;
 }
 
 /**
@@ -711,62 +1212,30 @@ function generateStaffQuestion(
   triggerCodes: string[],
   dietTriggers: string[],
   userAllergies: string[],
-  userDiets: string[]
+  userDiets: string[],
+  language: Language
 ): string {
+  const quickLanguage = normalizeQuickLanguage(language);
   // 발견된 트리거가 있으면 그에 대해 질문
   if (triggerCodes.length > 0) {
     const firstTrigger = triggerCodes[0];
-    const label = ALLERGY_CODE_TO_LABEL[firstTrigger] || firstTrigger;
-
-    switch (firstTrigger) {
-      case 'shellfish':
-        return '이 요리에 새우, 게, 랍스터 등 갑각류가 들어가나요?';
-      case 'pork':
-        return '육수나 조미료에 돼지고기가 들어가나요?';
-      case 'eggs':
-        return '이 요리에 계란이 들어가나요?';
-      case 'milk':
-        return '이 요리에 우유나 유제품이 들어가나요?';
-      default:
-        return `이 요리에 ${label}이(가) 들어가나요?`;
-    }
+    const label = getAllergyLabel(firstTrigger, language);
+    const override = ALLERGY_QUESTION_OVERRIDES[quickLanguage]?.[firstTrigger];
+    if (override) return override;
+    return ALLERGY_QUESTION_DEFAULT[quickLanguage](label);
   }
 
   // 식이제한 트리거가 있으면 그에 대해 질문
   if (dietTriggers.length > 0) {
     const firstDiet = dietTriggers[0];
-
-    switch (firstDiet) {
-      case 'halal':
-        return '이 요리는 할랄 인증을 받았나요? 돼지고기나 알코올이 없나요?';
-      case 'vegan':
-        return '이 요리에 동물성 재료(고기/달걀/우유/꿀)가 전혀 없나요?';
-      case 'vegetarian':
-        return '이 요리에 고기나 해산물이 들어가나요?';
-      case 'kosher':
-        return '이 요리는 코셔 규정을 따르나요?';
-      case 'gluten_free':
-        return '이 요리에 밀가루나 글루텐이 들어가나요?';
-      default:
-        return '이 요리의 재료를 확인해주시겠어요?';
-    }
+    const override = DIET_QUESTION_OVERRIDES[quickLanguage]?.[firstDiet];
+    if (override) return override;
+    return DEFAULT_STAFF_QUESTIONS[quickLanguage].diet(
+      getDietLabel(firstDiet, language)
+    );
   }
 
-  // 사용자 알레르기/식단 기반 일반 질문
-  if (userAllergies.length > 0) {
-    const allergyLabels = userAllergies
-      .slice(0, 2)
-      .map((code) => ALLERGY_CODE_TO_LABEL[code] || code)
-      .join(', ');
-    return `이 요리에 ${allergyLabels} 등이 들어가나요?`;
-  }
-
-  if (userDiets.length > 0) {
-    const dietLabel = DIET_CODE_TO_LABEL[userDiets[0]] || userDiets[0];
-    return `이 요리가 ${dietLabel} 식단에 적합한가요?`;
-  }
-
-  return '이 요리의 주요 재료를 알려주시겠어요?';
+  return generateDefaultStaffQuestion(userAllergies, userDiets, language);
 }
 
 // ============================================
@@ -790,7 +1259,21 @@ export function mergeQuickAndGemini(
   }
 ): FinalResult {
   // quickResult에서 식단 관련 트리거 확인 (알레르기 코드가 아닌 식단 코드)
-  const dietCodes = ['vegetarian', 'vegan', 'halal', 'kosher', 'gluten_free'];
+  const dietCodes = [
+    'vegetarian',
+    'vegan',
+    'lacto_vegetarian',
+    'ovo_vegetarian',
+    'pesco_vegetarian',
+    'flexitarian',
+    'halal',
+    'kosher',
+    'buddhist_vegetarian',
+    'gluten_free',
+    'pork_free',
+    'alcohol_free',
+    'garlic_onion_free',
+  ];
   const quickDietTriggers = quickResult.triggerCodes.filter((code) =>
     dietCodes.includes(code)
   );

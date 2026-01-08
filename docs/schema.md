@@ -46,6 +46,7 @@ INSERT INTO allergy_types (code, name_ko, name_en, name_ja, name_zh, icon, categ
 ('walnuts', '호두', 'Walnuts', 'くるみ', '核桃', '🌰', 'nut'),
 ('chicken', '닭고기', 'Chicken', '鶏肉', '鸡肉', '🐔', 'meat'),
 ('beef', '소고기', 'Beef', '牛肉', '牛肉', '🐄', 'meat'),
+('lamb', '양고기', 'Lamb', '羊肉', '羊肉', '🐑', 'meat'),
 ('squid', '오징어', 'Squid', 'イカ', '鱿鱼', '🦑', 'seafood'),
 ('shellfish', '조개류', 'Shellfish', '貝類', '贝类', '🐚', 'seafood'),
 ('pine_nuts', '잣', 'Pine Nuts', '松の実', '松子', '🌲', 'nut');
@@ -70,9 +71,17 @@ created_at TIMESTAMPTZ DEFAULT NOW()
 INSERT INTO diet_types (code, name_ko, name_en, name_ja, name_zh, icon, description_ko, description_en) VALUES
 ('vegetarian', '채식주의', 'Vegetarian', 'ベジタリアン', '素食主义', '🥬', '육류를 제외한 식단', 'Diet excluding meat'),
 ('vegan', '비건', 'Vegan', 'ビーガン', '纯素食', '🌱', '모든 동물성 식품 제외', 'Diet excluding all animal products'),
+('lacto_vegetarian', '락토 채식', 'Lacto Vegetarian', 'ラクト・ベジタリアン', '乳蛋素', '🥛', '육류·생선·달걀 제외, 유제품 허용', 'Diet excluding meat/fish/eggs, dairy allowed'),
+('ovo_vegetarian', '오보 채식', 'Ovo Vegetarian', 'オボ・ベジタリアン', '蛋素', '🥚', '육류·생선·유제품 제외, 달걀 허용', 'Diet excluding meat/fish/dairy, eggs allowed'),
+('pesco_vegetarian', '페스코 채식', 'Pesco Vegetarian', 'ペスコ・ベジタリアン', '鱼素', '🐟', '육류 제외, 생선 허용', 'Diet excluding meat, fish allowed'),
+('flexitarian', '플렉시테리언', 'Flexitarian', 'フレキシタリアン', '弹性素食', '🥗', '유연한 채식', 'Flexible vegetarian diet'),
 ('halal', '할랄', 'Halal', 'ハラール', '清真', '☪️', '이슬람 율법에 따른 식단', 'Diet according to Islamic law'),
 ('kosher', '코셔', 'Kosher', 'コーシャ', '犹太洁食', '✡️', '유대교 율법에 따른 식단', 'Diet according to Jewish law'),
+('buddhist_vegetarian', '불교 채식', 'Buddhist Vegetarian', '仏教菜食', '佛教素食', '🙏', '불교 채식(오신채 제외)', 'Buddhist vegetarian diet (no pungent vegetables)'),
 ('gluten_free', '글루텐 프리', 'Gluten Free', 'グルテンフリー', '无麸质', '🚫🌾', '글루텐 미포함 식단', 'Diet without gluten'),
+('pork_free', '돼지고기 제외', 'Pork-Free', '豚肉なし', '无猪肉', '🚫🐷', '돼지고기 제외 식단', 'Diet without pork'),
+('alcohol_free', '무알코올', 'Alcohol Free', 'アルコールなし', '无酒精', '🚫🍺', '알코올 미포함 식단', 'Diet without alcohol'),
+('garlic_onion_free', '마늘/양파 제외', 'Garlic/Onion Free', 'ニンニク・玉ねぎなし', '无大蒜/洋葱', '🧄🧅', '마늘과 양파 제외 식단', 'Diet without garlic or onion'),
 ('lactose_free', '유당 불내증', 'Lactose Free', '乳糖フリー', '无乳糖', '🚫🥛', '유제품 미포함 식단', 'Diet without lactose'),
 ('low_sodium', '저염식', 'Low Sodium', '低塩', '低钠', '🧂', '나트륨 섭취 제한 식단', 'Diet with limited sodium intake'),
 ('diabetic', '당뇨식', 'Diabetic', '糖尿病食', '糖尿病饮食', '💉', '혈당 관리를 위한 식단', 'Diet for blood sugar management');

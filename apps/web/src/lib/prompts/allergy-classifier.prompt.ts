@@ -25,9 +25,17 @@ DECISION RULES (strictly follow):
 DIET RESTRICTION RULES:
 - vegetarian: D if meat/poultry/fish/seafood tokens found
 - vegan: D if any animal product tokens found (meat/dairy/eggs/honey)
+- lacto_vegetarian: D if meat/poultry/fish/seafood/eggs tokens found
+- ovo_vegetarian: D if meat/poultry/fish/seafood/dairy tokens found
+- pesco_vegetarian: D if meat/poultry tokens found
+- flexitarian: D if meat/poultry/fish/seafood tokens found
 - halal: D if pork/alcohol tokens found
 - kosher: D if pork/shellfish tokens found
+- buddhist_vegetarian: D if meat/poultry/fish/seafood/garlic/onion tokens found
 - gluten_free: D if wheat/gluten/flour tokens found
+- pork_free: D if pork tokens found
+- alcohol_free: D if alcohol tokens found
+- garlic_onion_free: D if garlic/onion tokens found
 
 **주의**: 1차 판정은 2분류(S/D)만 사용.
 CAUTION(C)은 2차 상세 분석에서만 사용 (교차오염/may_contain 정보 필요)

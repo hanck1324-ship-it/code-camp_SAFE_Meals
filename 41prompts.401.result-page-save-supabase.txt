@@ -1,0 +1,444 @@
+아래의 조건을 모두 적용하여, 아래의 요구사항을 모두 구현할 것.
+구현 결과를 체크리스트로 반환할 것.
+
+==============================================
+
+조건-커서룰) 아래의 커서룰을 적용하여 작업하고, 이 작업이 끝나면 해당 rules 적용 결과를 체크리스트로 반환할 것.
+            - @01-common.mdc
+            - @04-func.mdc
+
+==============================================
+
+조건-선행작업) 이 프롬프트 실행 전 다음 프롬프트가 완료되어야 함:
+              - 38prompts.401.scan-history-save.txt (scan-history-repository 구현)
+
+==============================================
+
+조건-파일경로) 참고할 분석완료 페이지 (Mobile): apps/mobile/app/(tabs)/scan/result.tsx
+조건-파일경로) 참고할 분석결과 페이지 (Web): apps/web/src/app/scan/result/page.tsx
+조건-파일경로) 생성될 Hook 파일경로 (Mobile): apps/mobile/hooks/useSaveAnalysisResult.ts
+조건-파일경로) 생성될 Hook 파일경로 (Web): apps/web/src/hooks/useSaveAnalysisResult.ts
+조건-파일경로) 참고할 Repository 파일경로: apps/web/src/utils/scan-history-repository.ts (38prompts에서 생성됨)
+조건-파일경로) 참고할 타입 파일경로: apps/web/src/types/scan-history.types.ts (38prompts에서 생성됨)
+조건-파일경로) 참고 스키마 문서: /code-camp_SAFE_Meals/docs/schema.md
+
+==============================================
+
+핵심요구사항) 분석완료 페이지에서 사용자가 결과를 확인할 때 자동으로 Supabase에 분석 결과를 저장하는 기능을 구현할 것.
+
+1) 목표
+    - 스캔 분석이 완료되면 결과를 자동으로 Supabase에 저장
+    - 사용자가 대시보드에서 과거 스캔 이력을 확인 가능하도록 함
+    - 중복 저장 방지 (동일 job_id 체크)
+    - RLS(Row Level Security) 정책 준수
+    - 저장 실패해도 UI 경험에 영향 없음 (비동기 저장)
+
+2) 데이터베이스 스키마 (기존 스키마 활용)
+    2-1) scan_history 테이블
+        CREATE TABLE scan_history (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+            scan_type VARCHAR(20) NOT NULL CHECK (scan_type IN ('menu', 'barcode', 'image')),
+            image_url TEXT,
+            restaurant_name VARCHAR(200),
+            location JSONB, -- { lat, lng, address }
+            job_id TEXT UNIQUE, -- 중복 저장 방지용
+            scanned_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+    2-2) scan_results 테이블
+        CREATE TABLE scan_results (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            scan_id UUID NOT NULL REFERENCES scan_history(id) ON DELETE CASCADE,
+            menu_item_id UUID REFERENCES menu_items(id) ON DELETE SET NULL,
+            product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+            item_name VARCHAR(200) NOT NULL,
+            safety_level safety_level NOT NULL DEFAULT 'unknown',
+            warning_message TEXT,
+            matched_allergens JSONB, -- 매칭된 알레르기 목록
+            matched_diets JSONB, -- 매칭된 식이제한 목록
+            confidence_score DECIMAL(3,2), -- AI 신뢰도 점수 (0.00 ~ 1.00)
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+    2-3) safety_level ENUM
+        CREATE TYPE safety_level AS ENUM ('safe', 'caution', 'danger', 'unknown');
+
+3) TypeScript 타입 정의 (analysis-result.types.ts)
+    3-1) AnalysisResultToSave 타입
+        ```typescript
+        export interface AnalysisResultToSave {
+          jobId: string;
+          userId: string;
+          scanType: 'menu' | 'barcode' | 'image';
+          imageUrl?: string | null;
+          restaurantName?: string | null;
+          location?: {
+            lat?: number;
+            lng?: number;
+            address?: string;
+          } | null;
+          results: AnalysisResultItem[];
+        }
+
+        export interface AnalysisResultItem {
+          itemName: string;
+          originalName?: string; // 원본 메뉴명 (번역 전)
+          safetyLevel: 'safe' | 'caution' | 'danger' | 'unknown';
+          warningMessage?: string | null;
+          matchedAllergens?: string[] | null;
+          matchedDiets?: string[] | null;
+          confidenceScore?: number | null;
+          ingredients?: string[] | null;
+        }
+        ```
+
+    3-2) SaveAnalysisResultResponse 타입
+        ```typescript
+        export interface SaveAnalysisResultResponse {
+          success: boolean;
+          scanId?: string;
+          resultIds?: string[];
+          error?: string;
+          isDuplicate?: boolean; // 이미 저장된 경우
+        }
+        ```
+
+    3-3) ScanHistoryRow 타입 (DB 조회용)
+        ```typescript
+        export interface ScanHistoryRow {
+          id: string;
+          user_id: string;
+          scan_type: 'menu' | 'barcode' | 'image';
+          image_url: string | null;
+          restaurant_name: string | null;
+          location: {
+            lat?: number;
+            lng?: number;
+            address?: string;
+          } | null;
+          job_id: string | null;
+          scanned_at: string;
+        }
+        ```
+
+4) 38prompts와의 관계 (중요)
+    **38prompts.401.scan-history-save.txt는 API(route.ts)에서 서버사이드 저장을 다루고,
+    이 프롬프트(41prompts)는 클라이언트(result.tsx)에서 저장 트리거 Hook을 다룸.**
+    
+    4-1) 38prompts에서 이미 구현된 것 (재사용)
+        - ScanHistoryRepository 클래스 (apps/web/src/utils/scan-history-repository.ts)
+        - 타입 정의 (apps/web/src/types/scan-history.types.ts)
+        - saveScan 메서드
+
+    4-2) 이 프롬프트에서 구현할 것
+        - useSaveAnalysisResult Hook (클라이언트용)
+        - 분석완료 페이지에서 Hook 연동
+        - 자동 저장 트리거 로직
+
+5) useSaveAnalysisResult Hook 구현
+    5-1) Web 버전 (apps/web/src/hooks/useSaveAnalysisResult.ts)
+        ```typescript
+        'use client';
+        
+        import { useState, useCallback, useRef } from 'react';
+        import { createClient } from '@/lib/supabase/client';
+        import { ScanHistoryRepository } from '@/utils/scan-history-repository';
+        import type { SaveScanParams, SaveScanResult } from '@/types/scan-history.types';
+
+        interface UseSaveAnalysisResultReturn {
+          saveResult: (params: SaveScanParams) => Promise<SaveScanResult>;
+          isSaving: boolean;
+          saveError: string | null;
+          savedScanId: string | null;
+          isDuplicate: boolean;
+        }
+
+        export function useSaveAnalysisResult(): UseSaveAnalysisResultReturn {
+          const [isSaving, setIsSaving] = useState(false);
+          const [saveError, setSaveError] = useState<string | null>(null);
+          const [savedScanId, setSavedScanId] = useState<string | null>(null);
+          const [isDuplicate, setIsDuplicate] = useState(false);
+          const savingRef = useRef(false); // 중복 호출 방지
+          
+          const saveResult = useCallback(async (params: SaveScanParams): Promise<SaveScanResult> => {
+            // 이미 저장 중이거나 저장 완료된 경우 스킵
+            if (savingRef.current || savedScanId) {
+              console.log('ℹ️ [AnalysisResult] 저장 스킵 - 이미 처리됨');
+              return { success: true, scanId: savedScanId ?? undefined };
+            }
+            
+            savingRef.current = true;
+            setIsSaving(true);
+            setSaveError(null);
+            
+            try {
+              const supabase = createClient();
+              const repository = new ScanHistoryRepository(supabase);
+              const result = await repository.saveScan(params);
+              
+              if (result.success) {
+                setSavedScanId(result.scanId ?? null);
+                console.log(`✅ [AnalysisResult] 저장 완료 - scanId: ${result.scanId}`);
+              } else if (result.error?.includes('duplicate') || result.error?.includes('23505')) {
+                setIsDuplicate(true);
+                console.log(`ℹ️ [AnalysisResult] 이미 저장됨 - jobId: ${params.jobId}`);
+              } else {
+                setSaveError(result.error ?? '저장 실패');
+                console.error(`❌ [AnalysisResult] 저장 실패:`, result.error);
+              }
+              
+              return result;
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+              setSaveError(errorMessage);
+              console.error(`❌ [AnalysisResult] 저장 실패:`, error);
+              return { success: false, error: errorMessage };
+            } finally {
+              setIsSaving(false);
+              savingRef.current = false;
+            }
+          }, [savedScanId]);
+          
+          return {
+            saveResult,
+            isSaving,
+            saveError,
+            savedScanId,
+            isDuplicate,
+          };
+        }
+        ```
+
+    5-2) Mobile 버전 (apps/mobile/hooks/useSaveAnalysisResult.ts)
+        - Web 버전과 동일한 로직
+        - import 경로만 Mobile 프로젝트에 맞게 조정
+        ```typescript
+        import { supabase } from '@/lib/supabase';
+        // ... 나머지 동일
+        ```
+
+6) 분석완료 페이지에서 Hook 사용 (result.tsx)
+    6-1) Web 버전 (apps/web/src/app/scan/result/page.tsx)
+        ```typescript
+        'use client';
+        
+        import { useEffect } from 'react';
+        import { useSaveAnalysisResult } from '@/hooks/useSaveAnalysisResult';
+        import { useAuth } from '@/hooks/useAuth';
+        
+        export default function ScanResultPage() {
+          const { user } = useAuth();
+          const { saveResult, isSaving, savedScanId, isDuplicate } = useSaveAnalysisResult();
+          const { analysisResult } = useScanResult(); // 기존 분석 결과 Hook
+          
+          // FINAL 결과가 도착하면 자동 저장
+          useEffect(() => {
+            if (
+              analysisResult?.status === 'FINAL' && 
+              !savedScanId && 
+              !isDuplicate &&
+              user?.id &&
+              analysisResult.results?.length > 0
+            ) {
+              saveResult({
+                userId: user.id,
+                jobId: analysisResult.jobId,
+                scanType: 'menu',
+                restaurantName: analysisResult.restaurantName || null,
+                results: analysisResult.results.map(item => ({
+                  itemName: item.name,
+                  safetyLevel: item.safetyLevel,
+                  warningMessage: item.warningMessage || null,
+                  matchedAllergens: item.matchedAllergens || null,
+                  matchedDiets: item.matchedDiets || null,
+                  confidenceScore: item.confidence || null,
+                })),
+              });
+            }
+          }, [analysisResult, savedScanId, isDuplicate, user?.id, saveResult]);
+          
+          return (
+            <div>
+              {/* 결과 UI */}
+              
+              {/* 저장 상태 인디케이터 (선택적) */}
+              {isSaving && (
+                <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-md">
+                  <Spinner size="sm" />
+                  <span className="text-sm text-gray-600">저장 중...</span>
+                </div>
+              )}
+              {savedScanId && (
+                <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-sm text-green-700">저장 완료</span>
+                </div>
+              )}
+            </div>
+          );
+        }
+        ```
+
+    6-2) Mobile 버전 (apps/mobile/app/(tabs)/scan/result.tsx)
+        ```typescript
+        import { useEffect } from 'react';
+        import { View, ActivityIndicator, Text } from 'react-native';
+        import { useSaveAnalysisResult } from '@/hooks/useSaveAnalysisResult';
+        import { useAuth } from '@/hooks/useAuth';
+        import { CheckCircle } from 'lucide-react-native';
+        
+        export default function ScanResultScreen() {
+          const { user } = useAuth();
+          const { saveResult, isSaving, savedScanId } = useSaveAnalysisResult();
+          const { analysisResult } = useScanResult();
+          
+          useEffect(() => {
+            if (
+              analysisResult?.status === 'FINAL' && 
+              !savedScanId && 
+              user?.id &&
+              analysisResult.results?.length > 0
+            ) {
+              saveResult({
+                userId: user.id,
+                jobId: analysisResult.jobId,
+                scanType: 'menu',
+                restaurantName: analysisResult.restaurantName || null,
+                results: analysisResult.results.map(item => ({
+                  itemName: item.name,
+                  safetyLevel: item.safetyLevel,
+                  warningMessage: item.warningMessage || null,
+                  matchedAllergens: item.matchedAllergens || null,
+                  matchedDiets: item.matchedDiets || null,
+                  confidenceScore: item.confidence || null,
+                })),
+              });
+            }
+          }, [analysisResult, savedScanId, user?.id, saveResult]);
+          
+          return (
+            <View>
+              {/* 결과 UI */}
+              
+              {/* 저장 상태 인디케이터 */}
+              {isSaving && (
+                <View style={styles.saveIndicator}>
+                  <ActivityIndicator size="small" color="#6B7280" />
+                  <Text style={styles.saveText}>저장 중...</Text>
+                </View>
+              )}
+              {savedScanId && (
+                <View style={styles.savedIndicator}>
+                  <CheckCircle size={16} color="#15803D" />
+                  <Text style={styles.savedText}>저장 완료</Text>
+                </View>
+              )}
+            </View>
+          );
+        }
+        ```
+
+7) 이미지 저장 전략
+    7-1) 현재 스코프
+        - Base64 이미지는 저장하지 않음 (용량 문제)
+        - image_url은 null로 저장
+        - 추후 Supabase Storage 연동 시 별도 처리
+
+    7-2) 추후 확장 (참고용)
+        - 39prompts.401.scan-image-storage.txt 참조
+        - Storage 버킷에 이미지 업로드 후 URL 저장
+
+8) 로깅 및 모니터링
+    8-1) 성공 로그
+        ```typescript
+        console.log(`✅ [AnalysisResult] 저장 완료 - scanId: ${scanId}, items: ${resultIds.length}건`);
+        ```
+
+    8-2) 실패 로그
+        ```typescript
+        console.error(`❌ [AnalysisResult] 저장 실패:`, error);
+        ```
+
+    8-3) 중복 감지 로그
+        ```typescript
+        console.log(`ℹ️ [AnalysisResult] 이미 저장됨 - jobId: ${jobId}`);
+        ```
+
+==============================================
+
+테스트 시나리오) 저장 기능 검증
+
+1) 유닛 테스트 (Repository)
+    1-1) 정상 저장 케이스
+        - scan_history 생성 확인
+        - scan_results 생성 확인
+        - 반환값 검증
+
+    1-2) 중복 저장 방지
+        - 동일 job_id로 두 번 저장 시도
+        - 두 번째는 isDuplicate: true 반환
+
+    1-3) 에러 핸들링
+        - DB 에러 시 정상적인 에러 응답
+
+2) 통합 테스트 (Playwright)
+    2-1) 분석 완료 후 저장 확인
+        - 메뉴 스캔 수행
+        - 분석 완료 대기
+        - DB에서 scan_history 조회
+        - 저장된 데이터 검증
+
+    2-2) 대시보드 연동 확인
+        - 스캔 후 대시보드 이동
+        - 최근 스캔 목록에 표시 확인
+
+==============================================
+
+체크리스트 예상)
+
+[ ] 선행 작업 확인
+    [ ] 38prompts.401.scan-history-save.txt 완료 확인
+    [ ] ScanHistoryRepository 클래스 존재 확인
+    [ ] scan-history.types.ts 타입 정의 존재 확인
+
+[ ] useSaveAnalysisResult Hook 구현
+    [ ] Web 버전 (apps/web/src/hooks/useSaveAnalysisResult.ts)
+        [ ] useState로 상태 관리 (isSaving, saveError, savedScanId, isDuplicate)
+        [ ] useRef로 중복 호출 방지 (savingRef)
+        [ ] saveResult 함수 - ScanHistoryRepository.saveScan 호출
+        [ ] 에러 처리 및 로깅
+    [ ] Mobile 버전 (apps/mobile/hooks/useSaveAnalysisResult.ts)
+        [ ] Web 버전과 동일 로직
+        [ ] import 경로 Mobile용으로 조정
+
+[ ] 분석완료 페이지 수정
+    [ ] Web 버전 (apps/web/src/app/scan/result/page.tsx)
+        [ ] useSaveAnalysisResult Hook import
+        [ ] useEffect로 FINAL 상태 감지 및 자동 저장
+        [ ] 저장 조건 검증 (userId, results.length, !savedScanId)
+        [ ] 저장 상태 인디케이터 (선택적)
+    [ ] Mobile 버전 (apps/mobile/app/(tabs)/scan/result.tsx)
+        [ ] useSaveAnalysisResult Hook import
+        [ ] useEffect로 FINAL 상태 감지 및 자동 저장
+        [ ] 저장 조건 검증
+        [ ] 저장 상태 인디케이터 (선택적)
+
+[ ] 데이터 매핑
+    [ ] analysisResult → SaveScanParams 변환 로직
+    [ ] results 배열의 각 아이템 매핑
+
+[ ] 로깅
+    [ ] 저장 완료 로그 (✅)
+    [ ] 저장 실패 로그 (❌)
+    [ ] 중복/스킵 로그 (ℹ️)
+
+[ ] 테스트
+    [ ] Hook 유닛 테스트
+    [ ] 자동 저장 트리거 테스트
+    [ ] 중복 저장 방지 테스트
+    [ ] 대시보드 연동 확인 (저장 후 최근 스캔에 표시)
+
+[ ] 커서룰 적용 결과
+    [ ] @01-common.mdc 규칙 준수
+    [ ] @04-func.mdc 규칙 준수
