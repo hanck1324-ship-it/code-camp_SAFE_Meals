@@ -32,6 +32,7 @@ import {
   type SaveScanParams,
   type ScanResultItem,
 } from '@/types/scan-history.types';
+import type { Language } from '@/lib/translations';
 
 // Gemini API 클라이언트 초기화
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -134,33 +135,42 @@ export async function POST(req: NextRequest) {
 
     // 3. 📸 클라이언트에서 보낸 이미지 데이터 받기
     const parseStartTime = Date.now();
-    const body = await req.json();
+    const formData = await req.formData();
+    const imageFile = formData.get('file') as File | null;
+    // 클라이언트에서 언어 정보를 보낼 경우를 대비하여 추가
+    const languageInput = (formData.get('language') as string | null) || 'ko';
+    const language: Language = ['ko', 'en', 'ja', 'zh', 'es'].includes(languageInput)
+      ? (languageInput as Language)
+      : 'ko';
+
+    // 위치 정보 파싱
+    let clientLocation: { lat: number; lng: number } | null = null;
+    const locationStr = formData.get('location') as string | null;
+    if (locationStr) {
+      try {
+        clientLocation = JSON.parse(locationStr);
+        console.log('📍 [Location] 클라이언트 위치 정보:', clientLocation);
+      } catch (err) {
+        console.warn('⚠️ [Location] 위치 정보 파싱 실패:', err);
+      }
+    }
+
+    if (!imageFile) {
+      return NextResponse.json(
+        { success: false, message: '이미지 파일이 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    const imageBuffer = await imageFile.arrayBuffer();
+    const image = Buffer.from(imageBuffer).toString('base64');
     timings.parseMs = Date.now() - parseStartTime;
 
-    const { image, language = 'ko' } = body;
-
     // 📊 실제 요청 바디 크기 분석
-    const imageSize = image ? new TextEncoder().encode(image).length : 0;
+    const imageSize = imageBuffer.byteLength;
     console.log(
-      `📦 [Performance] 이미지 크기: ${(imageSize / 1024).toFixed(2)} KB (JSON 파싱: ${timings.parseMs}ms)`
+      `📦 [Performance] 이미지 크기: ${(imageSize / 1024).toFixed(2)} KB (FormData 파싱: ${timings.parseMs}ms)`
     );
-
-    if (!image) {
-      return NextResponse.json(
-        { success: false, message: '이미지 데이터가 없습니다.' },
-        { status: 400 }
-      );
-    }
-
-    if (image.startsWith('file://')) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: '이미지 형식이 올바르지 않습니다. Base64로 변환해주세요.',
-        },
-        { status: 400 }
-      );
-    }
 
     // 4. 🔍 OCR 처리 (필수 대기) - Google Vision API
     // OCR 텍스트가 나와야 룰/DB 1차 판정이 가능
@@ -168,10 +178,7 @@ export async function POST(req: NextRequest) {
     const ocrStartTime = Date.now();
 
     // 이미지 데이터 처리 (Base64 헤더 제거)
-    const base64Data = image.includes('base64,')
-      ? image.split('base64,')[1]
-      : image;
-
+    const base64Data = image; // FormData에서 읽은 raw base64
     const imagePart = {
       inlineData: {
         data: base64Data,
@@ -436,7 +443,7 @@ export async function POST(req: NextRequest) {
             imageUrl: null, // imageData가 있으면 Repository에서 Storage에 업로드 후 URL 설정
             imageData: image, // Base64 이미지 데이터 (Storage 업로드용)
             restaurantName: null, // OCR에서 추출 가능하면 추후 추가
-            location: null,
+            location: clientLocation, // 클라이언트에서 받은 위치 정보
             results: scanResults,
           };
 
@@ -693,6 +700,10 @@ async function callGeminiAnalysis(
                   type: 'string',
                   description: 'Menu name translated to user language',
                 },
+                price: {
+                  type: 'string',
+                  description: 'Price as shown in the image (e.g., "₩15,000", "$10.99", "1,500円"). Empty string if no price visible.',
+                },
                 status: { type: 'string', enum: ['SAFE', 'CAUTION', 'DANGER'] },
                 reason: {
                   type: 'string',
@@ -714,6 +725,7 @@ async function callGeminiAnalysis(
                 'id',
                 'original_name',
                 'translated_name',
+                'price',
                 'status',
                 'reason',
                 'allergens',

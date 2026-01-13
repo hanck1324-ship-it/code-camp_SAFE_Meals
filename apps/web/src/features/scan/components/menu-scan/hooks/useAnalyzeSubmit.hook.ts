@@ -13,6 +13,8 @@ import {
   PerformanceTracker,
   getGlobalCollector,
 } from '@/utils/performance-metrics';
+import axios, { isAxiosError } from '@/lib/axios';
+import { axiosFormData } from '@/lib/axios';
 
 export type { MenuAnalysisItem };
 
@@ -261,7 +263,7 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
    * - FINAL 상태가 되면 결과 업데이트
    */
   const pollForFinalResult = useCallback(
-    async (jobId: string, language: 'ko' | 'en') => {
+    async (jobId: string, language: Language) => {
       let attempts = 0;
 
       const poll = async () => {
@@ -276,8 +278,8 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         );
 
         try {
-          const response = await fetch(`/api/scan/result?jobId=${jobId}`);
-          const data = await response.json();
+          const response = await axios.get(`/api/scan/result?jobId=${jobId}`);
+          const data = response.data;
 
           // 서버 응답: { status: 'FINAL', result: {...}, results: [...] }
           if (data.status === 'FINAL' && (data.result || data.results)) {
@@ -425,67 +427,94 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           abortControllerRef.current?.abort();
         }, TIMEOUT_MS);
 
-        // API 헤더 구성
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+        // 위치 정보 가져오기 (시도)
+        let location: { lat: number; lng: number } | null = null;
+        if (navigator.geolocation) {
+          try {
+            const position = await new Promise<GeolocationPosition>(
+              (resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                  timeout: 5000,
+                  maximumAge: 60000, // 1분 내 캐시된 위치 허용
+                });
+              }
+            );
+            location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            console.log('[Location] 위치 정보 수집 성공:', location);
+          } catch (err) {
+            // 위치 정보 실패해도 스캔은 계속 진행
+            console.log('[Location] 위치 정보 수집 실패 (스캔 계속):', err);
+          }
         }
 
-        // 요청 바디 생성 (크기 측정용)
-        const requestBody = JSON.stringify({
-          image: base64Image,
-          language: analysisLanguage,
-          device_info: {
-            platform:
-              typeof navigator !== 'undefined' ? navigator.platform : 'unknown',
-            userAgent:
-              typeof navigator !== 'undefined'
-                ? navigator.userAgent
-                : 'unknown',
-          },
-          user_context: userContext,
-        });
+        // FormData 생성
+        const formData = new FormData();
+
+        // Base64 이미지를 Blob으로 변환하여 추가
+        const base64Data = base64Image.split(',')[1] || base64Image;
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'image/jpeg' });
+        const file = new File([blob], 'menu.jpg', { type: 'image/jpeg' });
+
+        formData.append('file', file);
+        formData.append('language', analysisLanguage);
+
+        // 위치 정보 추가 (있는 경우)
+        if (location) {
+          formData.append('location', JSON.stringify(location));
+        }
 
         // [계측] 요청 크기 기록
-        tracker.setRequestSize(new Blob([requestBody]).size);
+        tracker.setRequestSize(blob.size);
 
         // [계측] 업로드 구간 시작 (요청 전송)
         tracker.start('upload');
         tracker.start('network'); // 전체 네트워크도 시작
 
-        // Edge Function 호출
-        const response = await fetch('/api/scan/analyze', {
-          method: 'POST',
-          headers,
-          body: requestBody,
+        // Edge Function 호출 (axios 사용)
+        const response = await axiosFormData.post('/api/scan/analyze', formData, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : undefined,
+          },
           signal,
+          timeout: TIMEOUT_MS,
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              console.log(`[Upload] ${percent}%`);
+            }
+          },
         });
 
         // [계측] 업로드 + TTFB 완료 (응답 헤더 수신됨)
-        // Note: fetch는 응답 헤더가 도착하면 resolve됨
-        // 따라서 upload + ttfb가 합쳐진 시점임
         tracker.end('upload');
 
         // [계측] 다운로드 구간 시작
         tracker.start('download');
 
         // [계측] 응답 크기 및 Server-Timing 기록
-        const contentLength = response.headers.get('content-length');
-        const serverTiming = response.headers.get('server-timing');
+        const contentLength = response.headers['content-length'];
+        const serverTiming = response.headers['server-timing'];
         tracker.setResponseSize(contentLength);
         tracker.setServerTiming(serverTiming);
         tracker.addMetadata({
           httpStatus: response.status,
-          contentType: response.headers.get('content-type'),
-          transferEncoding: response.headers.get('transfer-encoding'),
+          contentType: response.headers['content-type'],
+          transferEncoding: response.headers['transfer-encoding'],
         });
 
         clearTimeout(timeoutId);
 
-        // 응답 JSON 파싱 (다운로드 + 파싱)
-        const data: AnalyzeAPIResponse = await response.json();
+        // 응답 데이터 (axios는 자동으로 JSON 파싱)
+        const data: AnalyzeAPIResponse = response.data;
 
         // [계측] 다운로드 구간 종료
         tracker.end('download');
@@ -493,11 +522,8 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         // [계측] 네트워크 전체 구간 종료
         tracker.end('network');
 
-        // [계측] 파싱 시간은 download에 포함됨 (response.json()이 둘 다 수행)
-        // 별도 파싱 계측이 필요하면 clone() 사용 필요
-
         // API 에러 응답 처리
-        if (!response.ok || !data.success) {
+        if (!data.success) {
           const errorMessage =
             data.message || ERROR_MESSAGES[analysisLanguage].server;
           setError(errorMessage);
@@ -637,11 +663,27 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           performanceTrackerRef.current.printSummary();
         }
 
-        if (err instanceof Error) {
+        // axios 에러 처리
+        if (isAxiosError(err)) {
+          if (err.code === 'ECONNABORTED' || err.code === 'ERR_CANCELED') {
+            setError(ERROR_MESSAGES[analysisLanguage].timeout);
+          } else if (err.response) {
+            // 서버 응답이 있는 경우 (4xx, 5xx)
+            const errorMessage = (err.response.data as any)?.message || ERROR_MESSAGES[analysisLanguage].server;
+            setError(errorMessage);
+            console.error(`[API Error] ${err.response.status}:`, err.response.data);
+          } else if (err.request) {
+            // 요청은 보냈지만 응답이 없는 경우 (네트워크 에러)
+            setError(ERROR_MESSAGES[analysisLanguage].network);
+            console.error('[Network Error] No response:', err.message);
+          } else {
+            // 요청 설정 중 에러
+            setError(ERROR_MESSAGES[analysisLanguage].server);
+            console.error('[Request Error]:', err.message);
+          }
+        } else if (err instanceof Error) {
           if (err.name === 'AbortError') {
             setError(ERROR_MESSAGES[analysisLanguage].timeout);
-          } else if (err.message === 'server') {
-            setError(ERROR_MESSAGES[analysisLanguage].server);
           } else {
             setError(ERROR_MESSAGES[analysisLanguage].network);
           }

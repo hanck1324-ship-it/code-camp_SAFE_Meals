@@ -3,7 +3,10 @@
  * Service Role Key를 사용하여 RLS 우회
  */
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
+
+// Node.js crypto.randomUUID를 uuid v4 대신 사용
+const uuidv4 = randomUUID;
 
 // Service Role Client 생성 (RLS 우회)
 let serviceClient: SupabaseClient | null = null;
