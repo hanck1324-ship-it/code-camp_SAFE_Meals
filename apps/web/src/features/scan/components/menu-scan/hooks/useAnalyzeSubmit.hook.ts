@@ -15,6 +15,9 @@ import {
 } from '@/utils/performance-metrics';
 import axios, { isAxiosError } from '@/lib/axios';
 import { axiosFormData } from '@/lib/axios';
+import { optimizeImage } from '@/utils/image-optimizer';
+import { optimizeImageWithWorker } from '@/utils/image-optimizer-worker';
+import { getCachedOCRResult, cacheOCRResult } from '@/utils/ocr-cache';
 
 export type { MenuAnalysisItem };
 
@@ -400,16 +403,82 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
       setError(null);
 
       try {
-        // 이미지를 Base64로 변환
+        // 🖼️ [최적화] 이미지 리사이징 및 압축
+        let optimizedBlob: Blob;
         let base64Image: string;
+
         if (typeof image === 'string') {
+          // 문자열인 경우 (이미 Base64)
           base64Image = image;
+          // Base64를 Blob으로 변환
+          const base64Data = base64Image.split(',')[1] || base64Image;
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          optimizedBlob = new Blob([byteArray], { type: 'image/jpeg' });
         } else {
-          base64Image = await fileToBase64(image);
+          // File 객체인 경우 - WebWorker로 최적화 수행
+          console.log('[ImageOptimize] WebWorker로 이미지 최적화 시작...');
+
+          let optimizeResult;
+          try {
+            // WebWorker 사용 (백그라운드 스레드에서 처리)
+            optimizeResult = await optimizeImageWithWorker(image, {
+              maxWidth: 1920,
+              maxHeight: 1920,
+              quality: 0.85,
+              mimeType: 'image/jpeg',
+            });
+          } catch (workerError) {
+            // WebWorker 실패 시 메인 스레드에서 처리
+            console.warn('[ImageOptimize] WebWorker 실패, 메인 스레드로 fallback:', workerError);
+            optimizeResult = await optimizeImage(image, {
+              maxWidth: 1920,
+              maxHeight: 1920,
+              quality: 0.85,
+              mimeType: 'image/jpeg',
+            });
+          }
+
+          optimizedBlob = optimizeResult.blob;
+
+          // Base64로 변환 (미리보기용)
+          base64Image = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(optimizedBlob);
+          });
+
+          // [계측] 최적화 메트릭 기록
+          tracker.addMetadata({
+            imageOptimization: {
+              originalSize: optimizeResult.originalSize,
+              optimizedSize: optimizeResult.optimizedSize,
+              compressionRatio: optimizeResult.compressionRatio,
+              processingTime: optimizeResult.processingTime,
+              originalDimensions: optimizeResult.originalDimensions,
+              optimizedDimensions: optimizeResult.optimizedDimensions,
+            },
+          });
         }
 
-        // 이미지 데이터 저장
+        // 이미지 데이터 저장 (미리보기용)
         setImageData(base64Image);
+
+        // 🔍 [최적화] OCR 캐시 확인
+        // 참고: 현재는 전체 분석 결과를 캐싱하지 않고 향후 확장 가능
+        const cachedOCRText = await getCachedOCRResult(optimizedBlob);
+        if (cachedOCRText) {
+          console.log('[OCRCache] 💡 이전에 스캔한 이미지 발견');
+          console.log('   → 서버에서 최신 분석 수행 (알레르기/식단 변경 가능)');
+          tracker.addMetadata({
+            ocrCacheHit: true,
+          });
+        }
 
         // 사용자 알레르기/식단 정보 조회 (병렬로 실행 가능)
         const userContextPromise = fetchUserAllergyDietContext();
@@ -453,16 +522,8 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         // FormData 생성
         const formData = new FormData();
 
-        // Base64 이미지를 Blob으로 변환하여 추가
-        const base64Data = base64Image.split(',')[1] || base64Image;
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'image/jpeg' });
-        const file = new File([blob], 'menu.jpg', { type: 'image/jpeg' });
+        // 최적화된 이미지를 File로 변환하여 추가
+        const file = new File([optimizedBlob], 'menu.jpg', { type: 'image/jpeg' });
 
         formData.append('file', file);
         formData.append('language', analysisLanguage);
@@ -473,7 +534,7 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         }
 
         // [계측] 요청 크기 기록
-        tracker.setRequestSize(blob.size);
+        tracker.setRequestSize(optimizedBlob.size);
 
         // [계측] 업로드 구간 시작 (요청 전송)
         tracker.start('upload');
@@ -531,6 +592,15 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
           tracker.finalize();
           tracker.printSummary();
           return;
+        }
+
+        // 💾 [최적화] OCR 결과를 캐시에 저장
+        if (data.results && data.results.length > 0 && !cachedOCRText) {
+          // 캐시 미스였고 분석 결과가 있으면 메뉴명들을 저장
+          const menuNames = data.results.map((r) => r.original_name).join(', ');
+          cacheOCRResult(optimizedBlob, menuNames).catch((err) => {
+            console.warn('[OCRCache] 캐시 저장 실패 (무시):', err);
+          });
         }
 
         // [계측] 매핑 구간 시작

@@ -15,6 +15,13 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  // WebWorker 지원
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.output.publicPath = '/_next/';
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;
