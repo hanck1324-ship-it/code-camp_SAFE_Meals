@@ -93,7 +93,8 @@ export default function DietOnboardingPage() {
       }
 
       if (isEditMode) {
-        router.replace('/profile/settings');
+        // refresh 파라미터로 설정 페이지에서 데이터 재로드 트리거
+        router.replace(`/profile/settings?refresh=${Date.now()}`);
         return;
       }
       router.replace('/onboarding/safety-card');
@@ -116,7 +117,8 @@ export default function DietOnboardingPage() {
       }
 
       if (isEditMode) {
-        router.replace('/profile/settings');
+        // refresh 파라미터로 설정 페이지에서 데이터 재로드 트리거
+        router.replace(`/profile/settings?refresh=${Date.now()}`);
         return;
       }
 

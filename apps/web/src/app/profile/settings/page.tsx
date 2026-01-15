@@ -1,25 +1,29 @@
 'use client';
 
 import { SafetyProfileEditScreen } from '@/features/profile/components/settings/safety-profile-edit-screen';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useSafetyCardAllergiesDietsLoad } from '@/features/profile/components/settings/hooks/index.submit-allergies-diets.hook';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
-export default function SettingsPage() {
+function SettingsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useTranslation();
 
   // Supabase에서 알레르기/식단 데이터 로드
   const { loadAllergiesAndDiets, isLoading, allergies, diets } =
     useSafetyCardAllergiesDietsLoad();
 
-  // 페이지 로드 시 데이터 가져오기
+  // 페이지 로드 시 및 편집 후 돌아왔을 때 데이터 가져오기
+  // refresh 파라미터가 변경될 때마다 데이터 재로드
+  const refreshKey = searchParams.get('refresh');
+
   useEffect(() => {
     loadAllergiesAndDiets();
-  }, [loadAllergiesAndDiets]);
+  }, [loadAllergiesAndDiets, refreshKey]);
 
   // Supabase 데이터를 userProfile 형식으로 변환
   const userProfile = {
@@ -51,5 +55,19 @@ export default function SettingsPage() {
         }
       />
     </RequireAuth>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      }
+    >
+      <SettingsContent />
+    </Suspense>
   );
 }
