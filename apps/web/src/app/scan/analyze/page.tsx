@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle, Camera, ArrowLeft } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+
+import { Button } from '@/components/ui/button';
 import { useAnalyzeSubmit } from '@/features/scan/components/menu-scan/hooks/useAnalyzeSubmit.hook';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Button } from '@/components/ui/button';
 
 /**
  * 분석 페이지 컨텐츠 컴포넌트
@@ -183,11 +184,12 @@ function AnalyzeContent() {
         )}
       </div>
 
-      {/* 하단 버튼 영역 */}
-      <div className="border-t border-[var(--color-border)] p-4">
+      {/* 하단 버튼 영역 - 항상 표시 */}
+      <div className="border-t border-[var(--color-border)] bg-white p-4">
         <div className="mx-auto flex max-w-md gap-3">
           {error ? (
             <>
+              {/* 에러 시: 재촬영 + 재시도 버튼 */}
               <Button
                 data-testid="retake-button"
                 variant="outline"
@@ -210,21 +212,34 @@ function AnalyzeContent() {
               </Button>
             </>
           ) : (
-            <Button
-              data-testid="analyze-button"
-              className="w-full bg-[var(--color-primary)] text-white"
-              onClick={handleAnalyze}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t.scanAnalyzing}
-                </>
-              ) : (
-                t.scanAnalyzeButton
-              )}
-            </Button>
+            <>
+              {/* 정상 시: 취소 + 분석 버튼 (로딩 중에도 표시) */}
+              <Button
+                data-testid="cancel-button"
+                variant="outline"
+                className="flex-1"
+                onClick={handleRetake}
+                disabled={isLoading}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </Button>
+              <Button
+                data-testid="analyze-button"
+                className="flex-1 bg-[var(--color-primary)] text-white"
+                onClick={handleAnalyze}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t.scanAnalyzing}
+                  </>
+                ) : (
+                  t.scanAnalyzeButton
+                )}
+              </Button>
+            </>
           )}
         </div>
       </div>

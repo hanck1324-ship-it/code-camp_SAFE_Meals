@@ -1,8 +1,9 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
-import { LanguageSelector } from '@/components/language-selector';
 import { Shield, Globe } from 'lucide-react';
+
+import { LanguageSelector } from '@/components/language-selector';
+import { useTranslation } from '@/hooks/useTranslation';
 
 /**
  * useTranslation 훅 사용 예시 컴포넌트

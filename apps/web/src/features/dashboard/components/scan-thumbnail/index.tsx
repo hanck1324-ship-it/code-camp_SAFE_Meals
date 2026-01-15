@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { Camera } from 'lucide-react';
+import { useState } from 'react';
+
 import { cn } from '@/components/ui/utils';
-import { SafetyLevel } from '@/features/dashboard/hooks/useRecentScans';
+
+import type { SafetyLevel } from '@/features/dashboard/hooks/useRecentScans';
 
 /**
  * 썸네일 크기별 스타일 정의
@@ -30,7 +32,10 @@ const SIZE_STYLES = {
  * Safety Level별 스타일 정의
  * Tailwind CSS 클래스 사용 (하드코딩 색상 없음)
  */
-const SAFETY_LEVEL_STYLES: Record<SafetyLevel, { bg: string; text: string; border: string }> = {
+const SAFETY_LEVEL_STYLES: Record<
+  SafetyLevel,
+  { bg: string; text: string; border: string }
+> = {
   safe: {
     bg: 'bg-green-50',
     text: 'text-green-700',
@@ -167,7 +172,7 @@ export function ScanThumbnail({
       {showBadge && (
         <div
           className={cn(
-            'absolute right-1 top-1 rounded font-medium border',
+            'absolute right-1 top-1 rounded border font-medium',
             sizeStyles.badge,
             safetyStyles.bg,
             safetyStyles.text,

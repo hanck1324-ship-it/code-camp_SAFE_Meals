@@ -19,7 +19,9 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+
 import { getSupabaseClient } from '@/lib/supabase';
+
 import type { SafetyCardData } from './index.data.hook';
 
 /**

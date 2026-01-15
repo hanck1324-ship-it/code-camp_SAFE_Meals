@@ -17,8 +17,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+
+import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { getSupabaseClient } from '@/lib/supabase';
-import { useLanguageStore, Language } from '@/commons/stores/useLanguageStore';
+
+import type { Language } from '@/commons/stores/useLanguageStore';
 
 /**
  * 안전카드 데이터 타입

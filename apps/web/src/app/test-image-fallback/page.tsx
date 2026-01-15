@@ -23,7 +23,9 @@ export default function TestImageFallbackPage() {
 
         {/* 에러 이미지 */}
         <section data-testid="error-section">
-          <h2 className="mb-4 text-xl font-semibold">에러 이미지 (존재하지 않는 URL)</h2>
+          <h2 className="mb-4 text-xl font-semibold">
+            에러 이미지 (존재하지 않는 URL)
+          </h2>
           <ImageWithFallback
             src="https://invalid-url-that-does-not-exist.com/image.jpg"
             alt="에러 이미지"

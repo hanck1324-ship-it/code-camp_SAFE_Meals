@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+
 import { getSupabaseClient } from '@/lib/supabase';
 
 // 안전 등급 타입 정의
@@ -166,7 +167,9 @@ export function useRecentScans(): UseRecentScansResult {
       setRecentScans(processedScans);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : '스캔 기록을 불러오는데 실패했습니다.';
+        err instanceof Error
+          ? err.message
+          : '스캔 기록을 불러오는데 실패했습니다.';
       setError(errorMessage);
       console.error('useRecentScans error:', err);
     } finally {

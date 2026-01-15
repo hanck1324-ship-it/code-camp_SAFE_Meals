@@ -1,6 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+import {
+  buildAllergyClassifierPrompt,
+  parseStatus as parseQuickStatus,
+  ALLERGY_CLASSIFIER_CONFIG,
+  RECOMMENDED_MODELS,
+  type QuickSafetyStatus,
+} from '@/lib/prompts/allergy-classifier.prompt';
+import {
+  convertSafetyLevel,
+  CONFIDENCE_TO_SCORE,
+  type SaveScanParams,
+  type ScanResultItem,
+} from '@/types/scan-history.types';
+import { extractTextFromImage, cleanMenuText } from '@/utils/google-vision-ocr';
+import { ScanHistoryRepository } from '@/utils/scan-history-repository';
 import {
   generateJobId,
   createPendingJob,
@@ -16,23 +32,10 @@ import {
   type FinalResponse,
   type ConfidenceLevel,
 } from '@/utils/scan-job-manager';
-import { extractTextFromImage, cleanMenuText } from '@/utils/google-vision-ocr';
 import { getOptimizedAllergyTokens } from '@/utils/token-optimizer';
-import {
-  buildAllergyClassifierPrompt,
-  parseStatus as parseQuickStatus,
-  ALLERGY_CLASSIFIER_CONFIG,
-  RECOMMENDED_MODELS,
-  type QuickSafetyStatus,
-} from '@/lib/prompts/allergy-classifier.prompt';
-import { ScanHistoryRepository } from '@/utils/scan-history-repository';
-import {
-  convertSafetyLevel,
-  CONFIDENCE_TO_SCORE,
-  type SaveScanParams,
-  type ScanResultItem,
-} from '@/types/scan-history.types';
+
 import type { Language } from '@/lib/translations';
+import type { NextRequest } from 'next/server';
 
 // Gemini API 클라이언트 초기화
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -139,7 +142,9 @@ export async function POST(req: NextRequest) {
     const imageFile = formData.get('file') as File | null;
     // 클라이언트에서 언어 정보를 보낼 경우를 대비하여 추가
     const languageInput = (formData.get('language') as string | null) || 'ko';
-    const language: Language = ['ko', 'en', 'ja', 'zh', 'es'].includes(languageInput)
+    const language: Language = ['ko', 'en', 'ja', 'zh', 'es'].includes(
+      languageInput
+    )
       ? (languageInput as Language)
       : 'ko';
 
@@ -702,7 +707,8 @@ async function callGeminiAnalysis(
                 },
                 price: {
                   type: 'string',
-                  description: 'Price as shown in the image (e.g., "₩15,000", "$10.99", "1,500円"). Empty string if no price visible.',
+                  description:
+                    'Price as shown in the image (e.g., "₩15,000", "$10.99", "1,500円"). Empty string if no price visible.',
                 },
                 status: { type: 'string', enum: ['SAFE', 'CAUTION', 'DANGER'] },
                 reason: {
@@ -827,6 +833,7 @@ GENERAL RULES:
       id: item.id,
       original_name: item.original_name || item.name || '',
       translated_name: item.translated_name || item.name || '',
+      price: item.price || null, // 가격 필드 추가
       description: '',
       safety_status: item.status,
       reason: item.reason,

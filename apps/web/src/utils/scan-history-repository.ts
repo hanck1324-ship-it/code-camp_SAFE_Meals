@@ -14,14 +14,15 @@
  * @see docs/schema.md
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { ScanImageStorage } from '@/utils/scan-image-storage';
+
 import type {
   SaveScanParams,
   SaveScanResult,
   ScanHistoryInsert,
   ScanResultInsert,
 } from '@/types/scan-history.types';
-import { ScanImageStorage } from '@/utils/scan-image-storage';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * 스캔 이력 저장소 클래스

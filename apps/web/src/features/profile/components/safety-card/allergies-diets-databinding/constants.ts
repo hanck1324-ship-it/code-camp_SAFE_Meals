@@ -428,10 +428,7 @@ export function getDietTypeInfo(
  * @param severity - 심각도 코드
  * @returns 심각도 한글 레이블 (없으면 기본값 반환)
  */
-export function getSeverityLabel(
-  severity: string,
-  language: Language
-): string {
+export function getSeverityLabel(severity: string, language: Language): string {
   const labels = SEVERITY_LABELS[severity as AllergySeverity];
   if (!labels) return severity;
   return labels[language] || labels.en || severity;

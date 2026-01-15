@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabase';
+
 import { maskEmail, constantTimeDelay } from '@/lib/masking';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { getSupabaseClient } from '@/lib/supabase';
 
 /**
  * 이메일 찾기 API

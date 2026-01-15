@@ -1,11 +1,13 @@
 'use client';
 
+import { Mail, Lock, Globe, Phone, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 import { Controller } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, Globe, Phone, User } from 'lucide-react';
-import { Input } from '@/components/ui/input-legacy';
+
+import { AUTH_URLS } from '@/commons/constants/url';
 import { Button } from '@/components/ui/button-legacy';
+import { Input } from '@/components/ui/input-legacy';
 import {
   Select,
   SelectContent,
@@ -13,9 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAuthSignupForm } from './hooks/index.form.hook';
 import { useTranslation, getSupportedLanguages } from '@/hooks/useTranslation';
-import { AUTH_URLS } from '@/commons/constants/url';
+
+import { useAuthSignupForm } from './hooks/index.form.hook';
+
 import type { Language } from '@/lib/translations';
 
 export interface AuthSignupProps {
@@ -43,7 +46,7 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
       className={`flex min-h-screen items-center justify-center p-4 ${className}`}
       data-testid="auth-signup-container"
     >
-      <div className="box-content flex flex-col w-full max-w-md rounded-2xl p-8">
+      <div className="box-content flex w-full max-w-md flex-col rounded-2xl p-8">
         <div className="mb-6 text-center">
           <h1 className="mb-2 text-2xl font-semibold text-foreground">
             {t.createAccount}
@@ -60,7 +63,13 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
                     : '새로운 계정을 만들어 서비스를 시작해보세요'}
           </p>
         </div>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSubmit(e); }}>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(e);
+          }}
+        >
           <div className="w-full">
             <Controller
               name="email"
@@ -150,7 +159,7 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
                   />
                   {isPasswordMismatch && (
                     <p
-                      className="text-sm text-destructive mt-1"
+                      className="mt-1 text-sm text-destructive"
                       data-testid="password-mismatch-error"
                     >
                       비밀번호가 일치하지 않습니다.
@@ -166,7 +175,7 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
               control={control}
               render={({ field }) => (
                 <div className="flex w-full flex-col gap-1">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <Globe className="h-4 w-4" />
                     {t.language}
                   </label>
@@ -294,7 +303,7 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
           </div>
           {errorMessage && (
             <div
-              className="text-sm text-destructive text-center p-2 bg-destructive/10 rounded-md"
+              className="bg-destructive/10 rounded-md p-2 text-center text-sm text-destructive"
               data-testid="signup-error-message"
             >
               {errorMessage}
@@ -306,7 +315,7 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
               variant="primary"
               fullWidth
               disabled={!isFormFilled || isLoading}
-              className="w-full rounded-[10px] flex items-center justify-center h-[55px]"
+              className="flex h-[55px] w-full items-center justify-center rounded-[10px]"
               data-testid="signup-submit-button"
             >
               {isLoading
@@ -327,7 +336,7 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
         {/* 구분선 */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
+            <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
             <span className="bg-background px-2 text-muted-foreground">
@@ -351,7 +360,7 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
           fullWidth
           onClick={onGoogleSignup}
           disabled={isLoading}
-          className="w-full rounded-[10px] flex items-center justify-center gap-2 h-[55px] border border-gray-300"
+          className="flex h-[55px] w-full items-center justify-center gap-2 rounded-[10px] border border-gray-300"
           data-testid="google-signup-button"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -389,7 +398,7 @@ export const AuthSignup: React.FC<AuthSignupProps> = ({ className = '' }) => {
             <button
               type="button"
               onClick={() => router.push(AUTH_URLS.LOGIN)}
-              className="font-medium text-[#2ECC71] no-underline hover:underline cursor-pointer bg-transparent border-none p-0"
+              className="cursor-pointer border-none bg-transparent p-0 font-medium text-[#2ECC71] no-underline hover:underline"
             >
               {t.signIn}
             </button>

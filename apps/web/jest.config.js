@@ -18,7 +18,18 @@ const customJestConfig = {
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/*.stories.{js,jsx,ts,tsx}',
+    '!src/components/ui/**', // shadcn/ui 컴포넌트 제외
   ],
+  coverageReporters: ['text', 'text-summary', 'html', 'lcov'],
+  // 커버리지 임계값 (점진적으로 높여갈 것)
+  coverageThreshold: {
+    global: {
+      statements: 5,
+      branches: 5,
+      functions: 5,
+      lines: 5,
+    },
+  },
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

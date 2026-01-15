@@ -7,9 +7,11 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+
 import { useTranslation } from '@/hooks/useTranslation';
-import { TravelPaymentModal } from './payment/TravelPaymentModal';
 import { formatCurrency } from '@/lib/portone';
+
+import { TravelPaymentModal } from './payment/TravelPaymentModal';
 
 interface PaymentScreenProps {
   onBack: () => void;

@@ -7,6 +7,7 @@ import {
   Shield,
   MessageCircle,
 } from 'lucide-react';
+
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface HelpSupportScreenProps {

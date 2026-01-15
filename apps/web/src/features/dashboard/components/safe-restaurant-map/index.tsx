@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { MapPin, Locate, RefreshCw } from 'lucide-react';
-import { DefaultMapService } from '@/lib/map';
-import type { MapAdapter, LatLng } from '@/lib/map';
+import { useEffect, useRef, useState } from 'react';
+
 import { useScanLocations } from '@/features/dashboard/hooks/useScanLocations';
+import { useTranslation } from '@/hooks/useTranslation';
+import { DefaultMapService } from '@/lib/map';
+
+import type { MapAdapter, LatLng } from '@/lib/map';
 
 interface SafeRestaurantMapProps {
   className?: string;
@@ -18,12 +21,16 @@ interface SafeRestaurantMapProps {
  * - 안전도에 따른 색상 구분
  * - 현재 위치 표시 기능
  */
-export function SafeRestaurantMap({ className, height = '400px' }: SafeRestaurantMapProps) {
+export function SafeRestaurantMap({
+  className,
+  height = '400px',
+}: SafeRestaurantMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapServiceRef = useRef<MapAdapter | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<LatLng | null>(null);
 
+  const { t } = useTranslation();
   const { markers, isLoading, error, refetch } = useScanLocations();
 
   // 지도 초기화
@@ -95,7 +102,7 @@ export function SafeRestaurantMap({ className, height = '400px' }: SafeRestauran
     if (location) {
       setCurrentLocation(location);
     } else {
-      alert('현재 위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
+      alert(t.locationPermissionError);
     }
   };
 
@@ -105,7 +112,7 @@ export function SafeRestaurantMap({ className, height = '400px' }: SafeRestauran
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MapPin className="h-5 w-5 text-[#2ECC71]" />
-          <h2>나만의 안전식당 지도</h2>
+          <h2>{t.mySafeRestaurantMap}</h2>
         </div>
         <div className="flex items-center gap-2">
           {/* 새로고침 버튼 */}
@@ -115,7 +122,9 @@ export function SafeRestaurantMap({ className, height = '400px' }: SafeRestauran
             className="rounded-lg border border-gray-200 p-2 hover:bg-gray-50 disabled:opacity-50"
             aria-label="새로고침"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+            />
           </button>
           {/* 현재 위치 버튼 */}
           <button
@@ -142,7 +151,7 @@ export function SafeRestaurantMap({ className, height = '400px' }: SafeRestauran
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
             <div className="text-center">
               <RefreshCw className="mx-auto mb-2 h-8 w-8 animate-spin text-[#2ECC71]" />
-              <p className="text-sm text-gray-600">지도 데이터 로딩 중...</p>
+              <p className="text-sm text-gray-600">{t.mapDataLoading}</p>
             </div>
           </div>
         )}
@@ -156,7 +165,7 @@ export function SafeRestaurantMap({ className, height = '400px' }: SafeRestauran
                 onClick={refetch}
                 className="rounded-lg bg-[#2ECC71] px-4 py-2 text-sm text-white hover:bg-[#27AE60]"
               >
-                다시 시도
+                {t.retry}
               </button>
             </div>
           </div>
@@ -167,27 +176,26 @@ export function SafeRestaurantMap({ className, height = '400px' }: SafeRestauran
       <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-600">
         <div className="flex items-center gap-1">
           <div className="h-3 w-3 rounded-full bg-[#2ECC71]" />
-          <span>안전</span>
+          <span>{t.safe}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="h-3 w-3 rounded-full bg-[#F39C12]" />
-          <span>주의</span>
+          <span>{t.caution}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="h-3 w-3 rounded-full bg-[#E74C3C]" />
-          <span>위험</span>
+          <span>{t.danger}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="h-3 w-3 rounded-full bg-[#95A5A6]" />
-          <span>확인필요</span>
+          <span>{t.needsReview}</span>
         </div>
       </div>
 
       {/* 통계 정보 */}
       {!isLoading && markers.length > 0 && (
         <div className="mt-3 rounded-lg bg-gray-50 p-3 text-center text-sm text-gray-600">
-          총 <span className="font-bold text-[#2ECC71]">{markers.length}개</span>의 스캔한
-          식당이 등록되어 있습니다
+          {t.scannedRestaurants.replace('{{count}}', markers.length.toString())}
         </div>
       )}
 
@@ -195,10 +203,8 @@ export function SafeRestaurantMap({ className, height = '400px' }: SafeRestauran
       {!isLoading && !error && markers.length === 0 && (
         <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
           <MapPin className="mx-auto mb-2 h-8 w-8 text-gray-400" />
-          <p className="mb-1 text-sm text-gray-600">아직 등록된 식당이 없습니다</p>
-          <p className="text-xs text-gray-500">
-            메뉴를 스캔하면 자동으로 지도에 표시됩니다
-          </p>
+          <p className="mb-1 text-sm text-gray-600">{t.noRestaurantsYet}</p>
+          <p className="text-xs text-gray-500">{t.scanMenuToDisplay}</p>
         </div>
       )}
     </div>

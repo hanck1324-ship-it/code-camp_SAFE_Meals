@@ -46,7 +46,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 이미지 URI를 포함하여 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 페이지 요소 확인
@@ -62,8 +64,12 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 안내 메시지 확인
-    await expect(page.locator('[data-testid="no-image-message"]')).toBeVisible();
-    await expect(page.locator('[data-testid="go-to-camera-button"]')).toBeVisible();
+    await expect(
+      page.locator('[data-testid="no-image-message"]')
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-testid="go-to-camera-button"]')
+    ).toBeVisible();
   });
 
   /**
@@ -91,7 +97,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 로딩 상태 확인
@@ -126,7 +134,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 결과 페이지로 이동 확인
@@ -154,7 +164,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 에러 메시지 확인
@@ -180,7 +192,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 에러 메시지 확인
@@ -205,7 +219,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 에러 메시지 확인
@@ -239,7 +255,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 로딩 상태 확인
@@ -271,7 +289,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 분석 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 에러 메시지 대기
@@ -286,9 +306,12 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     await page.click('[data-testid="retake-button"]');
 
     // URL이 변경되었는지 확인 (analyze 페이지를 벗어남)
-    await page.waitForFunction(() => !window.location.href.includes('/scan/analyze'), {
-      timeout: 5000,
-    });
+    await page.waitForFunction(
+      () => !window.location.href.includes('/scan/analyze'),
+      {
+        timeout: 5000,
+      }
+    );
   });
 
   /**
@@ -332,7 +355,9 @@ test.describe('이미지 분석 제출 기능 테스트', () => {
     });
 
     // 페이지로 이동
-    await page.goto(`/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`);
+    await page.goto(
+      `/scan/analyze?imageUri=${encodeURIComponent(TEST_IMAGE_URI)}`
+    );
     await page.waitForSelector('[data-testid="analyze-page"]');
 
     // 에러 메시지 대기

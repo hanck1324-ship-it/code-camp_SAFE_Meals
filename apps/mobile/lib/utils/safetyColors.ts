@@ -33,7 +33,10 @@ const DARK_COLORS: Record<SafetyLevel, SafetyColors> = {
  * @param isDark 다크모드 여부
  * @returns 배경색, 텍스트색, 테두리색 객체
  */
-export function getSafetyColors(level: SafetyLevel, isDark = false): SafetyColors {
+export function getSafetyColors(
+  level: SafetyLevel,
+  isDark = false
+): SafetyColors {
   return isDark ? DARK_COLORS[level] : LIGHT_COLORS[level];
 }
 
@@ -56,7 +59,10 @@ export function getSafetyLabel(level: SafetyLevel): string {
 export function getSafetyIconName(
   level: SafetyLevel
 ): 'checkmark-circle' | 'alert-circle' | 'warning' | 'help-circle' {
-  const icons: Record<SafetyLevel, 'checkmark-circle' | 'alert-circle' | 'warning' | 'help-circle'> = {
+  const icons: Record<
+    SafetyLevel,
+    'checkmark-circle' | 'alert-circle' | 'warning' | 'help-circle'
+  > = {
     safe: 'checkmark-circle',
     caution: 'alert-circle',
     danger: 'warning',

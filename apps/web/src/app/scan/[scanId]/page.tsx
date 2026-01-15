@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
 import {
   ChevronLeft,
   X,
@@ -9,9 +7,12 @@ import {
   AlertTriangle,
   AlertCircle,
 } from 'lucide-react';
-import { getSupabaseClient } from '@/lib/supabase';
+import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getSupabaseClient } from '@/lib/supabase';
 
 // ============================================
 // 타입 정의
@@ -99,7 +100,9 @@ function getSafetyIcon(status: SafetyStatus, size = 20) {
     DANGER: AlertCircle,
   }[status];
 
-  return <Icon style={{ width: size, height: size, color: ICON_STYLES[status] }} />;
+  return (
+    <Icon style={{ width: size, height: size, color: ICON_STYLES[status] }} />
+  );
 }
 
 function formatDate(dateString: string, language: string) {
@@ -285,8 +288,12 @@ function ScanDetailContent({ scanId }: { scanId: string }) {
                   ? '위험한 메뉴가 있습니다'
                   : 'Dangerous items detected'}
           </p>
-          <p className="text-sm" style={{ color: statusStyle.textStyle, opacity: 0.8 }}>
-            {scanData.restaurant_name || (language === 'ko' ? '메뉴 스캔' : 'Menu Scan')}
+          <p
+            className="text-sm"
+            style={{ color: statusStyle.textStyle, opacity: 0.8 }}
+          >
+            {scanData.restaurant_name ||
+              (language === 'ko' ? '메뉴 스캔' : 'Menu Scan')}
           </p>
         </div>
       </div>
@@ -322,21 +329,24 @@ function ScanDetailContent({ scanId }: { scanId: string }) {
                 </div>
 
                 {item.warning_message && (
-                  <p className="mt-2 text-sm text-gray-600">{item.warning_message}</p>
+                  <p className="mt-2 text-sm text-gray-600">
+                    {item.warning_message}
+                  </p>
                 )}
 
-                {item.matched_allergens && item.matched_allergens.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {item.matched_allergens.map((allergen) => (
-                      <span
-                        key={allergen}
-                        className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700"
-                      >
-                        {allergen}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {item.matched_allergens &&
+                  item.matched_allergens.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {item.matched_allergens.map((allergen) => (
+                        <span
+                          key={allergen}
+                          className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700"
+                        >
+                          {allergen}
+                        </span>
+                      ))}
+                    </div>
+                  )}
               </div>
             );
           })}

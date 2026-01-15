@@ -1,5 +1,6 @@
 import { ChevronLeft, Lock, Shield } from 'lucide-react';
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -147,7 +148,6 @@ export function SafetyCardPinScreen({
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

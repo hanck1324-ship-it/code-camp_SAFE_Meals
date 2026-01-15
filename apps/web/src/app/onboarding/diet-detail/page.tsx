@@ -1,11 +1,12 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { DietDetailScreen } from '@/components/onboarding/diet/ category/diet-detail-screen';
 import { Suspense, useState, useEffect } from 'react';
+
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { RequireAuth } from '@/components/auth/require-auth';
+import { DietDetailScreen } from '@/components/onboarding/diet/ category/diet-detail-screen';
 import { getSupabaseClient } from '@/lib/supabase';
 
 // UI diet ID를 DB diet_code로 변환하는 매핑

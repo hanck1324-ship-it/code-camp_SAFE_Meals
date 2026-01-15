@@ -1,16 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ShieldAlert, Lock, ChevronLeft, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button-legacy';
-import { useTranslation } from '@/hooks/useTranslation';
-import { Language } from '@/commons/stores/useLanguageStore';
-import type { SafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
 import { RequireAuth } from '@/components/auth/require-auth';
-import { useSafetyCardVerify } from '@/features/profile/components/safety-card/hooks/index.submit.hook';
-import { useSafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
+import { Button } from '@/components/ui/button-legacy';
 import { AllergiesDietsDatabinding } from '@/features/profile/components/safety-card/allergies-diets-databinding';
+import { useSafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
+import { useSafetyCardVerify } from '@/features/profile/components/safety-card/hooks/index.submit.hook';
+import { useTranslation } from '@/hooks/useTranslation';
+
+import type { Language } from '@/commons/stores/useLanguageStore';
+import type { SafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
 
 /**
  * 언어별 메시지 필드 매핑
@@ -111,9 +113,8 @@ export default function SafetyCardPage() {
 
   // 안전카드 데이터에서 메시지 가져오기
   const getCardMessage = (lang: Language): string => {
-    const data = (safetyCardData || safetyCardQueryData) as
-      | SafetyCardData
-      | null;
+    const data = (safetyCardData ||
+      safetyCardQueryData) as SafetyCardData | null;
     const fieldName = LANGUAGE_FIELD_MAP[lang] || 'message_ko';
     const message = data ? (data[fieldName] as string | null) : null;
     const trimmedMessage = (message || '').trim();
@@ -336,7 +337,6 @@ export default function SafetyCardPage() {
                 {t.pinSecurityInfo}
               </p>
             </div>
-
           </div>
         )}
       </div>

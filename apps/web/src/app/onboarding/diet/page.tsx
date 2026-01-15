@@ -2,9 +2,10 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { DietCategoryScreen } from '@/components/onboarding/diet/ category/diet-category-screen';
+
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { RequireAuth } from '@/components/auth/require-auth';
+import { DietCategoryScreen } from '@/components/onboarding/diet/ category/diet-category-screen';
 import { getSupabaseClient } from '@/lib/supabase';
 
 // DB diet_code를 UI 카테고리로 매핑

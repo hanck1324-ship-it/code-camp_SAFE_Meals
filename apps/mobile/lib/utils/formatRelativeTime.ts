@@ -59,7 +59,14 @@ export function formatRelativeTime(dateString: string, locale = 'ko'): string {
   if (diffDays < 7) return l.days(diffDays);
 
   // 7일 이상이면 날짜 표시
-  const localeString = locale === 'ko' ? 'ko-KR' : locale === 'ja' ? 'ja-JP' : locale === 'zh' ? 'zh-CN' : 'en-US';
+  const localeString =
+    locale === 'ko'
+      ? 'ko-KR'
+      : locale === 'ja'
+        ? 'ja-JP'
+        : locale === 'zh'
+          ? 'zh-CN'
+          : 'en-US';
   return date.toLocaleDateString(localeString, {
     month: 'short',
     day: 'numeric',

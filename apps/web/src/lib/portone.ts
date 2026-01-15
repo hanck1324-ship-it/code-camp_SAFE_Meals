@@ -96,12 +96,12 @@ function isMobileEnvironment(): boolean {
  * 지원하는 결제 수단 타입
  */
 export type PayMethod =
-  | 'CARD'           // 신용/체크카드 (국내외)
-  | 'EASY_PAY'       // 간편결제 (카카오페이, 네이버페이, 토스페이 등)
+  | 'CARD' // 신용/체크카드 (국내외)
+  | 'EASY_PAY' // 간편결제 (카카오페이, 네이버페이, 토스페이 등)
   | 'VIRTUAL_ACCOUNT' // 가상계좌
-  | 'TRANSFER'       // 실시간 계좌이체
-  | 'MOBILE'         // 휴대폰 소액결제
-  | 'PAYPAL';        // 페이팔
+  | 'TRANSFER' // 실시간 계좌이체
+  | 'MOBILE' // 휴대폰 소액결제
+  | 'PAYPAL'; // 페이팔
 
 /**
  * 결제 수단 정보
@@ -179,9 +179,10 @@ export async function requestPayment(
   const merchantUid = `order_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
   // 리디렉션 URL 설정 (결제 완료 후 돌아올 URL)
-  const redirectUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/payment`
-    : undefined;
+  const redirectUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/payment`
+      : undefined;
 
   const paymentRequest: PaymentRequest = {
     storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,

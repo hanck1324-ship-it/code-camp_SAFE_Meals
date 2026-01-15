@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+
 import { getSupabaseClient } from '@/lib/supabase';
+
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   email: string;
@@ -54,7 +56,10 @@ export const useAppStore = create<AppState>()(
           await supabase.auth.signOut();
 
           // 네이티브 앱에 로그아웃 메시지 전송
-          if (typeof window !== 'undefined' && (window as any).SafeMealsBridge) {
+          if (
+            typeof window !== 'undefined' &&
+            (window as any).SafeMealsBridge
+          ) {
             (window as any).SafeMealsBridge.postMessage({
               type: 'LOGOUT',
             });

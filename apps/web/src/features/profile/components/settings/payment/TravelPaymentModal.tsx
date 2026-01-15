@@ -1,5 +1,7 @@
 import { X, Calendar, Plane, Check } from 'lucide-react';
 import { useState } from 'react';
+
+import { showToast } from '@/components/ui/toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   createTravelPackage,
@@ -9,10 +11,10 @@ import {
   TRAVEL_PRICING,
   formatCurrency,
   PAYMENT_METHODS,
-  PayMethod,
 } from '@/lib/portone';
 import { getSupabaseClient } from '@/lib/supabase';
-import { showToast } from '@/components/ui/toast';
+
+import type { PayMethod } from '@/lib/portone';
 
 interface TravelPaymentModalProps {
   onClose: () => void;
@@ -60,7 +62,10 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
 
   const handlePurchase = async () => {
     if (!startDate || !endDate || calculatedDays === 0) {
-      showToast('warning', t.selectTravelDates || '여행 시작일과 종료일을 선택해주세요.');
+      showToast(
+        'warning',
+        t.selectTravelDates || '여행 시작일과 종료일을 선택해주세요.'
+      );
       return;
     }
 
@@ -165,13 +170,13 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
-      <div className="w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+      <div className="max-h-[95vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white shadow-2xl sm:max-h-[90vh]">
         {/* Header */}
-        <div className="sticky top-0 border-b border-gray-200 bg-white px-4 sm:px-6 py-3 sm:py-4">
+        <div className="sticky top-0 border-b border-gray-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Plane className="h-5 w-5 sm:h-6 sm:w-6 text-[#2ECC71]" />
-              <h2 className="text-lg sm:text-xl font-bold">
+              <Plane className="h-5 w-5 text-[#2ECC71] sm:h-6 sm:w-6" />
+              <h2 className="text-lg font-bold sm:text-xl">
                 {t.travelPackage || '여행 패키지'}
               </h2>
             </div>
@@ -186,7 +191,7 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
           {/* 요금 안내 */}
           <div className="rounded-2xl border-2 border-[#2ECC71] bg-gradient-to-br from-[#2ECC71]/10 to-white p-4">
             <div className="mb-2 flex items-center gap-3">
@@ -221,7 +226,7 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
                 onChange={(e) => handleStartDateChange(e.target.value)}
                 min={today}
                 max={maxDateStr}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base text-center focus:border-[#2ECC71] focus:outline-none"
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-center text-base focus:border-[#2ECC71] focus:outline-none"
                 style={{ minHeight: '48px' }}
                 disabled={isProcessing}
               />
@@ -240,7 +245,7 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
                 onChange={(e) => handleEndDateChange(e.target.value)}
                 min={startDate || today}
                 max={maxDateStr}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base text-center focus:border-[#2ECC71] focus:outline-none"
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-center text-base focus:border-[#2ECC71] focus:outline-none"
                 style={{ minHeight: '48px' }}
                 disabled={isProcessing || !startDate}
               />
@@ -259,31 +264,35 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
                   type="button"
                   onClick={() => setSelectedPayMethod(method.id)}
                   disabled={isProcessing}
-                  className={`w-full rounded-xl border-2 p-3 sm:p-4 text-left transition-all active:scale-[0.98] ${
+                  className={`w-full rounded-xl border-2 p-3 text-left transition-all active:scale-[0.98] sm:p-4 ${
                     selectedPayMethod === method.id
                       ? 'border-[#2ECC71] bg-[#2ECC71]/10'
                       : 'border-gray-200 hover:border-gray-300 active:border-gray-400'
                   } disabled:opacity-50`}
                 >
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-xl sm:text-2xl flex-shrink-0">{method.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                        <p className="font-semibold text-sm sm:text-base">
+                    <span className="flex-shrink-0 text-xl sm:text-2xl">
+                      {method.icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <p className="text-sm font-semibold sm:text-base">
                           {language === 'ko' ? method.name : method.nameEn}
                         </p>
                         {method.recommended && (
-                          <span className="rounded-full bg-[#2ECC71] px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-white whitespace-nowrap">
+                          <span className="whitespace-nowrap rounded-full bg-[#2ECC71] px-1.5 py-0.5 text-[10px] text-white sm:px-2 sm:text-xs">
                             {language === 'ko' ? '추천' : 'Recommended'}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-0.5 truncate">
-                        {language === 'ko' ? method.description : method.descriptionEn}
+                      <p className="mt-0.5 truncate text-xs text-gray-600 sm:text-sm">
+                        {language === 'ko'
+                          ? method.description
+                          : method.descriptionEn}
                       </p>
                     </div>
                     {selectedPayMethod === method.id && (
-                      <Check className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 text-[#2ECC71]" />
+                      <Check className="h-5 w-5 flex-shrink-0 text-[#2ECC71] sm:h-6 sm:w-6" />
                     )}
                   </div>
                 </button>
@@ -310,7 +319,7 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
                   {formatCurrency(TRAVEL_PRICING.DAILY_RATE)}
                 </span>
               </div>
-              <div className="my-3 border-t border-gray-300"></div>
+              <div className="my-3 border-t border-gray-300" />
               <div className="flex items-center justify-between">
                 <span className="text-lg font-bold">
                   {t.totalAmount || '총 금액'}
@@ -326,7 +335,7 @@ export function TravelPaymentModal({ onClose }: TravelPaymentModalProps) {
           <button
             onClick={handlePurchase}
             disabled={isProcessing || calculatedDays === 0}
-            className="w-full rounded-xl bg-[#2ECC71] px-4 sm:px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:bg-[#27AE60] active:bg-[#27AE60] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-xl bg-[#2ECC71] px-4 py-3 text-base font-semibold text-white transition-all hover:bg-[#27AE60] active:scale-[0.98] active:bg-[#27AE60] disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-4 sm:text-lg"
             style={{ minHeight: '48px' }}
           >
             {isProcessing

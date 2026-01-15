@@ -1,30 +1,44 @@
-import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import { router } from 'expo-router';
-import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
-import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import type { BarcodeScanningResult } from 'expo-camera';
 
 export default function CameraModal() {
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(true);
 
-  const handleBarcodeScanned = useCallback((result: BarcodeScanningResult) => {
-    if (!isScanning || !result.data) return;
-    
-    setIsScanning(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
-    // 스캔 결과와 함께 뒤로가기
-    router.back();
-    router.push(`/webview/scan/result?barcode=${result.data}`);
-  }, [isScanning]);
+  const handleBarcodeScanned = useCallback(
+    (result: BarcodeScanningResult) => {
+      if (!isScanning || !result.data) return;
+
+      setIsScanning(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // 스캔 결과와 함께 뒤로가기
+      router.back();
+      router.push(`/webview/scan/result?barcode=${result.data}`);
+    },
+    [isScanning]
+  );
 
   if (!permission?.granted) {
     return (
       <SafeAreaView style={styles.permissionContainer}>
-        <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => router.back()}
+        >
           <Ionicons name="close" size={28} color="#1f2937" />
         </TouchableOpacity>
         <Ionicons name="camera-outline" size={64} color="#9ca3af" />
@@ -49,10 +63,13 @@ export default function CameraModal() {
         }}
         onBarcodeScanned={isScanning ? handleBarcodeScanned : undefined}
       />
-      
+
       {/* 닫기 버튼 */}
       <SafeAreaView style={styles.header}>
-        <TouchableOpacity style={styles.closeButtonDark} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.closeButtonDark}
+          onPress={() => router.back()}
+        >
           <Ionicons name="close" size={28} color="#ffffff" />
         </TouchableOpacity>
       </SafeAreaView>

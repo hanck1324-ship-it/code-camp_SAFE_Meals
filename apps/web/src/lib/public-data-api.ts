@@ -12,7 +12,9 @@ const PUBLIC_DATA_KEY = process.env.PUBLIC_DATA_KEY;
 const HACCP_API_KEY = process.env.HACCP_API_KEY || PUBLIC_DATA_KEY;
 
 if (!PUBLIC_DATA_KEY && !HACCP_API_KEY) {
-  console.warn('[Public Data API] API keys are not configured in environment variables');
+  console.warn(
+    '[Public Data API] API keys are not configured in environment variables'
+  );
 }
 
 // ============================================
@@ -20,17 +22,17 @@ if (!PUBLIC_DATA_KEY && !HACCP_API_KEY) {
 // ============================================
 
 export interface HACCPProduct {
-  prdlstReportNo?: string;      // 품목제조번호
-  prdlstNm?: string;             // 제품명
-  manufacturerNm?: string;       // 제조사명
-  imgUrl1?: string;              // 제품 이미지 URL 1
-  imgUrl2?: string;              // 제품 이미지 URL 2
-  rawmtrl?: string;              // 원재료명
-  nutrient?: string;             // 영양성분
-  allergy?: string;              // 알레르기 유발물질
-  capacity?: string;             // 내용량
-  distributionPeriod?: string;   // 유통기한
-  [key: string]: unknown;        // 기타 필드
+  prdlstReportNo?: string; // 품목제조번호
+  prdlstNm?: string; // 제품명
+  manufacturerNm?: string; // 제조사명
+  imgUrl1?: string; // 제품 이미지 URL 1
+  imgUrl2?: string; // 제품 이미지 URL 2
+  rawmtrl?: string; // 원재료명
+  nutrient?: string; // 영양성분
+  allergy?: string; // 알레르기 유발물질
+  capacity?: string; // 내용량
+  distributionPeriod?: string; // 유통기한
+  [key: string]: unknown; // 기타 필드
 }
 
 export interface HACCPApiResponse {
@@ -64,7 +66,8 @@ export async function getHACCPProducts({
   pageNo?: number;
   numOfRows?: number;
 } = {}): Promise<HACCPApiResponse> {
-  const baseUrl = 'http://apis.data.go.kr/B553748/CertImgListServiceV3/getCertImgListServiceV3';
+  const baseUrl =
+    'http://apis.data.go.kr/B553748/CertImgListServiceV3/getCertImgListServiceV3';
 
   const params = new URLSearchParams({
     serviceKey: HACCP_API_KEY || '',
@@ -86,12 +89,14 @@ export async function getHACCPProducts({
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`HACCP API Error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `HACCP API Error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
@@ -135,7 +140,8 @@ export async function getKoreanFoodIngredients({
   page?: number;
   perPage?: number;
 } = {}): Promise<KoreanFoodApiResponse> {
-  const baseUrl = 'https://api.odcloud.kr/api/15136610/v1/uddi:cdae3642-8160-45f7-85bd-859ddb76958e';
+  const baseUrl =
+    'https://api.odcloud.kr/api/15136610/v1/uddi:cdae3642-8160-45f7-85bd-859ddb76958e';
 
   const params = new URLSearchParams({
     page: page.toString(),
@@ -148,13 +154,15 @@ export async function getKoreanFoodIngredients({
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
-        'Authorization': `Infuser ${PUBLIC_DATA_KEY}`,
+        Accept: 'application/json',
+        Authorization: `Infuser ${PUBLIC_DATA_KEY}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Korean Food API Error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Korean Food API Error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
@@ -170,14 +178,14 @@ export async function getKoreanFoodIngredients({
 // ============================================
 
 export interface FoodQRInfo {
-  PRDLST_NM?: string;           // 제품명
-  BSSH_NM?: string;             // 업소명
-  RAWMTRL_NM?: string;          // 원재료명
-  ALLERGY?: string;             // 알레르기 유발물질
-  NUTR_CONT?: string;           // 영양성분
-  CAPACITY?: string;            // 내용량
-  POG_DAYCNT?: string;          // 유통기한
-  BARCODE?: string;             // 바코드
+  PRDLST_NM?: string; // 제품명
+  BSSH_NM?: string; // 업소명
+  RAWMTRL_NM?: string; // 원재료명
+  ALLERGY?: string; // 알레르기 유발물질
+  NUTR_CONT?: string; // 영양성분
+  CAPACITY?: string; // 내용량
+  POG_DAYCNT?: string; // 유통기한
+  BARCODE?: string; // 바코드
   [key: string]: unknown;
 }
 
@@ -212,7 +220,8 @@ export async function getFoodQRInfo({
   pageNo?: number;
   numOfRows?: number;
 } = {}): Promise<FoodQRApiResponse> {
-  const baseUrl = 'https://apis.data.go.kr/1471000/FoodQrInfoService01/getFoodQrInfo';
+  const baseUrl =
+    'https://apis.data.go.kr/1471000/FoodQrInfoService01/getFoodQrInfo';
 
   const params = new URLSearchParams({
     serviceKey: PUBLIC_DATA_KEY || '',
@@ -234,12 +243,14 @@ export async function getFoodQRInfo({
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Food QR API Error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Food QR API Error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();

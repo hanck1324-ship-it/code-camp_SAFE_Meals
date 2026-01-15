@@ -1,6 +1,9 @@
-import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { SafetyBadge, SafetyLevel } from './safety-badge';
+import { useState } from 'react';
+
+import { SafetyBadge } from './safety-badge';
+
+import type { SafetyLevel } from './safety-badge';
 
 interface MenuListItemProps {
   originalName: string;

@@ -1,6 +1,9 @@
 import { X, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
-import { SafetyBadge, SafetyLevel } from '@/components/common/safety-badge';
+
+import { SafetyBadge } from '@/components/common/safety-badge';
 import { useTranslation } from '@/hooks/useTranslation';
+
+import type { SafetyLevel } from '@/components/common/safety-badge';
 
 interface MenuItem {
   id: string;

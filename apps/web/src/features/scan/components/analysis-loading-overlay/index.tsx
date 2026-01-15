@@ -1,12 +1,14 @@
 'use client';
 
-import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
+
+import { Progress } from '@/components/ui/progress';
 import {
-  AnalysisLoadingStage,
   LOADING_STAGE_PROGRESS,
   LOADING_STAGE_MESSAGES,
 } from '@/features/scan/types/loading';
+
+import type { AnalysisLoadingStage } from '@/features/scan/types/loading';
 
 interface AnalysisLoadingOverlayProps {
   stage: AnalysisLoadingStage;
@@ -80,6 +82,24 @@ export function AnalysisLoadingOverlay({
         >
           {progress}%
         </p>
+
+        {/* 예상 소요 시간 */}
+        <p className="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">
+          {language === 'ko'
+            ? '평균 5-10초 소요됩니다'
+            : 'Takes 5-10 seconds on average'}
+        </p>
+
+        {/* 팁 메시지 */}
+        {stage === 'analyzing-ai' && (
+          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
+            <p className="text-center text-xs text-blue-700 dark:text-blue-300">
+              {language === 'ko'
+                ? '💡 알레르기 정보를 미리 등록하면 더 정확한 결과를 받을 수 있어요'
+                : '💡 Register your allergies for more accurate results'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

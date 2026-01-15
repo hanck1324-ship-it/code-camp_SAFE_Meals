@@ -1,18 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Controller } from 'react-hook-form';
-import Link from 'next/link';
-import Image from 'next/image';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { Input } from '@/components/ui/input-legacy';
-import { Button } from '@/components/ui/button-legacy';
-import { useAuthLoginForm } from './hooks/index.form.hook';
-import { usePasswordReset } from './hooks/usePasswordReset';
+import Image from 'next/image';
+import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { Controller } from 'react-hook-form';
+
 import { AUTH_URLS } from '@/commons/constants/url';
 import { LanguageSelector } from '@/components/language-selector';
-import { useTranslation } from '@/hooks/useTranslation';
-import { Language } from '@/lib/translations';
+import { Button } from '@/components/ui/button-legacy';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +17,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input-legacy';
 import FindAccountModal from '@/features/auth/components/find-account/FindAccountModal';
+import { useTranslation } from '@/hooks/useTranslation';
+
+import { useAuthLoginForm } from './hooks/index.form.hook';
+import { usePasswordReset } from './hooks/usePasswordReset';
+
+import type { Language } from '@/lib/translations';
 
 export interface AuthLoginProps {
   className?: string;
@@ -53,11 +56,24 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
   const { language } = useTranslation();
   const isNativeApp =
     typeof window !== 'undefined' &&
-    (((window as any).ReactNativeWebView !== undefined) ||
+    ((window as any).ReactNativeWebView !== undefined ||
       (window as any).isNativeApp === true);
 
   // 계정 찾기 모달 상태
   const [isFindAccountModalOpen, setIsFindAccountModalOpen] = useState(false);
+
+  // URL 쿼리 파라미터로 모달 자동 열기 (클라이언트 사이드에서만)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('showFindEmail') === 'true') {
+      setIsFindAccountModalOpen(true);
+    }
+    if (params.get('showForgotPassword') === 'true') {
+      openPasswordResetDialog();
+    }
+  }, [openPasswordResetDialog]);
 
   const loginText: Record<
     Language,
@@ -159,7 +175,8 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
       continueWithApple: '使用Apple继续',
       continueWithFacebook: '使用Facebook继续',
       passwordResetTitle: '重置密码',
-      passwordResetDescription: '输入您的电子邮件地址，我们将向您发送密码重置链接。',
+      passwordResetDescription:
+        '输入您的电子邮件地址，我们将向您发送密码重置链接。',
       passwordResetEmailPlaceholder: '电子邮件地址',
       passwordResetSubmit: '发送重置邮件',
       passwordResetCancel: '取消',
@@ -316,7 +333,10 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
         </form>
 
         {/* 비밀번호 재설정 다이얼로그 */}
-        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && closePasswordResetDialog()}>
+        <Dialog
+          open={isDialogOpen}
+          onOpenChange={(open) => !open && closePasswordResetDialog()}
+        >
           <DialogContent data-testid="password-reset-dialog">
             <DialogHeader>
               <DialogTitle>{currentText.passwordResetTitle}</DialogTitle>
@@ -371,7 +391,9 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
                 className="inline-flex h-10 items-center justify-center rounded-md bg-[#2ECC71] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#27AE60] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                 data-testid="password-reset-submit-button"
               >
-                {isResetLoading ? '발송 중...' : currentText.passwordResetSubmit}
+                {isResetLoading
+                  ? '발송 중...'
+                  : currentText.passwordResetSubmit}
               </button>
             </DialogFooter>
           </DialogContent>
@@ -379,11 +401,11 @@ export const AuthLogin: React.FC<AuthLoginProps> = ({ className = '' }) => {
 
         {/* Divider */}
         <div className="my-6 flex items-center gap-4">
-          <div className="h-px flex-1 bg-gray-200"></div>
+          <div className="h-px flex-1 bg-gray-200" />
           <span className="text-sm text-muted-foreground">
             {currentText.or}
           </span>
-          <div className="h-px flex-1 bg-gray-200"></div>
+          <div className="h-px flex-1 bg-gray-200" />
         </div>
 
         {/* Social Login Buttons */}

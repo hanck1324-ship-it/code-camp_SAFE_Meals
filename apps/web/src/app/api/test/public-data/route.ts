@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import {
   getHACCPProducts,
   getKoreanFoodIngredients,
@@ -67,7 +68,8 @@ export async function GET(request: Request) {
               haccp: '/api/test/public-data?api=haccp',
               'korean-food': '/api/test/public-data?api=korean-food',
               'food-qr': '/api/test/public-data?api=food-qr',
-              'search-barcode': '/api/test/public-data?api=search-barcode&barcode=8801234567890',
+              'search-barcode':
+                '/api/test/public-data?api=search-barcode&barcode=8801234567890',
               'search-name': '/api/test/public-data?api=search-name&name=콜라',
             },
           },

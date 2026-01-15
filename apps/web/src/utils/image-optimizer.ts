@@ -113,7 +113,9 @@ export async function optimizeImage(
   console.log(`  - 원본 크기: ${(originalSize / 1024).toFixed(1)} KB`);
   console.log(`  - 최적화 후: ${(optimizedSize / 1024).toFixed(1)} KB`);
   console.log(`  - 압축률: ${(compressionRatio * 100).toFixed(1)}%`);
-  console.log(`  - 원본 해상도: ${originalDimensions.width}x${originalDimensions.height}`);
+  console.log(
+    `  - 원본 해상도: ${originalDimensions.width}x${originalDimensions.height}`
+  );
   console.log(`  - 최적화 해상도: ${targetWidth}x${targetHeight}`);
   console.log(`  - 처리 시간: ${processingTime.toFixed(1)}ms`);
 

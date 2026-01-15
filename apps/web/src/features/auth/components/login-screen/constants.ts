@@ -1,4 +1,4 @@
-import { Language } from '@/lib/translations';
+import type { Language } from '@/lib/translations';
 
 export const LOGIN_TEXT: Record<
   Language,
@@ -88,4 +88,3 @@ export const LOGIN_TEXT: Record<
     continueWithFacebook: 'Continuar con Facebook',
   },
 } as const;
-

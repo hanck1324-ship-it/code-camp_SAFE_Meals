@@ -17,6 +17,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+
 import { getSupabaseClient } from '@/lib/supabase';
 
 // ============================================
@@ -171,14 +172,18 @@ export function useSaveAnalysisResult(): UseSaveAnalysisResultReturn {
           // job_id UNIQUE 제약 위반 시 중복 저장 방지
           if (historyError.code === '23505') {
             setIsDuplicate(true);
-            console.log(`ℹ️ [AnalysisResult] 이미 저장됨 - jobId: ${params.jobId}`);
+            console.log(
+              `ℹ️ [AnalysisResult] 이미 저장됨 - jobId: ${params.jobId}`
+            );
             return { success: false, error: '이미 저장된 스캔입니다.' };
           }
           throw historyError;
         }
 
         const scanId = historyData.id;
-        console.log(`✅ [AnalysisResult] scan_history 삽입 완료 - scanId: ${scanId}`);
+        console.log(
+          `✅ [AnalysisResult] scan_history 삽입 완료 - scanId: ${scanId}`
+        );
 
         // ============================================
         // Step 2: scan_results 삽입
@@ -207,7 +212,9 @@ export function useSaveAnalysisResult(): UseSaveAnalysisResultReturn {
 
           try {
             await supabase.from('scan_history').delete().eq('id', scanId);
-            console.log(`🗑️ [AnalysisResult] 보상 삭제 완료 - scanId: ${scanId}`);
+            console.log(
+              `🗑️ [AnalysisResult] 보상 삭제 완료 - scanId: ${scanId}`
+            );
           } catch (cleanupError) {
             console.error(
               `⚠️ [AnalysisResult] 보상 삭제 실패 - orphan scanId: ${scanId}`,

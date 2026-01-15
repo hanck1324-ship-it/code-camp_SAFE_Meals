@@ -13,6 +13,7 @@
 
 import { ImageIcon, X, RotateCcw } from 'lucide-react';
 import Image from 'next/image';
+
 import { useMenuScan } from '@/features/scan/context';
 
 export function MenuScanPreviewArea() {

@@ -1,12 +1,13 @@
 'use client';
 
-import { SafetyProfileEditScreen } from '@/features/profile/components/settings/safety-profile-edit-screen';
+import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useEffect, Suspense } from 'react';
+
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useSafetyCardAllergiesDietsLoad } from '@/features/profile/components/settings/hooks/index.submit-allergies-diets.hook';
-import { useEffect, Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
+import { SafetyProfileEditScreen } from '@/features/profile/components/settings/safety-profile-edit-screen';
+import { useTranslation } from '@/hooks/useTranslation';
 
 function SettingsContent() {
   const router = useRouter();

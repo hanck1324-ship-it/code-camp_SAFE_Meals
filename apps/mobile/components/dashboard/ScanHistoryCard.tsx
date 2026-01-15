@@ -4,6 +4,7 @@
  * - 안전 등급별 색상 및 다크모드 대응
  */
 
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -12,10 +13,15 @@ import {
   StyleSheet,
   useColorScheme,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { RecentScan, SafetyLevel } from '@/types/scan';
-import { getSafetyColors, getSafetyLabel, getSafetyIconName } from '@/lib/utils/safetyColors';
+
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
+import {
+  getSafetyColors,
+  getSafetyLabel,
+  getSafetyIconName,
+} from '@/lib/utils/safetyColors';
+
+import type { RecentScan, SafetyLevel } from '@/types/scan';
 
 interface ScanHistoryCardProps {
   scan: RecentScan;
@@ -25,7 +31,13 @@ interface ScanHistoryCardProps {
 /**
  * 안전 등급 아이콘 컴포넌트
  */
-function SafetyIcon({ level, size = 32 }: { level: SafetyLevel; size?: number }) {
+function SafetyIcon({
+  level,
+  size = 32,
+}: {
+  level: SafetyLevel;
+  size?: number;
+}) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const colors = getSafetyColors(level, isDark);
@@ -76,7 +88,10 @@ function SafetyBadge({
 export function ScanHistoryCard({ scan, onPress }: ScanHistoryCardProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const safetyColors = getSafetyColors(scan.representativeItem.safetyLevel, isDark);
+  const safetyColors = getSafetyColors(
+    scan.representativeItem.safetyLevel,
+    isDark
+  );
   const timeAgo = formatRelativeTime(scan.scannedAt);
 
   // 접근성 레이블 구성
@@ -98,7 +113,9 @@ export function ScanHistoryCard({ scan, onPress }: ScanHistoryCardProps) {
       accessibilityHint="탭하여 상세 결과를 확인합니다"
     >
       {/* 썸네일 영역 */}
-      <View style={[styles.thumbnail, { backgroundColor: safetyColors.background }]}>
+      <View
+        style={[styles.thumbnail, { backgroundColor: safetyColors.background }]}
+      >
         {scan.imageUrl ? (
           <Image
             source={{ uri: scan.imageUrl }}
@@ -113,7 +130,10 @@ export function ScanHistoryCard({ scan, onPress }: ScanHistoryCardProps) {
       {/* 정보 영역 */}
       <View style={styles.info}>
         <Text
-          style={[styles.restaurantName, { color: isDark ? '#F9FAFB' : '#111827' }]}
+          style={[
+            styles.restaurantName,
+            { color: isDark ? '#F9FAFB' : '#111827' },
+          ]}
           numberOfLines={1}
         >
           {scan.restaurantName || '메뉴 스캔'}
@@ -132,12 +152,19 @@ export function ScanHistoryCard({ scan, onPress }: ScanHistoryCardProps) {
 
         {/* 결과 개수 표시 (2개 이상인 경우) */}
         {scan.representativeItem.totalCount > 1 && (
-          <Text style={[styles.countBadge, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+          <Text
+            style={[
+              styles.countBadge,
+              { color: isDark ? '#9CA3AF' : '#6B7280' },
+            ]}
+          >
             총 {scan.representativeItem.totalCount}개 메뉴
           </Text>
         )}
 
-        <Text style={[styles.timeAgo, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+        <Text
+          style={[styles.timeAgo, { color: isDark ? '#9CA3AF' : '#6B7280' }]}
+        >
           {timeAgo}
         </Text>
       </View>

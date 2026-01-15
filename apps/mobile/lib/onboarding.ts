@@ -13,14 +13,24 @@ export async function checkOnboardingStatus(userId: string): Promise<boolean> {
       { data: diets, error: dietError },
       { data: safetyCard, error: safetyError },
     ] = await Promise.all([
-      supabase.from('user_allergies').select('id').eq('user_id', userId).limit(1),
+      supabase
+        .from('user_allergies')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1),
       supabase.from('user_diets').select('id').eq('user_id', userId).limit(1),
       supabase.from('safety_cards').select('id').eq('user_id', userId).limit(1),
     ]);
 
-    if (allergyError) console.error('[checkOnboardingStatus] 알레르기 조회 에러:', allergyError);
-    if (dietError) console.error('[checkOnboardingStatus] 식단 조회 에러:', dietError);
-    if (safetyError) console.error('[checkOnboardingStatus] 안전카드 조회 에러:', safetyError);
+    if (allergyError)
+      console.error(
+        '[checkOnboardingStatus] 알레르기 조회 에러:',
+        allergyError
+      );
+    if (dietError)
+      console.error('[checkOnboardingStatus] 식단 조회 에러:', dietError);
+    if (safetyError)
+      console.error('[checkOnboardingStatus] 안전카드 조회 에러:', safetyError);
 
     const hasOnboarded =
       (allergies && allergies.length > 0) ||

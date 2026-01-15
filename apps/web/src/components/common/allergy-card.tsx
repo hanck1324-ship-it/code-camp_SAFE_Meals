@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react';
-import { LucideIcon } from 'lucide-react';
+
+import type { LucideIcon } from 'lucide-react';
 
 interface AllergyCardProps {
   icon?: LucideIcon;

@@ -1,8 +1,10 @@
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import Image from 'next/image';
+
+import { LanguageSelector } from '@/components/language-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LanguageSelector } from '@/components/language-selector';
-import Image from 'next/image';
+
 import { useLoginScreen } from './hooks/use-login-screen';
 
 const logo = '/assets/6cfabb519ebdb3c306fc082668ba8f0b1cd872e9.png';
@@ -142,11 +144,11 @@ export function LoginScreen({ onLogin, onSocialLogin }: LoginScreenProps) {
 
         {/* Divider */}
         <div className="my-6 flex items-center gap-4">
-          <div className="h-px flex-1 bg-gray-200"></div>
+          <div className="h-px flex-1 bg-gray-200" />
           <span className="text-sm text-muted-foreground">
             {currentText.or}
           </span>
-          <div className="h-px flex-1 bg-gray-200"></div>
+          <div className="h-px flex-1 bg-gray-200" />
         </div>
 
         {/* Social Login Buttons */}

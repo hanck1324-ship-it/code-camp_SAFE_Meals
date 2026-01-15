@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase';
+import { useState, useCallback } from 'react';
+
 import { AUTH_URLS } from '@/commons/constants/url';
+import { getSupabaseClient } from '@/lib/supabase';
 
 interface SignupData {
   email: string;
@@ -115,9 +116,13 @@ export function useSignup(): UseSignupReturn {
             const supabase = getSupabaseClient();
             await supabase.auth.signOut();
 
-            console.log('[useSignup] 회원가입 성공 - 세션 로그아웃 후 로그인 페이지로 이동');
+            console.log(
+              '[useSignup] 회원가입 성공 - 세션 로그아웃 후 로그인 페이지로 이동'
+            );
 
-            alert('회원가입에 성공하였습니다. 로그인 페이지에서 로그인해주세요.');
+            alert(
+              '회원가입에 성공하였습니다. 로그인 페이지에서 로그인해주세요.'
+            );
             router.push(AUTH_URLS.LOGIN);
           } else {
             // 이메일 인증이 필요한 경우

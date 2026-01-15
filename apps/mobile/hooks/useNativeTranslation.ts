@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useEffect, useCallback } from 'react';
+import { AppState } from 'react-native';
+
+import type { AppStateStatus } from 'react-native';
 
 /**
  * 지원 언어 타입

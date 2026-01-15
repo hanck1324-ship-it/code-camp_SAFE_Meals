@@ -1,23 +1,24 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase';
-import type { Language } from '@/commons/stores/useLanguageStore';
+import { useState, useCallback, useRef } from 'react';
+
 import {
   useAnalyzeResult,
   type AnalysisResult,
   type MenuAnalysisItem,
 } from '@/features/scan/context/analyze-result-context';
+import axios, { isAxiosError, axiosFormData } from '@/lib/axios';
+import { getSupabaseClient } from '@/lib/supabase';
+import { optimizeImage } from '@/utils/image-optimizer';
+import { optimizeImageWithWorker } from '@/utils/image-optimizer-worker';
+import { getCachedOCRResult, cacheOCRResult } from '@/utils/ocr-cache';
 import {
   PerformanceTracker,
   getGlobalCollector,
 } from '@/utils/performance-metrics';
-import axios, { isAxiosError } from '@/lib/axios';
-import { axiosFormData } from '@/lib/axios';
-import { optimizeImage } from '@/utils/image-optimizer';
-import { optimizeImageWithWorker } from '@/utils/image-optimizer-worker';
-import { getCachedOCRResult, cacheOCRResult } from '@/utils/ocr-cache';
+
+import type { Language } from '@/commons/stores/useLanguageStore';
 
 export type { MenuAnalysisItem };
 
@@ -299,7 +300,8 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
             const results = data.results || data.result?.results || [];
 
             if (results.length > 0) {
-              const overallStatus = data.overall_status || data.result?.overall_status || 'SAFE';
+              const overallStatus =
+                data.overall_status || data.result?.overall_status || 'SAFE';
               const detectedIngredients: string[] = [];
               const warnings: Array<{
                 ingredient: string;
@@ -434,7 +436,10 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
             });
           } catch (workerError) {
             // WebWorker 실패 시 메인 스레드에서 처리
-            console.warn('[ImageOptimize] WebWorker 실패, 메인 스레드로 fallback:', workerError);
+            console.warn(
+              '[ImageOptimize] WebWorker 실패, 메인 스레드로 fallback:',
+              workerError
+            );
             optimizeResult = await optimizeImage(image, {
               maxWidth: 1920,
               maxHeight: 1920,
@@ -523,7 +528,9 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         const formData = new FormData();
 
         // 최적화된 이미지를 File로 변환하여 추가
-        const file = new File([optimizedBlob], 'menu.jpg', { type: 'image/jpeg' });
+        const file = new File([optimizedBlob], 'menu.jpg', {
+          type: 'image/jpeg',
+        });
 
         formData.append('file', file);
         formData.append('language', analysisLanguage);
@@ -541,19 +548,25 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         tracker.start('network'); // 전체 네트워크도 시작
 
         // Edge Function 호출 (axios 사용)
-        const response = await axiosFormData.post('/api/scan/analyze', formData, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : undefined,
-          },
-          signal,
-          timeout: TIMEOUT_MS,
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              console.log(`[Upload] ${percent}%`);
-            }
-          },
-        });
+        const response = await axiosFormData.post(
+          '/api/scan/analyze',
+          formData,
+          {
+            headers: {
+              Authorization: token ? `Bearer ${token}` : undefined,
+            },
+            signal,
+            timeout: TIMEOUT_MS,
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                const percent = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total
+                );
+                console.log(`[Upload] ${percent}%`);
+              }
+            },
+          }
+        );
 
         // [계측] 업로드 + TTFB 완료 (응답 헤더 수신됨)
         tracker.end('upload');
@@ -739,9 +752,14 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
             setError(ERROR_MESSAGES[analysisLanguage].timeout);
           } else if (err.response) {
             // 서버 응답이 있는 경우 (4xx, 5xx)
-            const errorMessage = (err.response.data as any)?.message || ERROR_MESSAGES[analysisLanguage].server;
+            const errorMessage =
+              (err.response.data as any)?.message ||
+              ERROR_MESSAGES[analysisLanguage].server;
             setError(errorMessage);
-            console.error(`[API Error] ${err.response.status}:`, err.response.data);
+            console.error(
+              `[API Error] ${err.response.status}:`,
+              err.response.data
+            );
           } else if (err.request) {
             // 요청은 보냈지만 응답이 없는 경우 (네트워크 에러)
             setError(ERROR_MESSAGES[analysisLanguage].network);

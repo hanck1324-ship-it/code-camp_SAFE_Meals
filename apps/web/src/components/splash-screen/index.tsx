@@ -30,15 +30,15 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         <div
           className="h-2 w-2 animate-bounce rounded-full bg-white"
           style={{ animationDelay: '0ms' }}
-        ></div>
+        />
         <div
           className="h-2 w-2 animate-bounce rounded-full bg-white"
           style={{ animationDelay: '150ms' }}
-        ></div>
+        />
         <div
           className="h-2 w-2 animate-bounce rounded-full bg-white"
           style={{ animationDelay: '300ms' }}
-        ></div>
+        />
       </div>
     </div>
   );

@@ -1,22 +1,24 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+
 import { useAppStore } from '@/commons/stores/useAppStore';
-import { ProfileScreen } from '@/features/profile/components/settings/profile-screen';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { useSafetyCardAllergiesDietsLoad } from '@/features/profile/components/safety-card/hooks/index.allergies-diets-load.hook';
+import { ProfileScreen } from '@/features/profile/components/settings/profile-screen';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { logout } = useAppStore();
 
   // 실제 사용자 알레르기 및 식단 데이터 로드
-  const { allergies, diets, isLoading, error } = useSafetyCardAllergiesDietsLoad();
+  const { allergies, diets, isLoading, error } =
+    useSafetyCardAllergiesDietsLoad();
 
   // 화면에 표시할 프로필 데이터 구성
   const userProfile = {
-    allergies: allergies.map(a => a.allergy_code),
-    diets: diets.map(d => d.diet_code),
+    allergies: allergies.map((a) => a.allergy_code),
+    diets: diets.map((d) => d.diet_code),
   };
 
   const handleNavigate = (
@@ -60,7 +62,7 @@ export default function ProfilePage() {
       <RequireAuth>
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#2ECC71] border-t-transparent mx-auto"></div>
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#2ECC71] border-t-transparent" />
             <p className="text-muted-foreground">프로필 로드 중...</p>
           </div>
         </div>

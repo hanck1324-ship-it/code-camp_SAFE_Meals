@@ -5,7 +5,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+
 import { getSupabaseClient } from '@/lib/supabase';
+
 import type {
   SafetyLevel,
   ScanType,
@@ -45,7 +47,9 @@ interface RawScanHistory {
  * 위험도 우선순위: danger > caution > unknown > safe
  * 가장 위험한 항목을 대표로 선정
  */
-function selectRepresentativeResult(results: RawScanResult[]): RepresentativeItem {
+function selectRepresentativeResult(
+  results: RawScanResult[]
+): RepresentativeItem {
   if (!results || results.length === 0) {
     return {
       itemName: '결과 없음',
@@ -86,7 +90,11 @@ function mapToRecentScan(row: RawScanHistory): RecentScan {
   const representativeItem =
     row.scan_results && row.scan_results.length > 0
       ? selectRepresentativeResult(row.scan_results)
-      : { itemName: '결과 없음', safetyLevel: 'unknown' as const, totalCount: 0 };
+      : {
+          itemName: '결과 없음',
+          safetyLevel: 'unknown' as const,
+          totalCount: 0,
+        };
 
   return {
     id: row.id,
@@ -158,11 +166,14 @@ export function useRecentScans(limit = 3): UseRecentScansResult {
       }
 
       // 데이터 가공
-      const processedScans: RecentScan[] = (data as RawScanHistory[] | null)?.map(mapToRecentScan) ?? [];
+      const processedScans: RecentScan[] =
+        (data as RawScanHistory[] | null)?.map(mapToRecentScan) ?? [];
       setRecentScans(processedScans);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : '스캔 기록을 불러오는데 실패했습니다.';
+        err instanceof Error
+          ? err.message
+          : '스캔 기록을 불러오는데 실패했습니다.';
       setError(errorMessage);
       console.error('❌ [RecentScans] 조회 실패:', err);
     } finally {

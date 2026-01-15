@@ -1,0 +1,40 @@
+{
+  "extends": ["../../.eslintrc.json", "plugin:react/recommended"],
+  "plugins": ["react", "react-native"],
+  "env": {
+    "react-native/react-native": true
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off",
+    "react/jsx-curly-brace-presence": [
+      "warn",
+      { "props": "never", "children": "never" }
+    ],
+    "react/self-closing-comp": "warn",
+    "react-native/no-unused-styles": "warn",
+    "react-native/no-inline-styles": "warn",
+    "react-native/no-color-literals": "off"
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "jest.setup.js",
+        "jest.config.js"
+      ],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ]
+}

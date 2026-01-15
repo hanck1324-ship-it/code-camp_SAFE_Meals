@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+
 import { useImagePreprocess } from '@/features/scan/components/menu-scan/hooks/useImagePreprocess.hook';
 
 /**

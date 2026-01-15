@@ -4,7 +4,10 @@
  * @param locale - 언어 코드 (기본값: 'ko')
  * @returns 상대 시간 문자열
  */
-export function formatRelativeTime(dateString: string, locale: string = 'ko'): string {
+export function formatRelativeTime(
+  dateString: string,
+  locale: string = 'ko'
+): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -13,12 +16,15 @@ export function formatRelativeTime(dateString: string, locale: string = 'ko'): s
   const diffHours = Math.floor(diffMinutes / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  const translations: Record<string, {
-    justNow: string;
-    minutesAgo: (n: number) => string;
-    hoursAgo: (n: number) => string;
-    daysAgo: (n: number) => string;
-  }> = {
+  const translations: Record<
+    string,
+    {
+      justNow: string;
+      minutesAgo: (n: number) => string;
+      hoursAgo: (n: number) => string;
+      daysAgo: (n: number) => string;
+    }
+  > = {
     ko: {
       justNow: '방금 전',
       minutesAgo: (n) => `${n}분 전`,

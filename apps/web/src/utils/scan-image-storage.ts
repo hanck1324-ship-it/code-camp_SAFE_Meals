@@ -13,11 +13,11 @@
  * @see docs/schema.md
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   ImageUploadParams,
   ImageUploadResult,
 } from '@/types/scan-history.types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /** 스토리지 버킷명 */
 const BUCKET_NAME = 'scan-images';

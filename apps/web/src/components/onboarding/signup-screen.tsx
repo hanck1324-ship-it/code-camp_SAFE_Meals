@@ -1,9 +1,11 @@
-import { useState } from 'react';
 import { Mail, Lock, Leaf, ChevronLeft } from 'lucide-react';
+import { useState } from 'react';
+
+import { useTranslation } from '@/hooks/useTranslation';
+
+import { LanguageSelector } from '../language-selector';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { LanguageSelector } from '../language-selector';
-import { useTranslation } from '@/hooks/useTranslation';
 
 interface SignupScreenProps {
   onComplete: () => void;

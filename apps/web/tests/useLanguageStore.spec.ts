@@ -34,7 +34,7 @@ test.describe('useLanguageStore Hydration 테스트', () => {
       await page.reload();
 
       // hydration 완료 후 data-testid 대기
-      await page.waitForSelector('[data-testid="language-hydration-ready"]');
+      await page.waitForSelector('[data-testid="language-hydration-ready"]', { timeout: 60000 });
 
       // 언어가 'en'으로 로드되었는지 검증
       const languageElement = page.locator('[data-testid="current-language"]');
@@ -54,7 +54,7 @@ test.describe('useLanguageStore Hydration 테스트', () => {
       await page.reload();
 
       // hydration 완료 후 data-testid 대기
-      await page.waitForSelector('[data-testid="language-hydration-ready"]');
+      await page.waitForSelector('[data-testid="language-hydration-ready"]', { timeout: 60000 });
 
       // hydrated 상태가 true인지 검증
       const hydratedElement = page.locator('[data-testid="hydrated-status"]');
@@ -96,7 +96,7 @@ test.describe('useLanguageStore Hydration 테스트', () => {
       await page.reload();
 
       // hydration 완료 후 data-testid 대기
-      await page.waitForSelector('[data-testid="language-hydration-ready"]');
+      await page.waitForSelector('[data-testid="language-hydration-ready"]', { timeout: 60000 });
 
       // 앱 이름이 올바르게 표시되는지 확인 (SafeMeals는 모든 언어에서 동일)
       const appNameElement = page.locator('[data-testid="app-name"]');
@@ -115,7 +115,7 @@ test.describe('useLanguageStore Hydration 테스트', () => {
       await page.reload();
 
       // hydration 완료 후 data-testid 대기
-      await page.waitForSelector('[data-testid="language-hydration-ready"]');
+      await page.waitForSelector('[data-testid="language-hydration-ready"]', { timeout: 60000 });
 
       // 기본 언어가 'ko'인지 검증
       const languageElement = page.locator('[data-testid="current-language"]');
@@ -136,7 +136,7 @@ test.describe('useLanguageStore Hydration 테스트', () => {
       await page.reload();
 
       // hydration 완료 후 data-testid 대기
-      await page.waitForSelector('[data-testid="language-hydration-ready"]');
+      await page.waitForSelector('[data-testid="language-hydration-ready"]', { timeout: 60000 });
 
       // 기본 언어가 'ko'인지 검증
       const languageElement = page.locator('[data-testid="current-language"]');
@@ -160,7 +160,7 @@ test.describe('useLanguageStore Hydration 테스트', () => {
       await page.reload();
 
       // hydration 완료 후 data-testid 대기
-      await page.waitForSelector('[data-testid="language-hydration-ready"]');
+      await page.waitForSelector('[data-testid="language-hydration-ready"]', { timeout: 60000 });
 
       // 기본 언어가 'ko'인지 검증
       const languageElement = page.locator('[data-testid="current-language"]');

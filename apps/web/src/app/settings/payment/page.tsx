@@ -1,7 +1,8 @@
 'use client';
-import { PaymentScreen } from '@/features/profile/components/settings/payment-screen';
-import { RequireAuth } from '@/components/auth/require-auth';
 import { useRouter } from 'next/navigation';
+
+import { RequireAuth } from '@/components/auth/require-auth';
+import { PaymentScreen } from '@/features/profile/components/settings/payment-screen';
 
 export default function PaymentSettingsPage() {
   const router = useRouter();

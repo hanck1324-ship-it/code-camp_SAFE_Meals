@@ -1,17 +1,20 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { X, Search, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { X, Search, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 
 // 전화번호 유효성 검사 스키마
 const findAccountSchema = z.object({
   phone: z
     .string()
     .min(1, '전화번호를 입력해주세요.')
-    .regex(/^01[0-9]{8,9}$/, '올바른 전화번호 형식이 아닙니다. (예: 01012345678)')
+    .regex(
+      /^01[0-9]{8,9}$/,
+      '올바른 전화번호 형식이 아닙니다. (예: 01012345678)'
+    )
     .transform((val) => val.replace(/\D/g, '')), // 하이픈 제거
 });
 
@@ -97,7 +100,8 @@ export default function FindAccountModal({ onClose }: FindAccountModalProps) {
         // 이메일을 찾지 못한 경우
         setResult({
           type: 'info',
-          message: '입력하신 전화번호로 가입된 이메일이 없습니다.\n회원가입을 진행해주세요.',
+          message:
+            '입력하신 전화번호로 가입된 이메일이 없습니다.\n회원가입을 진행해주세요.',
         });
       }
     } catch (error) {
@@ -130,14 +134,21 @@ export default function FindAccountModal({ onClose }: FindAccountModalProps) {
         <form onSubmit={handleSubmit(onSubmit)} className="p-6">
           {/* Description */}
           <p className="mb-6 text-sm leading-relaxed text-gray-600">
-            가입하신 <span className="font-semibold text-gray-900">휴대폰 번호</span>를 입력하시면
+            가입하신{' '}
+            <span className="font-semibold text-gray-900">휴대폰 번호</span>를
+            입력하시면
             <br />
-            등록된 <span className="font-semibold text-gray-900">이메일 주소</span>를 확인해 드립니다.
+            등록된{' '}
+            <span className="font-semibold text-gray-900">이메일 주소</span>를
+            확인해 드립니다.
           </p>
 
           {/* Phone Input */}
           <div className="mb-4">
-            <label htmlFor="phone" className="mb-2 block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="phone"
+              className="mb-2 block text-sm font-medium text-gray-700"
+            >
               휴대폰 번호
             </label>
             <input
@@ -177,9 +188,15 @@ export default function FindAccountModal({ onClose }: FindAccountModalProps) {
               }`}
             >
               <div className="flex items-start gap-3">
-                {result.type === 'success' && <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />}
-                {result.type === 'error' && <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />}
-                {result.type === 'info' && <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />}
+                {result.type === 'success' && (
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                )}
+                {result.type === 'error' && (
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                )}
+                {result.type === 'info' && (
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                )}
                 <div className="flex-1">
                   <p className="whitespace-pre-line text-sm font-medium leading-relaxed">
                     {result.message}
@@ -198,7 +215,8 @@ export default function FindAccountModal({ onClose }: FindAccountModalProps) {
           <div className="mb-6 flex items-start gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
             <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
             <p className="text-xs leading-relaxed text-gray-600">
-              <span className="font-semibold text-gray-700">보안 안내:</span> 악용 방지를 위해 1시간에 3회까지만 조회 가능합니다.
+              <span className="font-semibold text-gray-700">보안 안내:</span>{' '}
+              악용 방지를 위해 1시간에 3회까지만 조회 가능합니다.
             </p>
           </div>
 

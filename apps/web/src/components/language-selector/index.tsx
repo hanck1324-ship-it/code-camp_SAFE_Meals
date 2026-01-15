@@ -1,7 +1,9 @@
 'use client';
 
 import { Globe } from 'lucide-react';
+
 import { useTranslation, getSupportedLanguages } from '@/hooks/useTranslation';
+
 import type { Language } from '@/lib/translations';
 
 /**

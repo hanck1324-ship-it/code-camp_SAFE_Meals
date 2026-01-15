@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import { getSupabaseClient } from '@/lib/supabase';
 
 /**

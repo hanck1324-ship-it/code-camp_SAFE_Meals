@@ -16,28 +16,23 @@ export async function checkOnboardingStatus(userId: string): Promise<boolean> {
     const [
       { data: allergies, error: allergyError },
       { data: diets, error: dietError },
-      { data: safetyCard, error: safetyError }
+      { data: safetyCard, error: safetyError },
     ] = await Promise.all([
       supabase
         .from('user_allergies')
         .select('id')
         .eq('user_id', userId)
         .limit(1),
-      supabase
-        .from('user_diets')
-        .select('id')
-        .eq('user_id', userId)
-        .limit(1),
-      supabase
-        .from('safety_cards')
-        .select('id')
-        .eq('user_id', userId)
-        .limit(1),
+      supabase.from('user_diets').select('id').eq('user_id', userId).limit(1),
+      supabase.from('safety_cards').select('id').eq('user_id', userId).limit(1),
     ]);
 
     // 에러 로깅
     if (allergyError) {
-      console.error('[checkOnboardingStatus] 알레르기 조회 에러:', allergyError);
+      console.error(
+        '[checkOnboardingStatus] 알레르기 조회 에러:',
+        allergyError
+      );
     }
     if (dietError) {
       console.error('[checkOnboardingStatus] 식단 조회 에러:', dietError);
@@ -61,7 +56,10 @@ export async function checkOnboardingStatus(userId: string): Promise<boolean> {
 
     // 신규 사용자인지 반환 (온보딩 미완료)
     const isNewUser = !hasOnboarded;
-    console.log('[checkOnboardingStatus] 결과:', isNewUser ? '신규 사용자 (온보딩 필요)' : '기존 사용자 (온보딩 완료)');
+    console.log(
+      '[checkOnboardingStatus] 결과:',
+      isNewUser ? '신규 사용자 (온보딩 필요)' : '기존 사용자 (온보딩 완료)'
+    );
 
     return isNewUser;
   } catch (error) {

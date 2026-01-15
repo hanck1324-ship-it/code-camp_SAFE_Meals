@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Check, X, AlertCircle, Info } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -40,7 +40,7 @@ export function Toast({ type, message, duration = 3000, onClose }: ToastProps) {
 
   return (
     <div
-      className={`fixed top-4 right-4 z-[9999] flex items-center gap-3 rounded-xl px-4 py-3 shadow-lg transition-all duration-300 ${
+      className={`fixed right-4 top-4 z-[9999] flex items-center gap-3 rounded-xl px-4 py-3 shadow-lg transition-all duration-300 ${
         colors[type]
       } ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
     >

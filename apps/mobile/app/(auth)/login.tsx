@@ -1,3 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  GoogleSignin,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,19 +19,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
-import {
-  GoogleSignin,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
-import { Session } from '@supabase/supabase-js';
 
 import { checkOnboardingStatus } from '@/lib/onboarding';
 import { getSupabaseClient, serializeSupabaseSession } from '@/lib/supabase';
+
+import type { Session } from '@supabase/supabase-js';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -210,7 +211,17 @@ export default function LoginScreen() {
 
   // 회원가입 페이지로 이동
   const handleSignUp = useCallback(() => {
-    router.push('/webview/auth/sign-up');
+    router.push('/webview/auth/signup');
+  }, []);
+
+  // 이메일 찾기 페이지로 이동 (WebView)
+  const handleFindEmail = useCallback(() => {
+    router.push('/webview/auth/login?showFindEmail=true');
+  }, []);
+
+  // 비밀번호 찾기 페이지로 이동 (WebView)
+  const handleForgotPassword = useCallback(() => {
+    router.push('/webview/auth/login?showForgotPassword=true');
   }, []);
 
   return (
@@ -315,6 +326,16 @@ export default function LoginScreen() {
             <Text style={styles.primaryButtonText}>로그인</Text>
           )}
         </TouchableOpacity>
+
+        {/* Forgot Email / Password Links */}
+        <View style={styles.forgotLinksContainer}>
+          <TouchableOpacity onPress={handleFindEmail} activeOpacity={0.7}>
+            <Text style={styles.forgotLinkText}>이메일을 잊으셨나요?</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
+            <Text style={styles.forgotLinkText}>비밀번호를 잊으셨나요?</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Divider */}
         <View style={styles.divider}>
@@ -452,6 +473,18 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  forgotLinksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 4,
+  },
+  forgotLinkText: {
+    color: '#22c55e',
+    fontSize: 13,
+    fontWeight: '500',
   },
   divider: {
     flexDirection: 'row',

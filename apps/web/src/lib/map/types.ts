@@ -77,8 +77,8 @@ export interface MapAdapter {
  * 안전도 레벨에 따른 색상 매핑
  */
 export const SAFETY_COLORS = {
-  safe: '#2ECC71',     // 초록
-  caution: '#F39C12',  // 노랑/주황
-  danger: '#E74C3C',   // 빨강
-  unknown: '#95A5A6',  // 회색
+  safe: '#2ECC71', // 초록
+  caution: '#F39C12', // 노랑/주황
+  danger: '#E74C3C', // 빨강
+  unknown: '#95A5A6', // 회색
 } as const;

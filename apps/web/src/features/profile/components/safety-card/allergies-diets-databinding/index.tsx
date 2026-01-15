@@ -13,14 +13,17 @@
 'use client';
 
 import { Loader2, AlertTriangle, Utensils, AlertCircle } from 'lucide-react';
+
 import { useTranslation } from '@/hooks/useTranslation';
-import type { Language } from '@/commons/stores/useLanguageStore';
-import { useSafetyCardAllergiesDietsLoad } from '../hooks/index.allergies-diets-load.hook';
+
 import {
   getAllergyTypeInfo,
   getDietTypeInfo,
   getSeverityLabel,
 } from './constants';
+import { useSafetyCardAllergiesDietsLoad } from '../hooks/index.allergies-diets-load.hook';
+
+import type { Language } from '@/commons/stores/useLanguageStore';
 
 /**
  * 알레르기 카드 컴포넌트 Props
@@ -35,12 +38,7 @@ interface AllergyCardProps {
 /**
  * 알레르기 카드 컴포넌트
  */
-function AllergyCard({
-  code,
-  severity,
-  notes,
-  language,
-}: AllergyCardProps) {
+function AllergyCard({ code, severity, notes, language }: AllergyCardProps) {
   const allergyInfo = getAllergyTypeInfo(code, language);
   const severityLabel = getSeverityLabel(severity, language);
 
@@ -180,7 +178,9 @@ function EmptyState() {
       data-testid="allergies-diets-empty"
     >
       <AlertTriangle className="mb-2 h-8 w-8 text-gray-400" />
-      <p className="text-center text-gray-600">{t.safetyCardAllergyDietEmpty}</p>
+      <p className="text-center text-gray-600">
+        {t.safetyCardAllergyDietEmpty}
+      </p>
     </div>
   );
 }
@@ -203,9 +203,7 @@ export function AllergiesDietsDatabinding() {
 
       {/* 에러 상태 */}
       {!isLoading && error && (
-        <ErrorState
-          message={t.safetyCardAllergyDietLoadError || error}
-        />
+        <ErrorState message={t.safetyCardAllergyDietLoadError || error} />
       )}
 
       {/* 빈 상태 */}

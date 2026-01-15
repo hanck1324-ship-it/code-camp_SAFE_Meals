@@ -2,6 +2,7 @@
 import { Home, Camera, Shield, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
+
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface BottomNavProps {
@@ -12,7 +13,7 @@ interface BottomNavProps {
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   // 경로에 따라 activeTab 결정
   const currentTab = useMemo(() => {
@@ -38,6 +39,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
 
   const SCAN_ENABLED_WEB = false;
 
+  // 언어 변경 시 항상 최신 번역을 사용하도록 useMemo 제거
   const tabs = [
     { id: 'home' as const, icon: Home, label: t.home, disabled: false },
     {
@@ -82,7 +84,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 {tab.label}
                 {tab.id === 'scan' && isDisabled && (
                   <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] text-gray-600">
-                    준비중
+                    {t.comingSoon}
                   </span>
                 )}
               </span>

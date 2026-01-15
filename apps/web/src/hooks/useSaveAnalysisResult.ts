@@ -16,9 +16,14 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+
 import { getSupabaseClient } from '@/lib/supabase';
 import { ScanHistoryRepository } from '@/utils/scan-history-repository';
-import type { SaveScanParams, SaveScanResult } from '@/types/scan-history.types';
+
+import type {
+  SaveScanParams,
+  SaveScanResult,
+} from '@/types/scan-history.types';
 
 // ============================================
 // 타입 정의
@@ -114,7 +119,9 @@ export function useSaveAnalysisResult(): UseSaveAnalysisResultReturn {
         ) {
           // 중복 저장 감지
           setIsDuplicate(true);
-          console.log(`ℹ️ [AnalysisResult] 이미 저장됨 - jobId: ${params.jobId}`);
+          console.log(
+            `ℹ️ [AnalysisResult] 이미 저장됨 - jobId: ${params.jobId}`
+          );
         } else {
           // 저장 실패
           setSaveError(result.error ?? '저장 실패');

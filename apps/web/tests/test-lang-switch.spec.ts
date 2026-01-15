@@ -1,6 +1,16 @@
 import { test, expect } from '@playwright/test';
 
 test('언어 변경 시 즉시 반영되어야 함', async ({ page }) => {
+  // 먼저 로그인
+  await page.goto('/auth/login');
+  await page.waitForSelector('[data-testid="email-input"]', { timeout: 10000 });
+  await page.fill('[data-testid="email-input"]', process.env.TEST_USER_EMAIL || '');
+  await page.fill('[data-testid="password-input"]', process.env.TEST_USER_PASSWORD || '');
+  await page.click('[data-testid="login-button"]');
+
+  // 대시보드로 리다이렉트될 때까지 대기
+  await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+
   // 1. 대시보드 페이지로 이동
   await page.goto('/dashboard');
   

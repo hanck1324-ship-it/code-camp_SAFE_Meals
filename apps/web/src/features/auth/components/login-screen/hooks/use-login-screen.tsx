@@ -1,5 +1,7 @@
 import { useState } from 'react';
+
 import { useTranslation } from '@/hooks/useTranslation';
+
 import { LOGIN_TEXT } from '../constants';
 
 interface UseLoginScreenProps {

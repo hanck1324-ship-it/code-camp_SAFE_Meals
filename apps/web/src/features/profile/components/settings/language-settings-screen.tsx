@@ -1,6 +1,8 @@
 import { ChevronLeft, Check } from 'lucide-react';
+
 import { useTranslation } from '@/hooks/useTranslation';
-import { Language } from '@/lib/translations';
+
+import type { Language } from '@/lib/translations';
 
 interface LanguageSettingsScreenProps {
   onBack: () => void;

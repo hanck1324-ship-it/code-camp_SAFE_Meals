@@ -1,17 +1,13 @@
 /* AuthProvider (Supabase Auth) */
 'use client';
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useRef,
-  ReactNode,
-} from 'react';
-import { User } from '@supabase/supabase-js';
-import { getSupabaseClient } from '@/lib/supabase';
-import { useAppStore } from '@/commons/stores/useAppStore';
 import { useRouter } from 'next/navigation';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
+
+import { useAppStore } from '@/commons/stores/useAppStore';
+import { getSupabaseClient } from '@/lib/supabase';
+
+import type { User } from '@supabase/supabase-js';
+import type { ReactNode } from 'react';
 
 interface AuthContextValue {
   user: User | null;
@@ -52,7 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
 
-      console.log('[AuthProvider] Auth state changed:', event, '- User:', !!session?.user);
+      console.log(
+        '[AuthProvider] Auth state changed:',
+        event,
+        '- User:',
+        !!session?.user
+      );
 
       if (event === 'SIGNED_IN' && session?.user && !isLoggingOut.current) {
         console.log('[AuthProvider] SIGNED_IN - 사용자 상태 설정');
@@ -100,8 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             keysToRemove.push(key);
           }
         }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-        console.log('[AuthProvider] ✅ localStorage 클리어 완료:', keysToRemove.length, '개 항목');
+        keysToRemove.forEach((key) => localStorage.removeItem(key));
+        console.log(
+          '[AuthProvider] ✅ localStorage 클리어 완료:',
+          keysToRemove.length,
+          '개 항목'
+        );
       } catch (e) {
         console.error('[AuthProvider] localStorage 클리어 실패:', e);
       }

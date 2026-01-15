@@ -215,22 +215,22 @@ export const SAFEMEALS_COLORS = {
   // 안전성 신호등 색상 (Light Mode)
   safety: {
     safe: {
-      bg: '#F0FDF4',           // 초록 배경
-      border: '#BBF7D0',       // 초록 테두리
-      text: '#15803D',         // 초록 텍스트 (대비 7.2:1)
-      icon: '#16A34A',         // 초록 아이콘
+      bg: '#F0FDF4', // 초록 배경
+      border: '#BBF7D0', // 초록 테두리
+      text: '#15803D', // 초록 텍스트 (대비 7.2:1)
+      icon: '#16A34A', // 초록 아이콘
     },
     caution: {
-      bg: '#FFFBEB',           // 노랑 배경
-      border: '#FDE68A',       // 노랑 테두리
-      text: '#92400E',         // 갈색 텍스트 (대비 8.5:1)
-      icon: '#D97706',         // 주황 아이콘
+      bg: '#FFFBEB', // 노랑 배경
+      border: '#FDE68A', // 노랑 테두리
+      text: '#92400E', // 갈색 텍스트 (대비 8.5:1)
+      icon: '#D97706', // 주황 아이콘
     },
     danger: {
-      bg: '#FEF2F2',           // 빨강 배경
-      border: '#FECACA',       // 빨강 테두리
-      text: '#B91C1C',         // 빨강 텍스트 (대비 7.8:1)
-      icon: '#DC2626',         // 빨강 아이콘
+      bg: '#FEF2F2', // 빨강 배경
+      border: '#FECACA', // 빨강 테두리
+      text: '#B91C1C', // 빨강 텍스트 (대비 7.8:1)
+      icon: '#DC2626', // 빨강 아이콘
     },
   },
 
@@ -261,9 +261,9 @@ export const SAFEMEALS_COLORS = {
     background: '#FFFFFF',
     backgroundSecondary: '#FAFAFA',
     text: {
-      primary: '#171717',      // 주 텍스트 (대비 16.1:1)
-      secondary: '#404040',    // 보조 텍스트 (대비 9.7:1)
-      tertiary: '#737373',     // 3차 텍스트 (대비 4.6:1)
+      primary: '#171717', // 주 텍스트 (대비 16.1:1)
+      secondary: '#404040', // 보조 텍스트 (대비 9.7:1)
+      tertiary: '#737373', // 3차 텍스트 (대비 4.6:1)
     },
     border: '#E5E5E5',
   },
@@ -273,7 +273,9 @@ export const SAFEMEALS_COLORS = {
  * SafeMeals 색상 가져오기 (테마 모드 기반)
  */
 export function getSafeMealsColors(mode: ThemeMode) {
-  return mode === 'dark' ? SAFEMEALS_COLORS.safetyDark : SAFEMEALS_COLORS.safety;
+  return mode === 'dark'
+    ? SAFEMEALS_COLORS.safetyDark
+    : SAFEMEALS_COLORS.safety;
 }
 
 /**
@@ -281,7 +283,10 @@ export function getSafeMealsColors(mode: ThemeMode) {
  */
 export type SafetyStatus = 'SAFE' | 'CAUTION' | 'DANGER';
 
-export function getSafetyColors(status: SafetyStatus, mode: ThemeMode = 'light') {
+export function getSafetyColors(
+  status: SafetyStatus,
+  mode: ThemeMode = 'light'
+) {
   const colors = getSafeMealsColors(mode);
   return colors[status.toLowerCase() as 'safe' | 'caution' | 'danger'];
 }

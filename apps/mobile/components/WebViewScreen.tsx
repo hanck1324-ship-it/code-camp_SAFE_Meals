@@ -1,3 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -8,31 +14,74 @@ import {
   Platform,
   BackHandler,
 } from 'react-native';
-import { WebView, WebViewMessageEvent } from 'react-native-webview';
-import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { WebView } from 'react-native-webview';
+
 import { getSupabaseAuthStorageKey } from '@/lib/supabase';
+
+import type { WebViewMessageEvent } from 'react-native-webview';
 
 interface WebViewScreenProps {
   path: string;
   showHeader?: boolean;
 }
 
-// Expo extra(webviewUrl) -> 기본값(LAN IP) 순서로 사용
-const resolveWebviewBaseUrl = () => {
-  const extra =
-    (Constants.expoConfig?.extra as { webviewUrl?: string } | undefined) ??
-    ((Constants as { manifest?: { extra?: { webviewUrl?: string } } }).manifest
-      ?.extra as { webviewUrl?: string } | undefined);
+/**
+ * WebView Base URL 결정 우선순위:
+ * 1. 환경변수 (EXPO_PUBLIC_WEB_URL)
+ * 2. app.json의 extra.webviewUrl
+ * 3. __DEV__ 모드:
+ *    - iOS 시뮬레이터: localhost
+ *    - Android 에뮬레이터: 10.0.2.2
+ *    - 실제 디바이스: debuggerHost에서 IP 추출
+ * 4. 프로덕션: 배포된 웹 URL
+ */
+const resolveWebviewBaseUrl = (): string => {
+  // 1. 환경변수 우선 (가장 유연함)
+  const envUrl = process.env.EXPO_PUBLIC_WEB_URL;
+  if (envUrl) {
+    return envUrl;
+  }
 
-  return extra?.webviewUrl ?? 'http://172.16.2.168:3000';
+  // 2. app.json의 extra.webviewUrl
+  const extra = Constants.expoConfig?.extra as
+    | { webviewUrl?: string }
+    | undefined;
+  if (extra?.webviewUrl) {
+    return extra.webviewUrl;
+  }
+
+  // 3. 개발 모드일 때 자동 감지
+  if (__DEV__) {
+    // iOS 시뮬레이터
+    if (Platform.OS === 'ios') {
+      return 'http://localhost:3000';
+    }
+
+    // Android
+    if (Platform.OS === 'android') {
+      // 실제 디바이스인 경우 debuggerHost에서 IP 추출
+      const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
+      if (debuggerHost && !debuggerHost.includes('localhost')) {
+        return `http://${debuggerHost}:3000`;
+      }
+      // 에뮬레이터
+      return 'http://10.0.2.2:3000';
+    }
+  }
+
+  // 4. 프로덕션 fallback
+  return 'https://your-production-domain.com';
 };
 
 const WEBVIEW_BASE_URL = resolveWebviewBaseUrl();
+
+// 디버깅용 로그
+if (__DEV__) {
+  console.log('[WebView] Base URL:', WEBVIEW_BASE_URL);
+  console.log('[WebView] Platform:', Platform.OS);
+  console.log('[WebView] debuggerHost:', Constants.expoConfig?.hostUri);
+}
 
 export default function WebViewScreen({
   path,
@@ -47,6 +96,9 @@ export default function WebViewScreen({
   const [supabaseSession, setSupabaseSession] = useState<string | null>(null);
   const [isAuthSessionLoaded, setIsAuthSessionLoaded] = useState(false);
 
+  // ✅ 동적 리다이렉트 URL 생성 (IP가 바뀌어도 자동으로 현재 Expo 환경에 맞는 URL 생성)
+  const appRedirectUrl = Linking.createURL('/');
+
   // URL 쿼리 파라미터 추가
   const queryString = Object.keys(params)
     .filter((key) => key !== 'path' && key !== 'hasImage')
@@ -54,6 +106,8 @@ export default function WebViewScreen({
       (key) =>
         `${encodeURIComponent(key)}=${encodeURIComponent(String(params[key]))}`
     )
+    // 웹에게 돌아올 주소를 알려줌 (예: &app_redirect_url=exp+safemeals://...)
+    .concat(`app_redirect_url=${encodeURIComponent(appRedirectUrl)}`)
     .join('&');
 
   const url = `${WEBVIEW_BASE_URL}${path}${queryString ? `?${queryString}` : ''}`;
@@ -98,9 +152,15 @@ export default function WebViewScreen({
   useEffect(() => {
     const loadSupabaseSession = async () => {
       try {
-        const storedSession = await AsyncStorage.getItem('supabaseSession');
-        if (storedSession) {
-          setSupabaseSession(storedSession);
+        // 로그인/회원가입 페이지에서는 세션 주입 하지 않음 (에러 방지)
+        const isAuthPage =
+          path.includes('/auth/login') || path.includes('/auth/signup');
+
+        if (!isAuthPage) {
+          const storedSession = await AsyncStorage.getItem('supabaseSession');
+          if (storedSession) {
+            setSupabaseSession(storedSession);
+          }
         }
       } catch (error) {
         console.error('Supabase 세션 로드 실패:', error);
@@ -110,7 +170,7 @@ export default function WebViewScreen({
     };
 
     loadSupabaseSession();
-  }, []);
+  }, [path]);
 
   useEffect(() => {
     setCanGoBack(false);
@@ -133,8 +193,12 @@ export default function WebViewScreen({
     return () => backHandler.remove();
   }, [canGoBack]);
 
-  // 디버그: URL 로깅
-  console.log('[WebViewScreen] Loading URL:', url);
+  // 디버그: URL 로깅 (마운트 시 한 번만)
+  useEffect(() => {
+    if (__DEV__) {
+      console.log('[WebViewScreen] Initial URL:', url);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 웹뷰에서 메시지 수신 처리
   const handleMessage = useCallback(async (event: WebViewMessageEvent) => {
@@ -560,10 +624,12 @@ export default function WebViewScreen({
           });
         }}
         onLoadEnd={(syntheticEvent) => {
-          console.log(
-            '[WebView] Load finished:',
-            syntheticEvent.nativeEvent.url
-          );
+          if (__DEV__) {
+            console.log(
+              '[WebView] Load finished:',
+              syntheticEvent.nativeEvent.url
+            );
+          }
         }}
         onNavigationStateChange={(navState) => setCanGoBack(navState.canGoBack)}
       />

@@ -4,6 +4,8 @@
  * - 로딩/에러/빈 상태 처리
  */
 
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import {
   View,
   Text,
@@ -14,9 +16,9 @@ import {
   StyleSheet,
   useColorScheme,
 } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+
 import { useRecentScans } from '@/hooks/useRecentScans';
+
 import { ScanHistoryCard } from './ScanHistoryCard';
 
 /**
@@ -45,7 +47,10 @@ function RecentScansLoading() {
               { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' },
             ]}
           >
-            <ActivityIndicator size="small" color={isDark ? '#6B7280' : '#9CA3AF'} />
+            <ActivityIndicator
+              size="small"
+              color={isDark ? '#6B7280' : '#9CA3AF'}
+            />
           </View>
         ))}
       </ScrollView>
@@ -71,10 +76,17 @@ function RecentScansEmpty() {
         size={48}
         color={isDark ? '#6B7280' : '#9CA3AF'}
       />
-      <Text style={[styles.emptyTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+      <Text
+        style={[styles.emptyTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}
+      >
         아직 스캔 기록이 없어요
       </Text>
-      <Text style={[styles.emptyDescription, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+      <Text
+        style={[
+          styles.emptyDescription,
+          { color: isDark ? '#9CA3AF' : '#6B7280' },
+        ]}
+      >
         메뉴판을 스캔해서 안전한 음식을 확인해보세요
       </Text>
       <TouchableOpacity
@@ -104,12 +116,10 @@ function RecentScansError({
 
   return (
     <View style={styles.errorContainer}>
-      <Ionicons
-        name="alert-circle-outline"
-        size={32}
-        color="#EF4444"
-      />
-      <Text style={[styles.errorText, { color: isDark ? '#FECACA' : '#B91C1C' }]}>
+      <Ionicons name="alert-circle-outline" size={32} color="#EF4444" />
+      <Text
+        style={[styles.errorText, { color: isDark ? '#FECACA' : '#B91C1C' }]}
+      >
         {message}
       </Text>
       <TouchableOpacity

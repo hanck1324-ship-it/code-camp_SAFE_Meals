@@ -23,6 +23,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+
 import { getSupabaseClient } from '@/lib/supabase';
 
 /**
@@ -106,7 +107,7 @@ export function useSafetyCardAllergiesDietsLoad(): UseSafetyCardAllergiesDietsLo
       // 알레르기 및 식단 데이터 병렬 조회 (Promise.all 사용)
       const [
         { data: userAllergies, error: allergiesError },
-        { data: userDiets, error: dietsError }
+        { data: userDiets, error: dietsError },
       ] = await Promise.all([
         supabase
           .from('user_allergies')
@@ -115,7 +116,7 @@ export function useSafetyCardAllergiesDietsLoad(): UseSafetyCardAllergiesDietsLo
         supabase
           .from('user_diets')
           .select('diet_code, notes')
-          .eq('user_id', userId)
+          .eq('user_id', userId),
       ]);
 
       console.log('[DEBUG] 병렬 조회 결과:', {

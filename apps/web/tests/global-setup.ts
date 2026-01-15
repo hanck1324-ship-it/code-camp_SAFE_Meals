@@ -24,8 +24,8 @@ setup('스캔 기록 있는 계정 인증 상태 저장', async ({ page, context
     return;
   }
 
-  await page.goto('/login');
-  await page.waitForSelector('[data-testid="email-input"]');
+  await page.goto('/auth/login');
+  await page.waitForSelector('[data-testid="email-input"]', { timeout: 10000 });
   
   await page.fill('[data-testid="email-input"]', withScansEmail);
   await page.fill('[data-testid="password-input"]', withScansPassword);
@@ -46,7 +46,8 @@ setup('스캔 기록 없는 계정 인증 상태 저장', async ({ browser }) =>
   const withoutScansPassword = process.env.TEST_USER_WITHOUT_SCANS_PASSWORD;
 
   if (!withoutScansEmail || !withoutScansPassword) {
-    console.warn('⚠️ TEST_USER_WITHOUT_SCANS 환경변수가 설정되지 않았습니다.');
+    console.warn('⚠️ TEST_USER_WITHOUT_SCANS 환경변수가 설정되지 않았습니다. 스킵합니다.');
+    // 환경변수가 없으면 스킵 (실패하지 않음)
     return;
   }
 
@@ -54,8 +55,8 @@ setup('스캔 기록 없는 계정 인증 상태 저장', async ({ browser }) =>
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto('/login');
-  await page.waitForSelector('[data-testid="email-input"]');
+  await page.goto('/auth/login');
+  await page.waitForSelector('[data-testid="email-input"]', { timeout: 10000 });
   
   await page.fill('[data-testid="email-input"]', withoutScansEmail);
   await page.fill('[data-testid="password-input"]', withoutScansPassword);

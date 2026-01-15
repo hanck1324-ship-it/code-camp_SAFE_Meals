@@ -7,7 +7,10 @@
  * - 백그라운드에서 병렬 처리 가능
  */
 
-import type { ImageOptimizeOptions, ImageOptimizeResult } from './image-optimizer';
+import type {
+  ImageOptimizeOptions,
+  ImageOptimizeResult,
+} from './image-optimizer';
 
 let worker: Worker | null = null;
 let workerInitPromise: Promise<Worker> | null = null;
@@ -66,11 +69,15 @@ export async function optimizeImageWithWorker(
           const result = event.data.result;
 
           console.log(`[ImageOptimizerWorker] 최적화 완료:`);
-          console.log(`  - 원본 크기: ${(result.originalSize / 1024).toFixed(1)} KB`);
+          console.log(
+            `  - 원본 크기: ${(result.originalSize / 1024).toFixed(1)} KB`
+          );
           console.log(
             `  - 최적화 후: ${(result.optimizedSize / 1024).toFixed(1)} KB`
           );
-          console.log(`  - 압축률: ${(result.compressionRatio * 100).toFixed(1)}%`);
+          console.log(
+            `  - 압축률: ${(result.compressionRatio * 100).toFixed(1)}%`
+          );
           console.log(
             `  - 원본 해상도: ${result.originalDimensions.width}x${result.originalDimensions.height}`
           );
@@ -96,7 +103,9 @@ export async function optimizeImageWithWorker(
       });
     });
   } catch (error) {
-    console.error('[ImageOptimizerWorker] Worker 사용 실패, fallback to main thread');
+    console.error(
+      '[ImageOptimizerWorker] Worker 사용 실패, fallback to main thread'
+    );
     // Worker 실패 시 메인 스레드에서 처리
     const { optimizeImage } = await import('./image-optimizer');
     return optimizeImage(file, options);

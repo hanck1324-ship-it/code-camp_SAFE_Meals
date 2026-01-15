@@ -5,9 +5,10 @@
  * 나중에 GoogleMapService로 교체 가능
  */
 
-import type { Map as LeafletMap, Marker as LeafletMarker } from 'leaflet';
-import type { MapAdapter, LatLng, MapConfig, MapMarkerData } from './types';
 import { SAFETY_COLORS } from './types';
+
+import type { MapAdapter, LatLng, MapConfig, MapMarkerData } from './types';
+import type { Map as LeafletMap, Marker as LeafletMarker } from 'leaflet';
 
 export class LeafletMapService implements MapAdapter {
   private map: LeafletMap | null = null;
@@ -24,7 +25,10 @@ export class LeafletMapService implements MapAdapter {
     const L = (await import('leaflet')).default;
 
     // Leaflet CSS가 없으면 추가
-    if (typeof window !== 'undefined' && !document.getElementById('leaflet-css')) {
+    if (
+      typeof window !== 'undefined' &&
+      !document.getElementById('leaflet-css')
+    ) {
       const link = document.createElement('link');
       link.id = 'leaflet-css';
       link.rel = 'stylesheet';
@@ -71,7 +75,9 @@ export class LeafletMapService implements MapAdapter {
     if (!this.map || !this.L) return;
 
     const L = this.L;
-    const color = marker.safetyLevel ? SAFETY_COLORS[marker.safetyLevel] : SAFETY_COLORS.unknown;
+    const color = marker.safetyLevel
+      ? SAFETY_COLORS[marker.safetyLevel]
+      : SAFETY_COLORS.unknown;
 
     // 커스텀 아이콘 생성 (안전도에 따른 색상)
     const icon = L.divIcon({

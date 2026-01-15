@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+
 import { AuthLogin } from '@/features/auth/components/login-form';
 
 export default function LoginPage() {

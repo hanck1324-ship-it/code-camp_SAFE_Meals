@@ -32,11 +32,57 @@ const TEST_IMAGE_URI =
  */
 async function login(page: Page) {
   await page.goto('/auth/login');
-  await page.waitForSelector('[data-testid="login-page-container"]');
-  await page.fill('input[type="email"]', TEST_USER_EMAIL);
-  await page.fill('input[type="password"]', TEST_USER_PASSWORD);
-  await page.click('[data-testid="login-submit-button"]');
-  await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+  await page.waitForSelector('[data-testid="login-page-container"]', { timeout: 10000 });
+
+  // 이메일과 비밀번호 입력
+  const emailInput = page.locator('input[type="email"]').first();
+  const passwordInput = page.locator('input[type="password"]').first();
+
+  await emailInput.fill(TEST_USER_EMAIL);
+  await passwordInput.fill(TEST_USER_PASSWORD);
+
+  // 약간 대기 (폼 검증)
+  await page.waitForTimeout(500);
+
+  // 로그인 버튼 클릭
+  const loginButton = page.locator('[data-testid="login-submit-button"]');
+  await loginButton.click();
+
+  // 대시보드로 리다이렉트 대기 (또는 에러 확인)
+  try {
+    await page.waitForURL(/\/dashboard/, { timeout: 20000 });
+    // 대시보드 로드 완료 대기
+    await page.waitForTimeout(1000);
+  } catch (error) {
+    // 로그인 실패 시 에러 메시지 캡처 - 더 상세하게
+    const errorMsg = await page.locator('[data-testid="login-error-message"]').textContent().catch(() => null);
+
+    if (errorMsg) {
+      console.error('로그인 실패:', errorMsg);
+      console.error('사용 중인 계정:', TEST_USER_EMAIL);
+      throw new Error(
+        `로그인 실패: ${errorMsg}\n` +
+        `계정: ${TEST_USER_EMAIL}\n` +
+        `해결 방법:\n` +
+        `1. Supabase 콘솔에서 계정이 존재하는지 확인\n` +
+        `2. 계정이 활성화되어 있는지 확인 (이메일 인증 완료)\n` +
+        `3. 비밀번호가 정확한지 확인\n` +
+        `4. .env.local의 TEST_USER_EMAIL/PASSWORD를 확인`
+      );
+    }
+
+    // 현재 URL 확인
+    console.error('현재 URL:', page.url());
+
+    // 스크린샷 저장
+    await page.screenshot({ path: 'test-results/login-failure.png' });
+
+    throw new Error(
+      `로그인 타임아웃: 대시보드로 리다이렉트되지 않음\n` +
+      `현재 URL: ${page.url()}\n` +
+      `계정: ${TEST_USER_EMAIL}`
+    );
+  }
 }
 
 test.describe('메뉴 스캔 결과 페이지 테스트', () => {

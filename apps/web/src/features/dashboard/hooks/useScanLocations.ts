@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+
 import { getSupabaseClient } from '@/lib/supabase';
-import type { MapMarkerData } from '@/lib/map';
+
 import type { SafetyLevel } from './useRecentScans';
+import type { MapMarkerData } from '@/lib/map';
 
 /**
  * 스캔 위치 데이터
@@ -106,7 +108,9 @@ export function useScanLocations(): UseScanLocationsResult {
         .filter((scan) => {
           // location이 유효한지 확인
           const loc = scan.location as { lat?: number; lng?: number } | null;
-          return loc && typeof loc.lat === 'number' && typeof loc.lng === 'number';
+          return (
+            loc && typeof loc.lat === 'number' && typeof loc.lng === 'number'
+          );
         })
         .map((scan) => {
           const results = scan.scan_results as Array<{
@@ -117,7 +121,8 @@ export function useScanLocations(): UseScanLocationsResult {
 
           // 가장 위험한 안전도를 대표로 선정
           const sorted = [...(results || [])].sort(
-            (a, b) => SAFETY_PRIORITY[a.safety_level] - SAFETY_PRIORITY[b.safety_level]
+            (a, b) =>
+              SAFETY_PRIORITY[a.safety_level] - SAFETY_PRIORITY[b.safety_level]
           );
           const representativeSafetyLevel =
             sorted.length > 0 ? sorted[0].safety_level : 'unknown';
@@ -125,7 +130,11 @@ export function useScanLocations(): UseScanLocationsResult {
           return {
             id: scan.id,
             restaurantName: scan.restaurant_name,
-            location: scan.location as { lat: number; lng: number; address?: string },
+            location: scan.location as {
+              lat: number;
+              lng: number;
+              address?: string;
+            },
             imageUrl: scan.image_url,
             scannedAt: scan.scanned_at,
             representativeSafetyLevel,
@@ -136,7 +145,9 @@ export function useScanLocations(): UseScanLocationsResult {
       setScanLocations(processed);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : '위치 정보를 불러오는데 실패했습니다.';
+        err instanceof Error
+          ? err.message
+          : '위치 정보를 불러오는데 실패했습니다.';
       setError(errorMessage);
       console.error('useScanLocations error:', err);
     } finally {

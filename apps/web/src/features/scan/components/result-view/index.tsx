@@ -1,24 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
   X,
-  CheckCircle,
+  CheckCircle2,
   AlertTriangle,
-  AlertCircle,
+  XCircle,
   ChevronLeft,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAnalyzeResult } from '@/features/scan/context/analyze-result-context';
-import { useTranslation } from '@/hooks/useTranslation';
-import { translations } from '@/lib/translations';
-import { MAIN_URLS } from '@/commons/constants/url';
-import { getGlobalCollector } from '@/utils/performance-metrics';
+import { useEffect, useState } from 'react';
+
 import { useAuth } from '@/app/_providers/auth-provider';
+import { MAIN_URLS } from '@/commons/constants/url';
+import { useRecentScans } from '@/features/dashboard/hooks/useRecentScans';
+import { useSafetyCardAllergiesDietsLoad } from '@/features/profile/components/safety-card/hooks/index.allergies-diets-load.hook';
+import {
+  generatePersonalizedInsights,
+  PersonalizedInsights,
+  RecommendationBadge,
+} from '@/features/scan/components/personalized-insights';
+import { ShareResult } from '@/features/scan/components/share-result';
+import { useAnalyzeResult } from '@/features/scan/context/analyze-result-context';
 import { useSaveAnalysisResult } from '@/hooks/useSaveAnalysisResult';
+import { useTranslation } from '@/hooks/useTranslation';
 import { convertSafetyLevel } from '@/types/scan-history.types';
+import { getGlobalCollector } from '@/utils/performance-metrics';
+
+import type { translations } from '@/lib/translations';
 
 // ============================================
 // 타입 정의
@@ -42,7 +52,14 @@ interface ScanResultScreenProps {
  */
 const STATUS_STYLES: Record<
   SafetyStatus,
-  { bg: string; text: string; border: string; bgStyle: string; textStyle: string; borderStyle: string }
+  {
+    bg: string;
+    text: string;
+    border: string;
+    bgStyle: string;
+    textStyle: string;
+    borderStyle: string;
+  }
 > = {
   SAFE: {
     bg: 'bg-sm-safe-bg',
@@ -79,7 +96,6 @@ const ICON_STYLES: Record<SafetyStatus, string> = {
   DANGER: 'var(--sm-danger-icon)',
 };
 
-
 // ============================================
 // 헬퍼 함수
 // ============================================
@@ -90,12 +106,16 @@ const ICON_STYLES: Record<SafetyStatus, string> = {
  */
 function getOverallStatusIcon(status: SafetyStatus) {
   const Icon = {
-    SAFE: CheckCircle,
+    SAFE: CheckCircle2,
     CAUTION: AlertTriangle,
-    DANGER: AlertCircle,
+    DANGER: XCircle,
   }[status];
 
-  return <Icon style={{ width: '32px', height: '32px', color: ICON_STYLES[status] }} />;
+  return (
+    <Icon
+      style={{ width: '32px', height: '32px', color: ICON_STYLES[status] }}
+    />
+  );
 }
 
 /**
@@ -104,12 +124,16 @@ function getOverallStatusIcon(status: SafetyStatus) {
  */
 function getSafetyIcon(status: SafetyStatus) {
   const Icon = {
-    SAFE: CheckCircle,
+    SAFE: CheckCircle2,
     CAUTION: AlertTriangle,
-    DANGER: AlertCircle,
+    DANGER: XCircle,
   }[status];
 
-  return <Icon style={{ width: '20px', height: '20px', color: ICON_STYLES[status] }} />;
+  return (
+    <Icon
+      style={{ width: '20px', height: '20px', color: ICON_STYLES[status] }}
+    />
+  );
 }
 
 /**
@@ -120,7 +144,7 @@ function getSafetyIcon(status: SafetyStatus) {
 function getSafetyBadge(status: SafetyStatus, t: (typeof translations)['ko']) {
   const config = {
     SAFE: {
-      Icon: CheckCircle,
+      Icon: CheckCircle2,
       label: t.safe,
     },
     CAUTION: {
@@ -128,7 +152,7 @@ function getSafetyBadge(status: SafetyStatus, t: (typeof translations)['ko']) {
       label: t.caution,
     },
     DANGER: {
-      Icon: AlertCircle,
+      Icon: XCircle,
       label: t.warning,
     },
   }[status];
@@ -147,7 +171,9 @@ function getSafetyBadge(status: SafetyStatus, t: (typeof translations)['ko']) {
         paddingBottom: '4px',
       }}
     >
-      <Icon style={{ width: '16px', height: '16px', color: ICON_STYLES[status] }} />
+      <Icon
+        style={{ width: '16px', height: '16px', color: ICON_STYLES[status] }}
+      />
       <span
         style={{
           color: styles.textStyle,
@@ -178,6 +204,9 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   const { t, language } = useTranslation();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
+  // 필터 모드 상태: 'SAFE' | 'CAUTION' | 'DANGER' | 'ALL'
+  const [filterMode, setFilterMode] = useState<SafetyStatus | 'ALL'>('ALL');
+
   // Context에서 분석 결과 가져오기
   const { analysisResult, clearAnalysisResult } = useAnalyzeResult();
 
@@ -187,6 +216,12 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   // 분석 결과 자동 저장 Hook
   const { saveResult, savedScanId, isDuplicate, resetSaveState } =
     useSaveAnalysisResult();
+
+  // 사용자 프로필 데이터 로드 (알레르기, 식단)
+  const { allergies, diets } = useSafetyCardAllergiesDietsLoad();
+
+  // 최근 스캔 이력 로드
+  const { recentScans } = useRecentScans();
 
   /**
    * [자동 저장] FINAL 상태 도달 시 Supabase에 저장
@@ -213,7 +248,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
       jobId: analysisResult._jobId ?? null,
       scanType: 'menu',
       restaurantName: null, // TODO: 추후 레스토랑 정보 연동
-      results: analysisResult.results.map((item) => ({
+      results: (analysisResult.results ?? []).map((item) => ({
         itemName: item.translated_name || item.original_name,
         safetyLevel: convertSafetyLevel(item.safety_status),
         warningMessage: item.reason || null,
@@ -306,7 +341,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
 
         {/* Error Message */}
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-          <AlertCircle className="h-16 w-16 text-sm-danger-icon" />
+          <XCircle className="h-16 w-16 text-sm-danger-icon" />
           <p
             className="text-center text-lg text-gray-600"
             data-testid="error-message"
@@ -327,8 +362,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
     );
   }
 
-  const { overall_status, detected_ingredients, results } =
-    analysisResult;
+  const { overall_status, results } = analysisResult;
   const statusStyle = STATUS_STYLES[overall_status];
   const isPartial = analysisResult._isPartial === true;
   const questionForStaff = analysisResult._questionForStaff;
@@ -341,13 +375,30 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
       })
     : [];
 
-  // 위험/주의 메뉴 개수 계산
-  const dangerCount = sortedResults.filter(
-    (item) => item.safety_status === 'DANGER'
+  // 각 등급별 메뉴 개수 계산
+  const safeCount = sortedResults.filter(
+    (item) => item.safety_status === 'SAFE'
   ).length;
   const cautionCount = sortedResults.filter(
     (item) => item.safety_status === 'CAUTION'
   ).length;
+  const dangerCount = sortedResults.filter(
+    (item) => item.safety_status === 'DANGER'
+  ).length;
+  const totalCount = sortedResults.length;
+
+  // 필터링된 결과
+  const filteredResults =
+    filterMode === 'ALL'
+      ? sortedResults
+      : sortedResults.filter((item) => item.safety_status === filterMode);
+
+  /**
+   * 필터 모드 전환 핸들러
+   */
+  const handleFilterModeChange = (mode: SafetyStatus | 'ALL') => {
+    setFilterMode(mode);
+  };
 
   return (
     <div
@@ -367,7 +418,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
         <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-3">
           <button
             onClick={onBack}
-            className="flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-lg"
+            className="flex items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm"
             style={{
               minWidth: '44px',
               minHeight: '44px',
@@ -378,7 +429,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
           <div /> {/* Spacer */}
           <button
             onClick={onBack}
-            className="flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-lg"
+            className="flex items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm"
             style={{
               minWidth: '44px',
               minHeight: '44px',
@@ -436,6 +487,79 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
           </div>
         </div>
 
+        {/* 안전 등급 필터 버튼 - 2x2 그리드 레이아웃 */}
+        <div className="border-b border-gray-200 bg-white px-3 py-3">
+          <div className="grid w-full grid-cols-2 gap-2">
+            {/* ALL 버튼 */}
+            <button
+              onClick={() => handleFilterModeChange('ALL')}
+              className={`flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-3 text-sm font-bold transition-colors ${
+                filterMode === 'ALL'
+                  ? 'bg-gray-900 text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              style={{ minHeight: '64px' }}
+              data-testid="filter-all"
+            >
+              <span className="whitespace-nowrap">
+                {t.all || (language === 'ko' ? '전체' : 'All')}
+              </span>
+              <span className="text-lg font-semibold">{totalCount}</span>
+            </button>
+
+            {/* SAFE 버튼 */}
+            <button
+              onClick={() => handleFilterModeChange('SAFE')}
+              className={`flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-3 text-sm font-bold transition-colors ${
+                filterMode === 'SAFE'
+                  ? 'bg-[#2ECC71] text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              style={{ minHeight: '64px' }}
+              data-testid="filter-safe"
+            >
+              <span className="whitespace-nowrap">
+                {t.safe || (language === 'ko' ? '안전' : 'Safe')}
+              </span>
+              <span className="text-lg font-semibold">{safeCount}</span>
+            </button>
+
+            {/* CAUTION 버튼 */}
+            <button
+              onClick={() => handleFilterModeChange('CAUTION')}
+              className={`flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-3 text-sm font-bold transition-colors ${
+                filterMode === 'CAUTION'
+                  ? 'bg-[#F39C12] text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              style={{ minHeight: '64px' }}
+              data-testid="filter-caution"
+            >
+              <span className="whitespace-nowrap">
+                {t.caution || (language === 'ko' ? '주의' : 'Caution')}
+              </span>
+              <span className="text-lg font-semibold">{cautionCount}</span>
+            </button>
+
+            {/* DANGER 버튼 */}
+            <button
+              onClick={() => handleFilterModeChange('DANGER')}
+              className={`flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-3 text-sm font-bold transition-colors ${
+                filterMode === 'DANGER'
+                  ? 'bg-[#E74C3C] text-white'
+                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              style={{ minHeight: '64px' }}
+              data-testid="filter-danger"
+            >
+              <span className="whitespace-nowrap">
+                {t.danger || (language === 'ko' ? '위험' : 'Danger')}
+              </span>
+              <span className="text-lg font-semibold">{dangerCount}</span>
+            </button>
+          </div>
+        </div>
+
         {/* 직원에게 물어볼 질문 (PARTIAL 상태에서만) */}
         {isPartial && questionForStaff && (
           <div
@@ -456,17 +580,17 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
         {/* Scrollable Content */}
         <div className="flex-1 space-y-3 overflow-y-auto p-3">
           {/* Menu Items */}
-          {sortedResults.length > 0 && (
+          {filteredResults.length > 0 ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-sm font-semibold text-gray-900">
                   {t.menuItems}
                 </h3>
                 <span className="text-xs text-gray-500">
-                  {sortedResults.length} {t.itemsDetected}
+                  {filteredResults.length} {t.itemsDetected}
                 </span>
               </div>
-              {sortedResults.map((item) => {
+              {filteredResults.map((item) => {
                 const isExpanded = expandedItems.has(item.id);
                 const hasDetails =
                   (item.ingredients && item.ingredients.length > 0) ||
@@ -505,11 +629,11 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                     {/* 메인 카드 내용 (원칙 2: 정보 위계) */}
                     <div>
                       <div className="mb-sm-sm flex items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="mb-sm-xs flex items-baseline gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-sm-xs flex flex-wrap items-center gap-2">
                             {/* 제목 - 원칙 1, 2: 18px 강조 본문 */}
                             <h3
-                              className="font-semibold text-gray-900 truncate"
+                              className="font-semibold text-gray-900"
                               style={{
                                 fontSize: '18px',
                                 lineHeight: '1.4',
@@ -520,10 +644,12 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                             </h3>
                             {item.price && (
                               <span
-                                className="font-bold text-primary whitespace-nowrap"
+                                className="ml-auto whitespace-nowrap font-extrabold text-[#2ECC71]"
                                 style={{
-                                  fontSize: '14px',
+                                  fontSize: '16px',
+                                  lineHeight: '1.4',
                                 }}
+                                data-testid="menu-item-price"
                               >
                                 {item.price}
                               </span>
@@ -531,7 +657,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                           </div>
                           {/* 부제목 - 원칙 1, 2: 14px 보조 정보 */}
                           <p
-                            className="text-gray-500 truncate"
+                            className="truncate text-gray-500"
                             style={{
                               fontSize: '14px',
                               lineHeight: '1.4',
@@ -547,8 +673,8 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                       <div className="flex items-center justify-between gap-2">
                         {getSafetyBadge(item.safety_status, t)}
                         {item.reason && (
-                          <p 
-                            className="flex-1 text-xs font-medium truncate"
+                          <p
+                            className="flex-1 truncate text-xs font-medium"
                             style={{ color: 'var(--sm-danger-text)' }}
                           >
                             {item.reason}
@@ -560,7 +686,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                       {hasDetails && (
                         <button
                           onClick={() => toggleItemExpanded(item.id)}
-                          className="mt-sm-sm flex w-full items-center justify-center gap-1 bg-gray-50 font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                          className="mt-sm-sm flex w-full items-center justify-center gap-1 bg-gray-50 font-medium text-gray-600 transition-colors hover:bg-gray-100"
                           style={{
                             minHeight: '44px',
                             borderRadius: '12px',
@@ -575,9 +701,13 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                               ? '자세히 보기'
                               : 'Show More'}
                           {isExpanded ? (
-                            <ChevronUp style={{ width: '16px', height: '16px' }} />
+                            <ChevronUp
+                              style={{ width: '16px', height: '16px' }}
+                            />
                           ) : (
-                            <ChevronDown style={{ width: '16px', height: '16px' }} />
+                            <ChevronDown
+                              style={{ width: '16px', height: '16px' }}
+                            />
                           )}
                         </button>
                       )}
@@ -585,10 +715,10 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
 
                     {/* 상세 정보 (펼쳤을 때만 표시) */}
                     {isExpanded && hasDetails && (
-                      <div className="border-t border-gray-200 bg-white p-3 space-y-3">
+                      <div className="space-y-3 border-t border-gray-200 bg-white p-3">
                         {/* 설명 */}
                         {item.description && (
-                          <p className="text-sm text-gray-700 leading-relaxed">
+                          <p className="text-sm leading-relaxed text-gray-700">
                             {item.description}
                           </p>
                         )}
@@ -596,7 +726,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                         {/* 재료 */}
                         {item.ingredients && item.ingredients.length > 0 && (
                           <div>
-                            <h4 className="text-xs font-semibold text-gray-700 mb-1.5">
+                            <h4 className="mb-1.5 text-xs font-semibold text-gray-700">
                               {language === 'ko' ? '재료' : 'Ingredients'}
                             </h4>
                             <div className="flex flex-wrap gap-1.5">
@@ -604,6 +734,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                                 <span
                                   key={idx}
                                   className="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700"
+                                  data-testid="ingredient-tag"
                                 >
                                   {ing}
                                 </span>
@@ -616,29 +747,35 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                         <div className="space-y-2">
                           {/* Allergy Risk */}
                           {item.allergy_risk && (
-                            <div className="flex items-start gap-2 rounded-lg bg-gray-50 p-2">
-                              <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                                {language === 'ko' ? '알레르기:' : 'Allergy:'}
+                            <div
+                              className={`flex items-start gap-2 rounded-lg p-2 ${
+                                item.allergy_risk.status === 'DANGER'
+                                  ? 'bg-red-100'
+                                  : item.allergy_risk.status === 'CAUTION'
+                                    ? 'bg-orange-100'
+                                    : 'bg-yellow-100'
+                              }`}
+                              data-testid="warning-item"
+                            >
+                              <span className="whitespace-nowrap text-xs font-semibold text-gray-700">
+                                알레르기:
                               </span>
                               <div className="flex flex-1 flex-wrap items-center gap-1.5">
                                 <span
                                   className="rounded-full px-2 py-0.5 text-xs font-semibold"
                                   style={{
-                                    backgroundColor: ICON_STYLES[item.allergy_risk.status as SafetyStatus],
+                                    backgroundColor:
+                                      ICON_STYLES[
+                                        item.allergy_risk.status as SafetyStatus
+                                      ],
                                     color: 'white',
                                   }}
                                 >
                                   {item.allergy_risk.status === 'DANGER'
-                                    ? language === 'ko'
-                                      ? '위험'
-                                      : 'Danger'
+                                    ? '위험'
                                     : item.allergy_risk.status === 'CAUTION'
-                                      ? language === 'ko'
-                                        ? '주의'
-                                        : 'Caution'
-                                      : language === 'ko'
-                                        ? '안전'
-                                        : 'Safe'}
+                                      ? '주의'
+                                      : '안전'}
                                 </span>
                                 {item.allergy_risk.matched_allergens &&
                                   item.allergy_risk.matched_allergens.length >
@@ -656,14 +793,17 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                           {/* Diet Risk */}
                           {item.diet_risk && (
                             <div className="flex items-start gap-2 rounded-lg bg-gray-50 p-2">
-                              <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                              <span className="whitespace-nowrap text-xs font-semibold text-gray-700">
                                 {language === 'ko' ? '식단:' : 'Diet:'}
                               </span>
                               <div className="flex flex-1 flex-wrap items-center gap-1.5">
                                 <span
                                   className="rounded-full px-2 py-0.5 text-xs font-semibold"
                                   style={{
-                                    backgroundColor: ICON_STYLES[item.diet_risk.status as SafetyStatus],
+                                    backgroundColor:
+                                      ICON_STYLES[
+                                        item.diet_risk.status as SafetyStatus
+                                      ],
                                     color: 'white',
                                   }}
                                 >
@@ -695,6 +835,31 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                 );
               })}
             </div>
+          ) : (
+            // 필터링 결과가 없을 때
+            <div className="flex flex-col items-center justify-center py-12">
+              <p className="mb-2 text-sm text-gray-600">
+                {language === 'ko'
+                  ? filterMode === 'ALL'
+                    ? '메뉴가 없습니다'
+                    : filterMode === 'SAFE'
+                      ? '안전한 메뉴가 없습니다'
+                      : filterMode === 'CAUTION'
+                        ? '주의 메뉴가 없습니다'
+                        : '위험 메뉴가 없습니다'
+                  : filterMode === 'ALL'
+                    ? 'No items'
+                    : `No ${filterMode.toLowerCase()} items`}
+              </p>
+              {filterMode !== 'ALL' && (
+                <button
+                  onClick={() => setFilterMode('ALL')}
+                  className="text-sm text-[#2ECC71] hover:underline"
+                >
+                  {language === 'ko' ? '모든 메뉴 보기' : 'Show all items'}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -702,7 +867,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
         <div className="border-t border-gray-200 bg-white p-sm-md">
           <button
             onClick={handleRetake}
-            className="w-full bg-primary font-semibold text-white hover:bg-primary/90 transition-colors active:scale-95"
+            className="hover:bg-primary/90 w-full bg-primary font-semibold text-white transition-colors active:scale-95"
             style={{
               minHeight: '56px',
               borderRadius: '16px',

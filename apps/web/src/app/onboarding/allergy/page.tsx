@@ -2,9 +2,10 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { AllergyCategoryScreen } from '@/components/onboarding/allergy/allergy-category-screen';
+
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { RequireAuth } from '@/components/auth/require-auth';
+import { AllergyCategoryScreen } from '@/components/onboarding/allergy/allergy-category-screen';
 import { getSupabaseClient } from '@/lib/supabase';
 
 // 알러지 코드를 카테고리로 매핑

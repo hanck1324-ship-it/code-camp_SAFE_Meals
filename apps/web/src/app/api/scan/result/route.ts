@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { getJob, type JobData } from '@/utils/scan-job-manager';
+
+import type { NextRequest } from 'next/server';
 
 /**
  * 스캔 결과 조회 API

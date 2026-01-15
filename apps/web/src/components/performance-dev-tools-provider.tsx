@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+
 import { registerDevMetrics } from '@/utils/performance-dev-tools';
 
 /**

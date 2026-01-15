@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import { Button } from '../../ui/button';
+import { useState, useEffect } from 'react';
+
 import { useTranslation } from '@/hooks/useTranslation';
+
+import { Button } from '../../ui/button';
 
 interface AllergyCategoryScreenProps {
   onCategorySelect: (categories: string[]) => void;

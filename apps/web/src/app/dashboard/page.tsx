@@ -1,8 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { HomeDashboard } from '@/features/dashboard/components/home-view';
+
 import { RequireAuth } from '@/components/auth/require-auth';
+import { HomeDashboard } from '@/features/dashboard/components/home-view';
 import { useHaccp } from '@/hooks/useHaccp'; // 1. 훅 불러오기
 
 export default function DashboardPage() {

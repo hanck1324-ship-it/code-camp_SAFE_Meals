@@ -1,6 +1,7 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
-import { ImageWithFallback } from '../ImageWithFallback';
 import React from 'react';
+
+import { ImageWithFallback } from '../ImageWithFallback';
 
 describe('ImageWithFallback 컴포넌트', () => {
   it('정상 이미지가 올바르게 렌더링되어야 함', () => {
@@ -37,7 +38,9 @@ describe('ImageWithFallback 컴포넌트', () => {
 
     // 폴백 이미지가 표시될 때까지 대기
     await waitFor(() => {
-      const fallbackImage = screen.getByAltText('Error loading image') as HTMLImageElement;
+      const fallbackImage = screen.getByAltText(
+        'Error loading image'
+      ) as HTMLImageElement;
       expect(fallbackImage).toBeInTheDocument();
       expect(fallbackImage.src).toContain('data:image/svg+xml;base64');
     });
@@ -60,7 +63,9 @@ describe('ImageWithFallback 컴포넌트', () => {
     });
 
     await waitFor(() => {
-      const fallbackImage = screen.getByAltText('Error loading image') as HTMLImageElement;
+      const fallbackImage = screen.getByAltText(
+        'Error loading image'
+      ) as HTMLImageElement;
       expect(fallbackImage).toHaveAttribute('data-original-url', originalUrl);
     });
   });
@@ -181,13 +186,23 @@ describe('ImageWithFallback 컴포넌트', () => {
       const flexContainer = fallbackImage.parentElement;
       expect(flexContainer).toBeInTheDocument();
       expect(flexContainer?.tagName).toBe('DIV');
-      expect(flexContainer).toHaveClass('flex', 'h-full', 'w-full', 'items-center', 'justify-center');
+      expect(flexContainer).toHaveClass(
+        'flex',
+        'h-full',
+        'w-full',
+        'items-center',
+        'justify-center'
+      );
 
       // 폴백 컨테이너 확인 (flex의 부모)
       const fallbackContainer = flexContainer?.parentElement;
       expect(fallbackContainer).toBeInTheDocument();
       expect(fallbackContainer?.tagName).toBe('DIV');
-      expect(fallbackContainer).toHaveClass('bg-gray-100', 'text-center', 'error-class');
+      expect(fallbackContainer).toHaveClass(
+        'bg-gray-100',
+        'text-center',
+        'error-class'
+      );
     });
   });
 

@@ -1,7 +1,7 @@
 'use client';
 
-import Layout from '@/components/layout';
 import { LanguageHydrationGuard } from '@/components/language-hydration-guard';
+import Layout from '@/components/layout';
 
 export default function MobileLayout({
   children,

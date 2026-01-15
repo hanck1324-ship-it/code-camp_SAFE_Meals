@@ -1,5 +1,8 @@
+import { useMemo } from 'react';
+
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { translations, languageNames } from '@/lib/translations';
+
 import type { Language } from '@/lib/translations';
 
 /**
@@ -35,9 +38,14 @@ export function useTranslation() {
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
 
-  // 언어가 없거나 번역이 없을 경우 영어를 기본값으로 사용
-  const translation = translations[language] || translations['en'];
-  const name = languageNames[language] || languageNames['en'];
+  // 언어가 변경될 때마다 새로운 번역 객체 생성
+  const translation = useMemo(() => {
+    return translations[language] || translations['en'];
+  }, [language]);
+
+  const name = useMemo(() => {
+    return languageNames[language] || languageNames['en'];
+  }, [language]);
 
   return {
     /** 현재 언어의 번역 객체 */
@@ -65,7 +73,8 @@ export function getTranslation(
   language: Language,
   key: keyof (typeof translations)['ko']
 ): string {
-  return translations[language][key];
+  const translation = translations[language] || translations['en'];
+  return translation[key] as string;
 }
 
 /**

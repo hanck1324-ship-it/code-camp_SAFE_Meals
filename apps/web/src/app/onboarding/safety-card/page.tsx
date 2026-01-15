@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { ShieldAlert, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { RequireAuth } from '@/components/auth/require-auth';
-import { getSupabaseClient } from '@/lib/supabase';
+import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getSupabaseClient } from '@/lib/supabase';
 
 export default function SafetyCardOnboardingPage() {
   const router = useRouter();
@@ -130,7 +131,8 @@ export default function SafetyCardOnboardingPage() {
             pin_code: pin,
             message_ko:
               '저는 알레르기가 있습니다.\n이 음식에 알레르기 성분이 들어있나요?',
-            message_en: 'I have allergies.\nDoes this food contain any allergens?',
+            message_en:
+              'I have allergies.\nDoes this food contain any allergens?',
             message_ja:
               '私はアレルギーがあります。\nこの食べ物にアレルゲンが含まれていますか?',
             message_zh: '我有过敏症。\n这种食物含有过敏原吗?',
@@ -152,20 +154,25 @@ export default function SafetyCardOnboardingPage() {
       completeOnboarding();
 
       // 네이티브 앱 감지: ReactNativeWebView 또는 isNativeApp 플래그 확인
-      const isNativeApp = typeof window !== 'undefined' && (
-        (window as any).ReactNativeWebView !== undefined ||
-        (window as any).isNativeApp === true
-      );
+      const isNativeApp =
+        typeof window !== 'undefined' &&
+        ((window as any).ReactNativeWebView !== undefined ||
+          (window as any).isNativeApp === true);
 
       console.log('[SafetyCard] 환경 감지:', {
-        hasReactNativeWebView: typeof window !== 'undefined' && (window as any).ReactNativeWebView !== undefined,
-        hasIsNativeAppFlag: typeof window !== 'undefined' && (window as any).isNativeApp === true,
-        isNativeApp
+        hasReactNativeWebView:
+          typeof window !== 'undefined' &&
+          (window as any).ReactNativeWebView !== undefined,
+        hasIsNativeAppFlag:
+          typeof window !== 'undefined' && (window as any).isNativeApp === true,
+        isNativeApp,
       });
 
       if (isNativeApp) {
         // 네이티브 앱: ONBOARDING_COMPLETE 메시지 전송 (네이티브가 라우팅 처리)
-        console.log('[SafetyCard] 네이티브 환경 - ONBOARDING_COMPLETE 메시지 전송');
+        console.log(
+          '[SafetyCard] 네이티브 환경 - ONBOARDING_COMPLETE 메시지 전송'
+        );
         if ((window as any).SafeMealsBridge) {
           (window as any).SafeMealsBridge.postMessage({
             type: 'ONBOARDING_COMPLETE',
@@ -196,20 +203,25 @@ export default function SafetyCardOnboardingPage() {
     completeOnboarding();
 
     // 네이티브 앱 감지: ReactNativeWebView 또는 isNativeApp 플래그 확인
-    const isNativeApp = typeof window !== 'undefined' && (
-      (window as any).ReactNativeWebView !== undefined ||
-      (window as any).isNativeApp === true
-    );
+    const isNativeApp =
+      typeof window !== 'undefined' &&
+      ((window as any).ReactNativeWebView !== undefined ||
+        (window as any).isNativeApp === true);
 
     console.log('[SafetyCard Skip] 환경 감지:', {
-      hasReactNativeWebView: typeof window !== 'undefined' && (window as any).ReactNativeWebView !== undefined,
-      hasIsNativeAppFlag: typeof window !== 'undefined' && (window as any).isNativeApp === true,
-      isNativeApp
+      hasReactNativeWebView:
+        typeof window !== 'undefined' &&
+        (window as any).ReactNativeWebView !== undefined,
+      hasIsNativeAppFlag:
+        typeof window !== 'undefined' && (window as any).isNativeApp === true,
+      isNativeApp,
     });
 
     if (isNativeApp) {
       // 네이티브 앱: ONBOARDING_COMPLETE 메시지 전송 (네이티브가 라우팅 처리)
-      console.log('[SafetyCard Skip] 네이티브 환경 - ONBOARDING_COMPLETE 메시지 전송');
+      console.log(
+        '[SafetyCard Skip] 네이티브 환경 - ONBOARDING_COMPLETE 메시지 전송'
+      );
       if ((window as any).SafeMealsBridge) {
         (window as any).SafeMealsBridge.postMessage({
           type: 'ONBOARDING_COMPLETE',
@@ -235,11 +247,7 @@ export default function SafetyCardOnboardingPage() {
         ? t.safetyCardPinChangeDesc
         : t.safetyCardPinSetupDesc
       : t.safetyCardPinConfirmDesc;
-  const actionLabel = isSaving
-    ? t.saving
-    : step === 'create'
-      ? t.next
-      : t.done;
+  const actionLabel = isSaving ? t.saving : step === 'create' ? t.next : t.done;
 
   return (
     <RequireAuth>
@@ -252,12 +260,8 @@ export default function SafetyCardOnboardingPage() {
         </div>
 
         {/* Title & Description */}
-        <h1 className="mb-2 text-2xl font-bold text-gray-900">
-          {title}
-        </h1>
-        <p className="mb-8 max-w-sm text-center text-gray-600">
-          {description}
-        </p>
+        <h1 className="mb-2 text-2xl font-bold text-gray-900">{title}</h1>
+        <p className="mb-8 max-w-sm text-center text-gray-600">{description}</p>
 
         {/* Error message */}
         {error && (
@@ -289,9 +293,7 @@ export default function SafetyCardOnboardingPage() {
         <div className="w-full max-w-md space-y-3">
           <Button
             onClick={step === 'create' ? handleCreatePin : handleConfirmPin}
-            disabled={
-              currentPin.length < 4 || isSaving
-            }
+            disabled={currentPin.length < 4 || isSaving}
             className="h-14 w-full rounded-2xl bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-lg font-semibold text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954] disabled:opacity-50"
           >
             {actionLabel}

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import { getSupabaseClient } from '@/lib/supabase';
 
 /**
@@ -8,7 +9,8 @@ import { getSupabaseClient } from '@/lib/supabase';
  */
 export async function POST(req: Request) {
   try {
-    const { paymentId, amount, productId, startDate, endDate, days } = await req.json();
+    const { paymentId, amount, productId, startDate, endDate, days } =
+      await req.json();
 
     // 1. 인증 확인
     const supabase = getSupabaseClient();
@@ -36,17 +38,14 @@ export async function POST(req: Request) {
     const portoneApiSecret = process.env.PORTONE_API_SECRET;
     if (!portoneApiSecret) {
       console.error('[Payment Verify] PORTONE_API_SECRET 미설정');
-      return NextResponse.json(
-        { error: '서버 설정 오류' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: '서버 설정 오류' }, { status: 500 });
     }
 
     const response = await fetch(
       `https://api.portone.io/v2/payments/${paymentId}`,
       {
         headers: {
-          'Authorization': `PortOne ${portoneApiSecret}`,
+          Authorization: `PortOne ${portoneApiSecret}`,
           'Content-Type': 'application/json',
         },
       }

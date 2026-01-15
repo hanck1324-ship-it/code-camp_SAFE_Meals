@@ -1,10 +1,11 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AllergyDetailScreen } from '@/components/onboarding/allergy/allergy-detail-screen';
 import { Suspense, useState, useEffect } from 'react';
-import { RequireAuth } from '@/components/auth/require-auth';
+
 import { useLanguageStore } from '@/commons/stores/useLanguageStore';
+import { RequireAuth } from '@/components/auth/require-auth';
+import { AllergyDetailScreen } from '@/components/onboarding/allergy/allergy-detail-screen';
 import { getSupabaseClient } from '@/lib/supabase';
 
 // UI allergy ID를 DB allergy_code로 변환하는 매핑

@@ -75,7 +75,9 @@ async function hashBlob(blob: Blob): Promise<string> {
   const arrayBuffer = await blob.arrayBuffer();
   const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
   return hashHex;
 }
 
@@ -127,11 +129,13 @@ export async function getCachedOCRResult(blob: Blob): Promise<string | null> {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
 
-    const entry = await new Promise<OCRCacheEntry | undefined>((resolve, reject) => {
-      const request = store.get(hash);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+    const entry = await new Promise<OCRCacheEntry | undefined>(
+      (resolve, reject) => {
+        const request = store.get(hash);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      }
+    );
 
     if (!entry) {
       console.log(`[OCRCache] ❌ 캐시 미스 - Hash: ${hash.slice(0, 8)}...`);
@@ -277,7 +281,9 @@ export async function getCacheStats(): Promise<{
       totalSize,
       oldestEntry: timestamps.length > 0 ? new Date(timestamps[0]) : null,
       newestEntry:
-        timestamps.length > 0 ? new Date(timestamps[timestamps.length - 1]) : null,
+        timestamps.length > 0
+          ? new Date(timestamps[timestamps.length - 1])
+          : null,
     };
   } catch (error) {
     console.warn('[OCRCache] 캐시 통계 조회 실패:', error);

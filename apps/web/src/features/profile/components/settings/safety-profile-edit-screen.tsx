@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, AlertCircle, Lock } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -133,12 +134,9 @@ export function SafetyProfileEditScreen({
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="mb-1">
-                {t.safetyCardPin || 'Safety Card PIN'}
-              </h3>
+              <h3 className="mb-1">{t.safetyCardPin || 'Safety Card PIN'}</h3>
               <p className="text-sm text-muted-foreground">
-                {t.safetyCardPinDesc ||
-                  'Set or update your Safety Card PIN'}
+                {t.safetyCardPinDesc || 'Set or update your Safety Card PIN'}
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2ECC71]/10">

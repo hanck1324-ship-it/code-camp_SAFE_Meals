@@ -6,8 +6,9 @@ import {
   LogOut,
   ChevronRight,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { LanguageSelector } from '@/components/language-selector';
+import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface ProfileScreenProps {
@@ -22,10 +23,7 @@ interface ProfileScreenProps {
   onLogout: () => void;
 }
 
-export function ProfileScreen({
-  onNavigate,
-  onLogout,
-}: ProfileScreenProps) {
+export function ProfileScreen({ onNavigate, onLogout }: ProfileScreenProps) {
   const { t, languageName } = useTranslation();
 
   const settingsItems = [

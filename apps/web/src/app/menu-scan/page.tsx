@@ -15,8 +15,8 @@
  * - result-area: 375 x 300px
  */
 
-import { MenuScanHeader } from '@/features/scan/components/menu-scan/menu-scan-header';
 import { MenuScanCameraButton } from '@/features/scan/components/menu-scan/menu-scan-camera-button';
+import { MenuScanHeader } from '@/features/scan/components/menu-scan/menu-scan-header';
 import { MenuScanPreviewArea } from '@/features/scan/components/menu-scan/menu-scan-preview-area';
 import { MenuScanProcessButton } from '@/features/scan/components/menu-scan/menu-scan-process-button';
 import { MenuScanResultArea } from '@/features/scan/components/menu-scan/menu-scan-result-area';

@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { NextThemesProvider } from '@/commons/providers/next-themes/next-themes.provider';
+
 import { QueryProvider } from '@/app/_providers/query-provider';
+import { NextThemesProvider } from '@/commons/providers/next-themes/next-themes.provider';
 
 interface LayoutProps {
   children: React.ReactNode;

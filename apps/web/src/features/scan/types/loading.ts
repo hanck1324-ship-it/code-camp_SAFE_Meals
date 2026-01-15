@@ -4,10 +4,10 @@
  */
 export type AnalysisLoadingStage =
   | 'idle'
-  | 'compressing'        // 이미지 압축 (10%)
-  | 'fetching-context'   // 사용자 정보 조회 (20%)
-  | 'analyzing-ocr'      // OCR 텍스트 추출 (40%)
-  | 'analyzing-ai'       // AI 분석 (100%)
+  | 'compressing' // 이미지 압축 (10%)
+  | 'fetching-context' // 사용자 정보 조회 (20%)
+  | 'analyzing-ocr' // OCR 텍스트 추출 (40%)
+  | 'analyzing-ai' // AI 분석 (100%)
   | 'complete';
 
 export const LOADING_STAGE_PROGRESS: Record<AnalysisLoadingStage, number> = {

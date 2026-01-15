@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Lock, Eye, EyeOff } from 'lucide-react';
-import { getSupabaseClient } from '@/lib/supabase';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import React, { useState, useCallback } from 'react';
+
+import { AUTH_URLS } from '@/commons/constants/url';
 import { LanguageSelector } from '@/components/language-selector';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Language } from '@/lib/translations';
-import { AUTH_URLS } from '@/commons/constants/url';
+import { getSupabaseClient } from '@/lib/supabase';
+
+import type { Language } from '@/lib/translations';
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -49,7 +51,8 @@ export default function ResetPasswordPage() {
       changePassword: '비밀번호 변경',
       passwordMismatch: '비밀번호가 일치하지 않습니다.',
       passwordTooShort: `비밀번호는 최소 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`,
-      linkExpired: '링크가 만료되었습니다. 비밀번호 재설정을 다시 요청해주세요.',
+      linkExpired:
+        '링크가 만료되었습니다. 비밀번호 재설정을 다시 요청해주세요.',
       changeSuccess: '비밀번호가 성공적으로 변경되었습니다.',
       changeFailed: '비밀번호 변경에 실패하였습니다. 다시 시도해주세요.',
       newPasswordPlaceholder: '새 비밀번호 입력',
@@ -80,8 +83,7 @@ export default function ResetPasswordPage() {
       linkExpired:
         'リンクの有効期限が切れました。パスワードリセットを再度リクエストしてください。',
       changeSuccess: 'パスワードが正常に変更されました。',
-      changeFailed:
-        'パスワードの変更に失敗しました。もう一度お試しください。',
+      changeFailed: 'パスワードの変更に失敗しました。もう一度お試しください。',
       newPasswordPlaceholder: '新しいパスワードを入力',
       confirmPasswordPlaceholder: 'パスワードを確認',
     },
@@ -144,7 +146,10 @@ export default function ResetPasswordPage() {
       });
 
       if (error) {
-        if (error.message.includes('expired') || error.message.includes('invalid')) {
+        if (
+          error.message.includes('expired') ||
+          error.message.includes('invalid')
+        ) {
           setErrorMessage(currentText.linkExpired);
         } else {
           setErrorMessage(currentText.changeFailed);
@@ -231,23 +236,23 @@ export default function ResetPasswordPage() {
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-4 pr-12 text-base outline-none transition-colors focus:border-[#2ECC71] focus:ring-2 focus:ring-[#2ECC71]/20"
-                  placeholder={currentText.confirmPasswordPlaceholder}
-                  data-testid="confirm-password-input"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-gray-700"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
+                className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-4 pr-12 text-base outline-none transition-colors focus:border-[#2ECC71] focus:ring-2 focus:ring-[#2ECC71]/20"
+                placeholder={currentText.confirmPasswordPlaceholder}
+                data-testid="confirm-password-input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-gray-700"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
             </div>
+          </div>
 
           {errorMessage && (
             <p

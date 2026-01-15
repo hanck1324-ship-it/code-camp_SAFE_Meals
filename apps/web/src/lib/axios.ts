@@ -1,4 +1,6 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
+
+import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 /**
  * 공통 axios 인스턴스
@@ -43,7 +45,9 @@ axiosInstance.interceptors.request.use(
 
     // 개발 환경에서 요청 로깅
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(
+        `[API Request] ${config.method?.toUpperCase()} ${config.url}`
+      );
     }
 
     return config;
@@ -164,7 +168,9 @@ axiosFormData.interceptors.request.use(
 
     // 개발 환경에서 요청 로깅
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(
+        `[API Request] ${config.method?.toUpperCase()} ${config.url}`
+      );
     }
 
     return config;

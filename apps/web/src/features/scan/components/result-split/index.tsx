@@ -9,11 +9,14 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { SafetyBadge, SafetyLevel } from '@/components/common/safety-badge';
+
 import { MenuListItem } from '@/components/common/menu-list-item';
+import { SafetyBadge } from '@/components/common/safety-badge';
 import { LanguageSelector } from '@/components/language-selector';
+import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
+
+import type { SafetyLevel } from '@/components/common/safety-badge';
 
 interface MenuItem {
   id: string;

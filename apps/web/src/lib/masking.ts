@@ -54,8 +54,8 @@ export function maskPhone(phone: string): string {
   }
 
   // 010-****-5678 형태로 마스킹
-  const prefix = digitsOnly.slice(0, 3);   // 010
-  const suffix = digitsOnly.slice(-4);     // 5678
+  const prefix = digitsOnly.slice(0, 3); // 010
+  const suffix = digitsOnly.slice(-4); // 5678
 
   return `${prefix}-****-${suffix}`;
 }
@@ -79,7 +79,7 @@ export function maskName(name: string): string {
   // 영문인 경우 (공백으로 분리된 이름)
   const parts = name.split(' ');
   return parts
-    .map(part => {
+    .map((part) => {
       if (part.length <= 1) return part;
       return part[0] + '*'.repeat(part.length - 1);
     })
@@ -93,7 +93,7 @@ export function maskName(name: string): string {
 export async function constantTimeDelay(ms: number = 500): Promise<void> {
   const start = Date.now();
   // 실제 작업 시간과 관계없이 항상 동일한 시간 소요
-  await new Promise(resolve => {
+  await new Promise((resolve) => {
     const elapsed = Date.now() - start;
     const remaining = Math.max(0, ms - elapsed);
     setTimeout(resolve, remaining);

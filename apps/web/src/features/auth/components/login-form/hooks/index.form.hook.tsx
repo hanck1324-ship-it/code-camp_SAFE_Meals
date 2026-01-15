@@ -1,9 +1,10 @@
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import { useLogin } from '@/hooks/useLogin';
+
 import { useAuth } from '@/app/_providers/auth-provider';
 import { MAIN_URLS } from '@/commons/constants/url';
+import { useLogin } from '@/hooks/useLogin';
 
 interface LoginForm {
   email: string;
@@ -35,16 +36,19 @@ export function useAuthLoginForm() {
     setHasCheckedAuth(true);
 
     // 네이티브 앱 감지: ReactNativeWebView 또는 isNativeApp 플래그 확인
-    const isNativeApp = typeof window !== 'undefined' && (
-      (window as any).ReactNativeWebView !== undefined ||
-      (window as any).isNativeApp === true
-    );
+    const isNativeApp =
+      typeof window !== 'undefined' &&
+      ((window as any).ReactNativeWebView !== undefined ||
+        (window as any).isNativeApp === true);
 
     console.log('[LoginForm] 환경 감지:', {
-      hasReactNativeWebView: typeof window !== 'undefined' && (window as any).ReactNativeWebView !== undefined,
-      hasIsNativeAppFlag: typeof window !== 'undefined' && (window as any).isNativeApp === true,
+      hasReactNativeWebView:
+        typeof window !== 'undefined' &&
+        (window as any).ReactNativeWebView !== undefined,
+      hasIsNativeAppFlag:
+        typeof window !== 'undefined' && (window as any).isNativeApp === true,
       isNativeApp,
-      authUser: !!authUser
+      authUser: !!authUser,
     });
 
     // 로그인 상태라면 대시보드로 이동 (웹 환경에서만)
@@ -52,7 +56,9 @@ export function useAuthLoginForm() {
       console.log('[LoginForm] 웹 환경 - 이미 로그인됨, dashboard로 이동');
       router.replace(MAIN_URLS.DASHBOARD);
     } else if (authUser && isNativeApp) {
-      console.log('[LoginForm] 네이티브 환경 - 이미 로그인됨, 리다이렉트 안 함 (네이티브가 처리)');
+      console.log(
+        '[LoginForm] 네이티브 환경 - 이미 로그인됨, 리다이렉트 안 함 (네이티브가 처리)'
+      );
     }
   }, [authUser, isAuthLoading, hasCheckedAuth, router]);
 

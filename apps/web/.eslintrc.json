@@ -1,0 +1,40 @@
+{
+  "extends": [
+    "../../.eslintrc.json",
+    "next/core-web-vitals",
+    "plugin:jsx-a11y/recommended"
+  ],
+  "plugins": ["jsx-a11y"],
+  "rules": {
+    "react/jsx-curly-brace-presence": [
+      "warn",
+      { "props": "never", "children": "never" }
+    ],
+    "react/self-closing-comp": "warn",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "jsx-a11y/alt-text": "warn",
+    "jsx-a11y/anchor-is-valid": "warn",
+    "jsx-a11y/click-events-have-key-events": "warn",
+    "jsx-a11y/no-static-element-interactions": "warn",
+    "@next/next/no-img-element": "warn"
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": {
+        "project": "./tsconfig.json"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ]
+}

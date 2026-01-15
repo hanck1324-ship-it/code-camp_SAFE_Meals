@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+
 import './globals.css';
-import { AuthProvider } from './_providers/auth-provider';
-import { AnalyzeResultProvider } from '@/features/scan/context/analyze-result-context';
-import Layout from '@/components/layout';
 import { LanguageHydrationGuard } from '@/components/language-hydration-guard';
-import { ToastContainer } from '@/components/ui/toast';
+import Layout from '@/components/layout';
 import { PerformanceDevToolsProvider } from '@/components/performance-dev-tools-provider';
+import { ToastContainer } from '@/components/ui/toast';
+import { AnalyzeResultProvider } from '@/features/scan/context/analyze-result-context';
+
+import { AuthProvider } from './_providers/auth-provider';
 
 export const metadata: Metadata = {
   title: 'SafeMeals',

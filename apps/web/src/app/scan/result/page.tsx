@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+
 import { RequireAuth } from '@/components/auth/require-auth';
 import { ScanResultScreen } from '@/features/scan/components/result-view';
 

@@ -49,6 +49,12 @@ test.describe('회원가입 기능 테스트', () => {
       page.locator('[data-testid="signup-submit-button"]')
     ).toBeEnabled({ timeout: 10000 });
 
+    // alert 다이얼로그 자동 수락 설정
+    page.on('dialog', async (dialog) => {
+      console.log('Dialog message:', dialog.message());
+      await dialog.accept();
+    });
+
     // 회원가입 버튼 클릭
     await page.click('[data-testid="signup-submit-button"]');
 

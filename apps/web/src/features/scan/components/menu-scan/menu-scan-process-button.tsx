@@ -11,6 +11,7 @@
  */
 
 import { Scan } from 'lucide-react';
+
 import { useMenuScan } from '@/features/scan/context';
 
 export function MenuScanProcessButton() {

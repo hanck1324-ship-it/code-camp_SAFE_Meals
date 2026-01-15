@@ -1,11 +1,12 @@
 import { Clock, RefreshCw, Camera } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
 import { LanguageSelector } from '@/components/language-selector';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useRecentScans } from '@/features/dashboard/hooks/useRecentScans';
-import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
-import { ScanThumbnail } from '@/features/dashboard/components/scan-thumbnail';
 import { SafeRestaurantMap } from '@/features/dashboard/components/safe-restaurant-map';
+import { ScanThumbnail } from '@/features/dashboard/components/scan-thumbnail';
+import { useRecentScans } from '@/features/dashboard/hooks/useRecentScans';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
 
 interface HomeDashboardProps {
   onScanMenu: () => void;
@@ -14,7 +15,12 @@ interface HomeDashboardProps {
   error?: string | null;
 }
 
-export function HomeDashboard({ onScanMenu, haccpList, isLoading, error }: HomeDashboardProps) {
+export function HomeDashboard({
+  onScanMenu,
+  haccpList,
+  isLoading,
+  error,
+}: HomeDashboardProps) {
   const router = useRouter();
   const { t, language } = useTranslation();
   const {
@@ -87,9 +93,7 @@ export function HomeDashboard({ onScanMenu, haccpList, isLoading, error }: HomeD
             data-testid="recent-scans-empty"
           >
             <Camera className="mb-2 h-8 w-8 text-gray-400" />
-            <p className="mb-3 text-sm text-gray-600">
-              {t.noScansYet}
-            </p>
+            <p className="mb-3 text-sm text-gray-600">{t.noScansYet}</p>
             <button
               onClick={onScanMenu}
               className="rounded-lg bg-[#2ECC71] px-4 py-2 text-sm text-white hover:bg-[#27AE60]"
@@ -119,7 +123,9 @@ export function HomeDashboard({ onScanMenu, haccpList, isLoading, error }: HomeD
                     language={language as 'ko' | 'en'}
                     className="mb-2 h-12 w-32 md:h-16 md:w-32"
                   />
-                  <p className="truncate text-sm">{scan.representativeItem.itemName}</p>
+                  <p className="truncate text-sm">
+                    {scan.representativeItem.itemName}
+                  </p>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     <span>{formatRelativeTime(scan.scannedAt, language)}</span>
@@ -127,7 +133,10 @@ export function HomeDashboard({ onScanMenu, haccpList, isLoading, error }: HomeD
                   {/* 결과 개수 표시 */}
                   {scan.representativeItem.totalCount > 1 && (
                     <div className="mt-1 text-xs text-gray-500">
-                      {t.totalItems.replace('{{count}}', scan.representativeItem.totalCount.toString())}
+                      {t.totalItems.replace(
+                        '{{count}}',
+                        scan.representativeItem.totalCount.toString()
+                      )}
                     </div>
                   )}
                 </button>

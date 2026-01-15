@@ -11,8 +11,9 @@
  * - 파일 크기 제한: 10MB
  */
 
-import { useRef, type ChangeEvent } from 'react';
 import { Camera, ImageIcon } from 'lucide-react';
+import { useRef, type ChangeEvent } from 'react';
+
 import { useMenuScan } from '@/features/scan/context';
 
 /**

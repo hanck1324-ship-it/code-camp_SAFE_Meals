@@ -1,8 +1,9 @@
 'use client';
 
-import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useCallback } from 'react';
+
+import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 
 /**
  * LanguageHydrationGuard Props 인터페이스
