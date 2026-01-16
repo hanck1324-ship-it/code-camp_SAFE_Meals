@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { RequireAuth } from '@/components/auth/require-auth';
-import { useSafetyCardAllergiesDietsLoad } from '@/features/profile/components/safety-card/hooks/index.allergies-diets-load.hook';
+import { useSafetyCardAllergiesDietsLoad } from '@/features/profile/components/safety-card/hooks/useSafetyCard';
 import { ProfileScreen } from '@/features/profile/components/settings/profile-screen';
 
 export default function ProfilePage() {

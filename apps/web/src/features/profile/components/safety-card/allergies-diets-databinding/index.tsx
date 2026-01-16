@@ -21,7 +21,7 @@ import {
   getDietTypeInfo,
   getSeverityLabel,
 } from './constants';
-import { useSafetyCardAllergiesDietsLoad } from '../hooks/index.allergies-diets-load.hook';
+import { useSafetyCardAllergiesDietsLoad } from '../hooks/useSafetyCard';
 
 import type { Language } from '@/commons/stores/useLanguageStore';
 

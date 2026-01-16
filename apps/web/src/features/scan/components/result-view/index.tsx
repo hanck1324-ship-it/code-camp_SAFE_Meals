@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/_providers/auth-provider';
 import { MAIN_URLS } from '@/commons/constants/url';
 import { useRecentScans } from '@/features/dashboard/hooks/useRecentScans';
-import { useSafetyCardAllergiesDietsLoad } from '@/features/profile/components/safety-card/hooks/index.allergies-diets-load.hook';
+import { useSafetyCardAllergiesDietsLoad } from '@/features/profile/components/safety-card/hooks/useSafetyCard';
 import {
   generatePersonalizedInsights,
   PersonalizedInsights,
@@ -37,7 +37,7 @@ import type { translations } from '@/lib/translations';
 type SafetyStatus = 'SAFE' | 'CAUTION' | 'DANGER';
 
 interface ScanResultScreenProps {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 // ============================================
@@ -201,6 +201,9 @@ function getSafetyBadge(status: SafetyStatus, t: (typeof translations)['ko']) {
  */
 export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
   const router = useRouter();
+
+  // onBack이 제공되지 않으면 router.back() 사용
+  const handleBack = onBack ?? (() => router.back());
   const { t, language } = useTranslation();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
@@ -325,14 +328,14 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
         {/* Header Controls */}
         <div className="flex items-center justify-between border-b border-gray-200 p-4">
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
           <div /> {/* Spacer */}
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100"
           >
             <X className="h-6 w-6" />
@@ -417,7 +420,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
         {/* Header Controls (원칙 4: 44px 터치 영역) */}
         <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-3">
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="flex items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm"
             style={{
               minWidth: '44px',
@@ -428,7 +431,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
           </button>
           <div /> {/* Spacer */}
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="flex items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm"
             style={{
               minWidth: '44px',
