@@ -7,12 +7,14 @@ import { useState } from 'react';
 import { RequireAuth } from '@/components/auth/require-auth';
 import { Button } from '@/components/ui/button-legacy';
 import { AllergiesDietsDatabinding } from '@/features/profile/components/safety-card/allergies-diets-databinding';
-import { useSafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
-import { useSafetyCardVerify } from '@/features/profile/components/safety-card/hooks/index.submit.hook';
+import {
+  useSafetyCardData,
+  useSafetyCardVerify,
+} from '@/features/profile/components/safety-card/hooks/useSafetyCard';
 import { useTranslation } from '@/hooks/useTranslation';
 
 import type { Language } from '@/commons/stores/useLanguageStore';
-import type { SafetyCardData } from '@/features/profile/components/safety-card/hooks/index.data.hook';
+import type { SafetyCardData } from '@/features/profile/components/safety-card/hooks/useSafetyCard';
 
 /**
  * 언어별 메시지 필드 매핑
