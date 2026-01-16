@@ -1,8 +1,8 @@
 'use client';
 
-import { ShieldAlert, Lock } from 'lucide-react';
+import { ShieldAlert, Lock, Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useAppStore } from '@/commons/stores/useAppStore';
 import { RequireAuth } from '@/components/auth/require-auth';
@@ -17,18 +17,102 @@ export default function SafetyCardOnboardingPage() {
   const { completeOnboarding } = useAppStore();
   const isEditMode = searchParams.get('mode') === 'edit';
 
+  const [currentPinInput, setCurrentPinInput] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
-  const [step, setStep] = useState<'create' | 'confirm'>('create');
+  const [step, setStep] = useState<'verify' | 'create' | 'confirm'>('create');
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isCheckingExistingPin, setIsCheckingExistingPin] = useState(true);
+
+  // 편집 모드일 때 기존 PIN이 있는지 확인
+  useEffect(() => {
+    async function checkExistingPin() {
+      if (!isEditMode) {
+        setIsCheckingExistingPin(false);
+        return;
+      }
+
+      try {
+        const supabase = getSupabaseClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          setIsCheckingExistingPin(false);
+          return;
+        }
+
+        const { data: safetyCard } = await supabase
+          .from('safety_cards')
+          .select('pin_code')
+          .eq('user_id', user.id)
+          .single();
+
+        if (safetyCard?.pin_code) {
+          setStep('verify');
+        }
+      } catch (err) {
+        console.error('기존 PIN 확인 실패:', err);
+      } finally {
+        setIsCheckingExistingPin(false);
+      }
+    }
+
+    checkExistingPin();
+  }, [isEditMode]);
+
+  /**
+   * 기존 PIN 검증
+   */
+  const handleVerifyCurrentPin = async () => {
+    if (currentPinInput.length !== 4) return;
+
+    setIsVerifying(true);
+    setError('');
+
+    try {
+      const supabase = getSupabaseClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setError(t.loginRequired);
+        return;
+      }
+
+      const { data: safetyCard } = await supabase
+        .from('safety_cards')
+        .select('pin_code')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!safetyCard || safetyCard.pin_code !== currentPinInput) {
+        setError(t.incorrectPin || 'PIN이 일치하지 않습니다.');
+        setCurrentPinInput('');
+        return;
+      }
+
+      // 검증 성공 - 새 PIN 생성 단계로
+      setStep('create');
+      setError('');
+    } catch (err) {
+      console.error('PIN 검증 실패:', err);
+      setError(t.saveFailedRetry);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   /**
    * PIN 입력 핸들러
    */
   const handlePinChange = (index: number, value: string) => {
-    const currentPin = step === 'create' ? pin : confirmPin;
-    const setCurrentPin = step === 'create' ? setPin : setConfirmPin;
+    const currentPin = step === 'verify' ? currentPinInput : step === 'create' ? pin : confirmPin;
+    const setCurrentPin = step === 'verify' ? setCurrentPinInput : step === 'create' ? setPin : setConfirmPin;
 
     const numericValue = value.replace(/\D/g, '');
     if (numericValue.length > 0) {
@@ -54,7 +138,7 @@ export default function SafetyCardOnboardingPage() {
    * Backspace 처리
    */
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    const currentPin = step === 'create' ? pin : confirmPin;
+    const currentPin = step === 'verify' ? currentPinInput : step === 'create' ? pin : confirmPin;
     if (e.key === 'Backspace' && !currentPin[index] && index > 0) {
       const prevInput = document.querySelector(
         `input[data-pin-index="${index - 1}"]`
@@ -234,20 +318,56 @@ export default function SafetyCardOnboardingPage() {
     }
   };
 
-  const currentPin = step === 'create' ? pin : confirmPin;
-  const title =
-    step === 'create'
-      ? isEditMode
-        ? t.safetyCardPinChangeTitle
-        : t.safetyCardPinSetupTitle
-      : t.safetyCardPinConfirmTitle;
-  const description =
-    step === 'create'
-      ? isEditMode
-        ? t.safetyCardPinChangeDesc
-        : t.safetyCardPinSetupDesc
-      : t.safetyCardPinConfirmDesc;
-  const actionLabel = isSaving ? t.saving : step === 'create' ? t.next : t.done;
+  const displayPin = step === 'verify' ? currentPinInput : step === 'create' ? pin : confirmPin;
+
+  const getTitle = () => {
+    if (step === 'verify') {
+      return t.enterSecurityPin || '현재 PIN 입력';
+    }
+    if (step === 'create') {
+      return isEditMode ? t.safetyCardPinChangeTitle : t.safetyCardPinSetupTitle;
+    }
+    return t.safetyCardPinConfirmTitle;
+  };
+
+  const getDescription = () => {
+    if (step === 'verify') {
+      return t.pinDescription || '새 PIN을 설정하려면 현재 PIN을 먼저 입력하세요';
+    }
+    if (step === 'create') {
+      return isEditMode ? t.safetyCardPinChangeDesc : t.safetyCardPinSetupDesc;
+    }
+    return t.safetyCardPinConfirmDesc;
+  };
+
+  const getActionLabel = () => {
+    if (isVerifying || isSaving) return t.saving || '처리 중...';
+    if (step === 'verify') return t.unlock || '확인';
+    if (step === 'create') return t.next;
+    return t.done;
+  };
+
+  const handleAction = () => {
+    if (step === 'verify') {
+      handleVerifyCurrentPin();
+    } else if (step === 'create') {
+      handleCreatePin();
+    } else {
+      handleConfirmPin();
+    }
+  };
+
+  // 로딩 중
+  if (isCheckingExistingPin) {
+    return (
+      <RequireAuth>
+        <div className="flex min-h-screen flex-col items-center justify-center bg-white">
+          <Loader2 className="h-8 w-8 animate-spin text-[#2ECC71]" />
+          <p className="mt-4 text-gray-500">{t.loading}</p>
+        </div>
+      </RequireAuth>
+    );
+  }
 
   return (
     <RequireAuth>
@@ -260,8 +380,8 @@ export default function SafetyCardOnboardingPage() {
         </div>
 
         {/* Title & Description */}
-        <h1 className="mb-2 text-2xl font-bold text-gray-900">{title}</h1>
-        <p className="mb-8 max-w-sm text-center text-gray-600">{description}</p>
+        <h1 className="mb-2 text-2xl font-bold text-gray-900">{getTitle()}</h1>
+        <p className="mb-8 max-w-sm text-center text-gray-600">{getDescription()}</p>
 
         {/* Error message */}
         {error && (
@@ -275,16 +395,16 @@ export default function SafetyCardOnboardingPage() {
           {[0, 1, 2, 3].map((i) => (
             <input
               key={i}
-              type="text"
+              type="password"
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={1}
-              value={currentPin[i] || ''}
+              value={displayPin[i] || ''}
               onChange={(e) => handlePinChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
               data-pin-index={i}
               className="h-16 w-16 rounded-2xl border-2 border-gray-200 bg-white text-center text-2xl font-semibold focus:border-[#2ECC71] focus:outline-none"
-              autoFocus={i === 0 && step === 'create'}
+              autoFocus={i === 0}
             />
           ))}
         </div>
@@ -292,11 +412,11 @@ export default function SafetyCardOnboardingPage() {
         {/* Action Buttons */}
         <div className="w-full max-w-md space-y-3">
           <Button
-            onClick={step === 'create' ? handleCreatePin : handleConfirmPin}
-            disabled={currentPin.length < 4 || isSaving}
+            onClick={handleAction}
+            disabled={displayPin.length < 4 || isSaving || isVerifying}
             className="h-14 w-full rounded-2xl bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-lg font-semibold text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954] disabled:opacity-50"
           >
-            {actionLabel}
+            {getActionLabel()}
           </Button>
 
           {step === 'create' && !isEditMode && (
