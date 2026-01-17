@@ -221,6 +221,7 @@ async function fetchUserAllergyDietContext(): Promise<UserContext> {
  */
 const POLL_INTERVAL_MS = 2000; // 2초마다 폴링
 const MAX_POLL_ATTEMPTS = 30; // 최대 60초 (30 * 2초)
+const MAX_CONSECUTIVE_ERRORS = 3; // 연속 에러 최대 횟수
 
 /**
  * 이미지 분석 제출 커스텀 훅
@@ -265,14 +266,30 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
    * PARTIAL 응답 후 FINAL 결과 폴링
    * - 2초마다 /api/scan/result 호출
    * - FINAL 상태가 되면 결과 업데이트
+   * - 폴링 실패 시 사용자에게 알림 표시
    */
   const pollForFinalResult = useCallback(
     async (jobId: string, language: Language) => {
       let attempts = 0;
+      let consecutiveErrors = 0;
 
       const poll = async () => {
         if (attempts >= MAX_POLL_ATTEMPTS) {
           console.log('[Polling] 최대 시도 횟수 도달, 폴링 중단');
+          // 사용자에게 알림 - PARTIAL 결과는 유지
+          setAnalysisResult((prev) => {
+            if (prev && prev._isPartial) {
+              return {
+                ...prev,
+                _pollingFailed: true,
+                _pollingMessage:
+                  language === 'ko'
+                    ? '상세 분석에 시간이 걸리고 있습니다. 현재 결과를 참고해주세요.'
+                    : 'Detailed analysis is taking longer than expected. Please refer to the current result.',
+              };
+            }
+            return prev;
+          });
           return;
         }
 
@@ -284,6 +301,9 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
         try {
           const response = await axios.get(`/api/scan/result?jobId=${jobId}`);
           const data = response.data;
+
+          // 성공 시 연속 에러 카운트 리셋
+          consecutiveErrors = 0;
 
           // 서버 응답: { status: 'FINAL', result: {...}, results: [...] }
           if (data.status === 'FINAL' && (data.result || data.results)) {
@@ -354,11 +374,45 @@ export function useAnalyzeSubmit(): UseAnalyzeSubmitReturn {
             // 아직 처리 중 - 다음 폴링 예약
             pollTimerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
           } else if (data.status === 'ERROR') {
-            console.error('[Polling] 에러 발생:', data.error);
-            // 에러 시 폴링 중단 (PARTIAL 결과는 유지)
+            console.error('[Polling] 에러 발생:', data.error || data.message);
+            // 에러 시 폴링 중단 + 사용자에게 알림
+            setAnalysisResult((prev) => {
+              if (prev && prev._isPartial) {
+                return {
+                  ...prev,
+                  _pollingFailed: true,
+                  _pollingMessage:
+                    language === 'ko'
+                      ? '상세 분석 중 오류가 발생했습니다. 현재 결과를 참고해주세요.'
+                      : 'An error occurred during detailed analysis. Please refer to the current result.',
+                };
+              }
+              return prev;
+            });
           }
         } catch (err) {
           console.error('[Polling] 네트워크 에러:', err);
+          consecutiveErrors++;
+
+          // 연속 에러가 최대치를 초과하면 폴링 중단
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            console.log('[Polling] 연속 에러 최대치 도달, 폴링 중단');
+            setAnalysisResult((prev) => {
+              if (prev && prev._isPartial) {
+                return {
+                  ...prev,
+                  _pollingFailed: true,
+                  _pollingMessage:
+                    language === 'ko'
+                      ? '네트워크 연결이 불안정합니다. 현재 결과를 참고해주세요.'
+                      : 'Network connection is unstable. Please refer to the current result.',
+                };
+              }
+              return prev;
+            });
+            return;
+          }
+
           // 네트워크 에러 시 다음 폴링 계속 시도
           pollTimerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
         }

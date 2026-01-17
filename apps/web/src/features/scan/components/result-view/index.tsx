@@ -445,17 +445,33 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
 
       {/* Bottom Section - Results */}
       <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-        {/* PARTIAL 상태 표시 (분석 진행 중) */}
+        {/* PARTIAL 상태 표시 (분석 진행 중 또는 폴링 실패) */}
         {isPartial && (
           <div
-            className="flex items-center gap-2 border-b border-blue-200 bg-blue-50 p-3"
+            className={`flex items-center gap-2 border-b p-3 ${
+              analysisResult._pollingFailed
+                ? 'border-amber-200 bg-amber-50'
+                : 'border-blue-200 bg-blue-50'
+            }`}
             data-testid="partial-status-banner"
           >
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-            <p className="text-sm text-blue-700">
-              {language === 'ko'
-                ? '1차 분석 결과입니다. AI 상세 분석 중...'
-                : 'Preliminary result. AI analysis in progress...'}
+            {analysisResult._pollingFailed ? (
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+            ) : (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            )}
+            <p
+              className={`text-sm ${
+                analysisResult._pollingFailed
+                  ? 'text-amber-700'
+                  : 'text-blue-700'
+              }`}
+            >
+              {analysisResult._pollingFailed
+                ? analysisResult._pollingMessage
+                : language === 'ko'
+                  ? '1차 분석 결과입니다. AI 상세 분석 중...'
+                  : 'Preliminary result. AI analysis in progress...'}
             </p>
           </div>
         )}

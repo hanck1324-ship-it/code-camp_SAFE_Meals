@@ -1,8 +1,8 @@
 /**
  * Google Vision OCR 유틸리티
  *
- * Google Cloud Vision API를 사용하여 이미지에서 텍스트를 추출합니다.
- * REST API 직접 호출 방식으로 구현 (서버리스 환경 호환)
+ * 서버 API를 통해 Google Cloud Vision API를 호출하여 이미지에서 텍스트를 추출합니다.
+ * API 키는 서버에서만 사용되어 클라이언트에 노출되지 않습니다.
  *
  * 사용처:
  * - 메뉴 스캔 시 이미지에서 텍스트 추출
@@ -28,33 +28,13 @@ export interface OcrResult {
   processingTimeMs: number;
 }
 
-/** Vision API 응답 구조 */
-interface VisionApiResponse {
-  responses: Array<{
-    textAnnotations?: Array<{
-      locale?: string;
-      description: string;
-      boundingPoly?: {
-        vertices: Array<{ x: number; y: number }>;
-      };
-    }>;
-    fullTextAnnotation?: {
-      text: string;
-      pages: Array<{
-        confidence?: number;
-        property?: {
-          detectedLanguages?: Array<{
-            languageCode: string;
-            confidence: number;
-          }>;
-        };
-      }>;
-    };
-    error?: {
-      code: number;
-      message: string;
-    };
-  }>;
+/** OCR API 응답 */
+interface OcrApiResponse {
+  text: string;
+  confidence: 'low' | 'medium' | 'high';
+  detectedLanguage: string | null;
+  processingTimeMs: number;
+  error?: string;
 }
 
 // ============================================
@@ -62,7 +42,7 @@ interface VisionApiResponse {
 // ============================================
 
 /**
- * Google Vision API를 사용하여 이미지에서 텍스트 추출
+ * 서버 API를 통해 이미지에서 텍스트 추출
  *
  * @param base64Image - Base64 인코딩된 이미지 데이터 (data:image/... 헤더 포함 가능)
  * @returns OCR 결과 (텍스트, 신뢰도, 언어)
@@ -72,109 +52,44 @@ export async function extractTextFromImage(
 ): Promise<OcrResult> {
   const startTime = Date.now();
 
-  // API 키 확인
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_VISION_API_KEY;
-  if (!apiKey) {
-    console.error('❌ [OCR] NEXT_PUBLIC_GOOGLE_VISION_API_KEY가 설정되지 않음');
-    throw new Error('Google Vision API 키가 설정되지 않았습니다.');
-  }
-
-  // Base64 헤더 제거 (data:image/jpeg;base64, 형태인 경우)
-  const base64Data = base64Image.includes('base64,')
-    ? base64Image.split('base64,')[1]
-    : base64Image;
-
-  console.log(
-    `📝 [OCR] Google Vision API 호출 시작 (이미지 크기: ${(base64Data.length / 1024).toFixed(1)} KB)`
-  );
+  console.log(`📝 [OCR] 서버 API 호출 시작`);
 
   try {
-    // Google Vision API REST 호출
-    const response = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          requests: [
-            {
-              image: {
-                content: base64Data,
-              },
-              features: [
-                {
-                  type: 'TEXT_DETECTION',
-                  maxResults: 1,
-                },
-                {
-                  type: 'DOCUMENT_TEXT_DETECTION',
-                  maxResults: 1,
-                },
-              ],
-              imageContext: {
-                languageHints: ['ko', 'en', 'ja', 'zh', 'th', 'vi'],
-              },
-            },
-          ],
-        }),
-      }
-    );
+    // 서버 API 호출 (API 키는 서버에서 처리)
+    const response = await fetch('/api/ocr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image: base64Image,
+      }),
+    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `❌ [OCR] API 호출 실패: ${response.status} - ${errorText}`
-      );
-      throw new Error(`Google Vision API 호출 실패: ${response.status}`);
+    const data: OcrApiResponse = await response.json();
+
+    if (!response.ok || data.error) {
+      console.error(`❌ [OCR] API 호출 실패: ${data.error}`);
+      throw new Error(data.error || 'OCR 처리 실패');
     }
 
-    const data: VisionApiResponse = await response.json();
     const processingTimeMs = Date.now() - startTime;
 
-    // 에러 체크
-    if (data.responses[0]?.error) {
-      const error = data.responses[0].error;
-      console.error(`❌ [OCR] API 에러: ${error.code} - ${error.message}`);
-      throw new Error(`Vision API 에러: ${error.message}`);
-    }
-
-    // 텍스트 추출
-    const fullTextAnnotation = data.responses[0]?.fullTextAnnotation;
-    const textAnnotations = data.responses[0]?.textAnnotations;
-
-    // 전체 텍스트 (fullTextAnnotation 우선, 없으면 첫 번째 textAnnotation)
-    const text =
-      fullTextAnnotation?.text || textAnnotations?.[0]?.description || '';
-
-    // 언어 감지
-    const detectedLanguage =
-      fullTextAnnotation?.pages?.[0]?.property?.detectedLanguages?.[0]
-        ?.languageCode ||
-      textAnnotations?.[0]?.locale ||
-      null;
-
-    // 신뢰도 계산
-    const pageConfidence = fullTextAnnotation?.pages?.[0]?.confidence;
-    const confidence = calculateConfidence(text, pageConfidence);
-
     console.log(`✅ [OCR] 완료 (${processingTimeMs}ms)`);
-    console.log(`   - 텍스트 길이: ${text.length}자`);
-    console.log(`   - 감지된 언어: ${detectedLanguage || '알 수 없음'}`);
-    console.log(`   - 신뢰도: ${confidence}`);
-    if (text.length > 0) {
+    console.log(`   - 텍스트 길이: ${data.text.length}자`);
+    console.log(`   - 감지된 언어: ${data.detectedLanguage || '알 수 없음'}`);
+    console.log(`   - 신뢰도: ${data.confidence}`);
+    if (data.text.length > 0) {
       console.log(
-        `   - 미리보기: ${text.substring(0, 100).replace(/\n/g, ' ')}...`
+        `   - 미리보기: ${data.text.substring(0, 100).replace(/\n/g, ' ')}...`
       );
     }
 
     return {
-      text,
-      confidence,
-      detectedLanguage,
+      text: data.text,
+      confidence: data.confidence,
+      detectedLanguage: data.detectedLanguage,
       processingTimeMs,
-      rawResponse: data,
     };
   } catch (error) {
     const processingTimeMs = Date.now() - startTime;
@@ -183,49 +98,6 @@ export async function extractTextFromImage(
     // API 에러는 상위로 전파하여 ocrFailed 플래그가 설정되도록 함
     throw error;
   }
-}
-
-/**
- * OCR 신뢰도 계산
- *
- * @param text - 추출된 텍스트
- * @param pageConfidence - Vision API의 페이지 신뢰도 (0~1)
- * @returns 신뢰도 등급
- */
-function calculateConfidence(
-  text: string,
-  pageConfidence?: number
-): 'low' | 'medium' | 'high' {
-  // 텍스트가 너무 짧으면 low
-  if (text.length < 10) {
-    return 'low';
-  }
-
-  // Vision API가 신뢰도를 제공한 경우
-  if (pageConfidence !== undefined) {
-    if (pageConfidence >= 0.9) return 'high';
-    if (pageConfidence >= 0.7) return 'medium';
-    return 'low';
-  }
-
-  // 휴리스틱: 텍스트 길이와 품질로 추정
-  // - 메뉴는 보통 여러 줄, 가격, 메뉴명 포함
-  const lines = text.split('\n').filter((line) => line.trim().length > 0);
-  const hasNumbers = /\d/.test(text);
-  const hasKorean = /[가-힣]/.test(text);
-  const hasEnglish = /[a-zA-Z]/.test(text);
-
-  // 여러 줄 + 숫자(가격) + 한글/영어 → high
-  if (lines.length >= 5 && hasNumbers && (hasKorean || hasEnglish)) {
-    return 'high';
-  }
-
-  // 어느 정도 내용이 있으면 medium
-  if (lines.length >= 2 && text.length >= 50) {
-    return 'medium';
-  }
-
-  return 'low';
 }
 
 /**

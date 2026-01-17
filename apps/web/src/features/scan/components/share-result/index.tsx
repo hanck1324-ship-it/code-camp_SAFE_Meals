@@ -161,7 +161,7 @@ export function ShareResult({
       <button
         onClick={() => {
           // 모바일에서는 네이티브 공유, 데스크톱에서는 옵션 표시
-          if (navigator.share) {
+          if (typeof navigator.share === 'function') {
             handleNativeShare();
           } else {
             setIsOpen(!isOpen);
@@ -178,7 +178,7 @@ export function ShareResult({
       </button>
 
       {/* Share Options Modal */}
-      {isOpen && !navigator.share && (
+      {isOpen && typeof navigator.share !== 'function' && (
         <>
           {/* Backdrop */}
           <div
@@ -270,14 +270,3 @@ export function ShareResult({
   );
 }
 
-/**
- * html2canvas 라이브러리 타입 선언
- * 실제 프로젝트에서는 `npm install html2canvas` 필요
- */
-declare module 'html2canvas' {
-  function html2canvas(
-    element: HTMLElement,
-    options?: any
-  ): Promise<HTMLCanvasElement>;
-  export default html2canvas;
-}

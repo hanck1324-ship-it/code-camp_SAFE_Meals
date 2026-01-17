@@ -1,6 +1,21 @@
 import axios from 'axios';
 
+import { refreshSession } from './supabase';
+
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
+
+// 토큰 갱신 중복 방지
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string) => void> = [];
+
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
+function onTokenRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
 
 /**
  * 공통 axios 인스턴스
@@ -8,6 +23,7 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
  * 기능:
  * - 자동 토큰 추가 (Authorization 헤더)
  * - 자동 에러 처리 (401, 429, 500 등)
+ * - 401 시 토큰 갱신 후 재시도
  * - 타임아웃 설정
  * - 요청/응답 로깅 (개발 환경)
  */
@@ -72,7 +88,7 @@ axiosInstance.interceptors.response.use(
     }
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     // 에러 상세 정보
     const status = error.response?.status;
     const url = error.config?.url;
@@ -80,16 +96,77 @@ axiosInstance.interceptors.response.use(
 
     console.error(`[API Error] ${method} ${url} - Status: ${status}`);
 
-    // 401 Unauthorized - 로그인 필요
-    if (status === 401) {
-      console.warn('인증 실패: 로그인이 필요합니다.');
+    // 401 Unauthorized - 토큰 갱신 시도 후 재요청
+    if (status === 401 && error.config) {
+      const originalRequest = error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
+      };
 
-      // 클라이언트 사이드에서만 실행
-      if (typeof window !== 'undefined') {
-        // 로그인 페이지로 리다이렉트
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/auth/login') {
-          window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+      // 이미 재시도한 요청이면 로그인 페이지로 이동
+      if (originalRequest._retry) {
+        console.warn('인증 실패: 토큰 갱신 후에도 실패. 로그인이 필요합니다.');
+
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/auth/login') {
+            window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+          }
+        }
+        return Promise.reject(error);
+      }
+
+      // 토큰 갱신 중이면 대기
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          subscribeTokenRefresh((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(axiosInstance(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // 토큰 갱신 시도
+        const refreshed = await refreshSession();
+
+        if (refreshed && typeof window !== 'undefined') {
+          // 새 토큰으로 요청 재시도
+          const token = localStorage.getItem(
+            'sb-fogmlohrpnwmzkhvtwdp-auth-token'
+          );
+          if (token) {
+            const authData = JSON.parse(token);
+            const accessToken = authData?.access_token;
+
+            if (accessToken) {
+              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+              onTokenRefreshed(accessToken);
+              isRefreshing = false;
+              return axiosInstance(originalRequest);
+            }
+          }
+        }
+
+        // 갱신 실패 - 로그인 페이지로 이동
+        isRefreshing = false;
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/auth/login') {
+            window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+          }
+        }
+      } catch (refreshError) {
+        isRefreshing = false;
+        console.error('토큰 갱신 실패:', refreshError);
+
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/auth/login') {
+            window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+          }
         }
       }
     }
@@ -191,7 +268,7 @@ axiosFormData.interceptors.response.use(
     }
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     // 에러 상세 정보
     const status = error.response?.status;
     const url = error.config?.url;
@@ -199,16 +276,74 @@ axiosFormData.interceptors.response.use(
 
     console.error(`[API Error] ${method} ${url} - Status: ${status}`);
 
-    // 401 Unauthorized - 로그인 필요
-    if (status === 401) {
-      console.warn('인증 실패: 로그인이 필요합니다.');
+    // 401 Unauthorized - 토큰 갱신 시도 후 재요청
+    if (status === 401 && error.config) {
+      const originalRequest = error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
+      };
 
-      // 클라이언트 사이드에서만 실행
-      if (typeof window !== 'undefined') {
-        // 로그인 페이지로 리다이렉트
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/auth/login') {
-          window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+      // 이미 재시도한 요청이면 로그인 페이지로 이동
+      if (originalRequest._retry) {
+        console.warn('인증 실패: 토큰 갱신 후에도 실패. 로그인이 필요합니다.');
+
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/auth/login') {
+            window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+          }
+        }
+        return Promise.reject(error);
+      }
+
+      // 토큰 갱신 중이면 대기
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          subscribeTokenRefresh((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(axiosFormData(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshed = await refreshSession();
+
+        if (refreshed && typeof window !== 'undefined') {
+          const token = localStorage.getItem(
+            'sb-fogmlohrpnwmzkhvtwdp-auth-token'
+          );
+          if (token) {
+            const authData = JSON.parse(token);
+            const accessToken = authData?.access_token;
+
+            if (accessToken) {
+              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+              onTokenRefreshed(accessToken);
+              isRefreshing = false;
+              return axiosFormData(originalRequest);
+            }
+          }
+        }
+
+        isRefreshing = false;
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/auth/login') {
+            window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+          }
+        }
+      } catch (refreshError) {
+        isRefreshing = false;
+        console.error('토큰 갱신 실패:', refreshError);
+
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/auth/login') {
+            window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+          }
         }
       }
     }

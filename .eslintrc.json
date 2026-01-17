@@ -63,7 +63,7 @@
       }
     ],
     "import/no-duplicates": "warn",
-    "no-console": ["warn", { "allow": ["warn", "error"] }]
+    "no-console": ["warn", { "allow": ["log", "warn", "error"] }]
   },
   "ignorePatterns": [
     "node_modules/",

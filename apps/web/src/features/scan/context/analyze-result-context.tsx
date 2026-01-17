@@ -79,17 +79,27 @@ export interface AnalysisResult {
   _jobId?: string | null;
   /** 직원에게 물어볼 질문 */
   _questionForStaff?: string;
+  /** 폴링 실패 여부 */
+  _pollingFailed?: boolean;
+  /** 폴링 실패 메시지 */
+  _pollingMessage?: string;
 }
 
 // ============================================
 // Context 정의
 // ============================================
 
+/** setAnalysisResult 함수의 인자 타입 (함수형 업데이트 지원) */
+type SetAnalysisResultArg =
+  | AnalysisResult
+  | null
+  | ((prev: AnalysisResult | null) => AnalysisResult | null);
+
 interface AnalyzeResultContextValue {
   /** 분석 결과 */
   analysisResult: AnalysisResult | null;
-  /** 분석 결과 설정 함수 */
-  setAnalysisResult: (result: AnalysisResult | null) => void;
+  /** 분석 결과 설정 함수 (함수형 업데이트 지원) */
+  setAnalysisResult: (arg: SetAnalysisResultArg) => void;
   /** 분석 결과 초기화 함수 */
   clearAnalysisResult: () => void;
 }
@@ -120,9 +130,14 @@ export function AnalyzeResultProvider({
   /**
    * 분석 결과 설정 함수
    * - 새로운 분석 결과를 저장
+   * - 함수형 업데이트도 지원 (prev => newValue)
    */
-  const setAnalysisResult = useCallback((result: AnalysisResult | null) => {
-    setAnalysisResultState(result);
+  const setAnalysisResult = useCallback((arg: SetAnalysisResultArg) => {
+    if (typeof arg === 'function') {
+      setAnalysisResultState(arg);
+    } else {
+      setAnalysisResultState(arg);
+    }
   }, []);
 
   /**

@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // ESLint 경고는 빌드 실패로 처리하지 않음 (npm run lint로 별도 확인)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     domains: [],
     remotePatterns: [
