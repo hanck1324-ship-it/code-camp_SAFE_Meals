@@ -3,9 +3,9 @@ import { useState } from 'react';
 
 import { useTranslation } from '@/hooks/useTranslation';
 
-import { LanguageSelector } from '../language-selector';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
+import { LanguageSelector } from '@/components/language-selector';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface SignupScreenProps {
   onComplete: () => void;

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 
 import { useTranslation } from '@/hooks/useTranslation';
 
-import { Button } from '../../ui/button';
+import { Button } from '@/components/ui/button';
 
 interface AllergyCategoryScreenProps {
   onCategorySelect: (categories: string[]) => void;

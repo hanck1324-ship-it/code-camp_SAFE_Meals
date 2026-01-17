@@ -3,9 +3,8 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { RequireAuth } from '@/components/auth/require-auth';
-import { DietCategoryScreen } from '@/components/onboarding/diet/ category/diet-category-screen';
+import { DietCategoryScreen } from '@/components/onboarding/diet/category/diet-category-screen';
 import { getSupabaseClient } from '@/lib/supabase';
 
 // DB diet_code를 UI 카테고리로 매핑
@@ -32,8 +31,6 @@ export default function DietOnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get('mode') === 'edit';
-  const language = useLanguageStore((state) => state.language);
-  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

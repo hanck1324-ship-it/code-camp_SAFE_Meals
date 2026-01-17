@@ -4,9 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
 
 import { useAppStore } from '@/commons/stores/useAppStore';
-import { useLanguageStore } from '@/commons/stores/useLanguageStore';
 import { RequireAuth } from '@/components/auth/require-auth';
-import { DietDetailScreen } from '@/components/onboarding/diet/ category/diet-detail-screen';
+import { DietDetailScreen } from '@/components/onboarding/diet/category/diet-detail-screen';
 import { getSupabaseClient } from '@/lib/supabase';
 
 // UI diet ID를 DB diet_code로 변환하는 매핑
@@ -44,10 +43,8 @@ function DietDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get('mode') === 'edit';
-  const language = useLanguageStore((state) => state.language);
-  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const { completeOnboarding } = useAppStore();
-  const [isSaving, setIsSaving] = useState(false);
+  const [, setIsSaving] = useState(false);
   const [initialDiets, setInitialDiets] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

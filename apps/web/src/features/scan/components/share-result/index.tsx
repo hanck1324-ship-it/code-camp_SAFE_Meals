@@ -161,7 +161,7 @@ export function ShareResult({
       <button
         onClick={() => {
           // 모바일에서는 네이티브 공유, 데스크톱에서는 옵션 표시
-          if (navigator.share) {
+          if (typeof navigator !== 'undefined' && 'share' in navigator) {
             handleNativeShare();
           } else {
             setIsOpen(!isOpen);

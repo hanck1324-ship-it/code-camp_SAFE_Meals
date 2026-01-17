@@ -11,17 +11,17 @@ interface SafetyBadgeProps {
 export function SafetyBadge({ level, text, size = 'md' }: SafetyBadgeProps) {
   const configs = {
     safe: {
-      bg: 'bg-[#2ECC71]',
+      bg: 'bg-sm-safe-icon',
       text: 'text-white',
       icon: CheckCircle2,
     },
     warning: {
-      bg: 'bg-[#F1C40F]',
+      bg: 'bg-sm-caution-icon',
       text: 'text-gray-900',
       icon: AlertTriangle,
     },
     danger: {
-      bg: 'bg-[#E74C3C]',
+      bg: 'bg-sm-danger-icon',
       text: 'text-white',
       icon: XCircle,
     },
