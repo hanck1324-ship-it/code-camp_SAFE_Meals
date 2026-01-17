@@ -151,7 +151,7 @@ export function DietDetailScreen({
           </span>
           <div className="h-2 flex-1 rounded-full bg-gray-100">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60]"
+              className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80"
               style={{ width: '100%' }}
             />
           </div>
@@ -176,13 +176,13 @@ export function DietDetailScreen({
                     onClick={() => toggleDiet(option.id)}
                     className={`flex w-full items-start justify-between rounded-xl border-2 p-4 transition-all ${
                       selectedDiets.includes(option.id)
-                        ? 'border-[#2ECC71] bg-[#2ECC71]/5'
+                        ? 'border-primary bg-primary/5'
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     } `}
                   >
                     <div className="flex-1 text-left">
                       <div
-                        className={`mb-1 ${selectedDiets.includes(option.id) ? 'text-[#2ECC71]' : 'text-gray-900'}`}
+                        className={`mb-1 ${selectedDiets.includes(option.id) ? 'text-primary' : 'text-gray-900'}`}
                       >
                         {option.label}
                       </div>
@@ -191,7 +191,7 @@ export function DietDetailScreen({
                       </div>
                     </div>
                     {selectedDiets.includes(option.id) && (
-                      <div className="ml-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#2ECC71]">
+                      <div className="ml-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary">
                         <Check className="h-4 w-4 text-white" />
                       </div>
                     )}
@@ -207,7 +207,7 @@ export function DietDetailScreen({
       <div className="border-t border-gray-100 p-6">
         <Button
           onClick={() => onComplete(selectedDiets)}
-          className="mb-4 h-14 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
+          className="mb-4 h-14 w-full rounded-full bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30 hover:from-primary/90 hover:to-primary/70"
         >
           {t.done}
         </Button>

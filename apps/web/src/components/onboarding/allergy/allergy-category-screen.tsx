@@ -89,7 +89,7 @@ export function AllergyCategoryScreen({
           </span>
           <div className="h-2 flex-1 rounded-full bg-gray-100">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60]"
+              className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80"
               style={{ width: '25%' }}
             />
           </div>
@@ -108,13 +108,13 @@ export function AllergyCategoryScreen({
               onClick={() => toggleCategory(category.id)}
               className={`relative rounded-2xl border-2 p-6 transition-all ${
                 selectedCategories.includes(category.id)
-                  ? 'border-[#2ECC71] bg-[#2ECC71]/5'
+                  ? 'border-primary bg-primary/5'
                   : 'border-gray-200 bg-white hover:border-gray-300'
               } `}
             >
               {/* Selected Check */}
               {selectedCategories.includes(category.id) && (
-                <div className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#2ECC71]">
+                <div className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary">
                   <svg
                     className="h-4 w-4 text-white"
                     fill="none"
@@ -135,7 +135,7 @@ export function AllergyCategoryScreen({
                 <span className="text-5xl">{category.emoji}</span>
                 <div>
                   <div
-                    className={`mb-1 text-sm ${selectedCategories.includes(category.id) ? 'text-[#2ECC71]' : 'text-gray-900'}`}
+                    className={`mb-1 text-sm ${selectedCategories.includes(category.id) ? 'text-primary' : 'text-gray-900'}`}
                   >
                     {category.label}
                   </div>
@@ -150,7 +150,7 @@ export function AllergyCategoryScreen({
           {/* ETC Card - Search */}
           <button
             onClick={onEtcClick}
-            className="relative rounded-2xl border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-white p-6 transition-all hover:border-[#2ECC71] hover:bg-[#2ECC71]/5"
+            className="relative rounded-2xl border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-white p-6 transition-all hover:border-primary hover:bg-primary/5"
           >
             <div className="flex flex-col items-center gap-3 text-center">
               <span className="text-5xl">🔍</span>
@@ -167,7 +167,7 @@ export function AllergyCategoryScreen({
       <div className="border-t border-gray-100 px-6 pb-6 pt-[19px]">
         <Button
           onClick={() => onCategorySelect(selectedCategories)}
-          className="mb-4 h-14 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
+          className="mb-4 h-14 w-full rounded-full bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30 hover:from-primary/90 hover:to-primary/70"
         >
           {t.next}
         </Button>

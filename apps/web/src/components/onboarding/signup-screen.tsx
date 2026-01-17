@@ -34,7 +34,7 @@ export function SignupScreen({ onComplete, onBack }: SignupScreenProps) {
 
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
         {/* Logo */}
-        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#2ECC71] to-[#27AE60] shadow-xl shadow-[#2ECC71]/20">
+        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-primary/80 shadow-xl shadow-primary/20">
           <Leaf className="h-10 w-10 text-white" />
         </div>
 
@@ -55,7 +55,7 @@ export function SignupScreen({ onComplete, onBack }: SignupScreenProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t.emailPlaceholder}
-                className="h-14 rounded-xl border-2 border-gray-200 pl-12 focus:border-[#2ECC71]"
+                className="h-14 rounded-xl border-2 border-gray-200 pl-12 focus:border-primary"
               />
             </div>
           </div>
@@ -71,7 +71,7 @@ export function SignupScreen({ onComplete, onBack }: SignupScreenProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t.passwordPlaceholder}
-                className="h-14 rounded-xl border-2 border-gray-200 pl-12 focus:border-[#2ECC71]"
+                className="h-14 rounded-xl border-2 border-gray-200 pl-12 focus:border-primary"
               />
             </div>
           </div>
@@ -81,7 +81,7 @@ export function SignupScreen({ onComplete, onBack }: SignupScreenProps) {
         <Button
           onClick={onComplete}
           disabled={!isValid}
-          className="mb-4 h-14 w-full rounded-full bg-gradient-to-r from-[#2ECC71] to-[#27AE60] text-white shadow-lg shadow-[#2ECC71]/30 hover:from-[#27AE60] hover:to-[#229954]"
+          className="mb-4 h-14 w-full rounded-full bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30 hover:from-primary/90 hover:to-primary/70"
         >
           {t.getStarted}
         </Button>
@@ -89,7 +89,7 @@ export function SignupScreen({ onComplete, onBack }: SignupScreenProps) {
         {/* Sign In Link */}
         <p className="text-center text-sm text-gray-600">
           {t.alreadyHaveAccount}{' '}
-          <button className="text-[#2ECC71] hover:underline">{t.signIn}</button>
+          <button className="text-primary hover:underline">{t.signIn}</button>
         </p>
       </div>
     </div>
