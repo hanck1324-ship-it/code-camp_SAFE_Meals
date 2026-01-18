@@ -409,7 +409,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
       data-testid="scan-result-screen"
     >
       {/* Top Half - Camera View */}
-      <div className="relative h-1/4 min-h-[150px]">
+      <div className="relative h-[120px] flex-shrink-0">
         <img
           src="https://images.unsplash.com/photo-1639508138725-0b8e762b3cfd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZXN0YXVyYW50JTIwbWVudSUyMGZvb2R8ZW58MXx8fHwxNzY1NDkwNjYyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
           alt="Menu"
@@ -444,11 +444,11 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
       </div>
 
       {/* Bottom Section - Results */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <div className="flex min-h-0 flex-1 flex-col bg-gray-50">
         {/* PARTIAL 상태 표시 (분석 진행 중) */}
         {isPartial && (
           <div
-            className="flex items-center gap-2 border-b border-blue-200 bg-blue-50 p-3"
+            className="flex flex-shrink-0 items-center gap-2 border-b border-blue-200 bg-blue-50 p-3"
             data-testid="partial-status-banner"
           >
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -462,7 +462,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
 
         {/* Overall Status Banner */}
         <div
-          className="flex items-center gap-3 border-b px-4 py-3"
+          className="flex flex-shrink-0 items-center gap-3 border-b px-4 py-3"
           style={{
             backgroundColor: statusStyle.bgStyle,
             borderColor: statusStyle.borderStyle,
@@ -491,7 +491,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
         </div>
 
         {/* 안전 등급 필터 버튼 - 2x2 그리드 레이아웃 */}
-        <div className="border-b border-gray-200 bg-white px-3 py-3">
+        <div className="flex-shrink-0 border-b border-gray-200 bg-white px-3 py-3">
           <div className="grid w-full grid-cols-2 gap-2">
             {/* ALL 버튼 */}
             <button
@@ -501,7 +501,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                   ? 'bg-gray-900 text-white'
                   : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
               }`}
-              style={{ minHeight: '64px' }}
+              style={{ minHeight: '52px' }}
               data-testid="filter-all"
             >
               <span className="whitespace-nowrap">
@@ -518,7 +518,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                   ? 'bg-[#2ECC71] text-white'
                   : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
               }`}
-              style={{ minHeight: '64px' }}
+              style={{ minHeight: '52px' }}
               data-testid="filter-safe"
             >
               <span className="whitespace-nowrap">
@@ -535,7 +535,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                   ? 'bg-[#F39C12] text-white'
                   : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
               }`}
-              style={{ minHeight: '64px' }}
+              style={{ minHeight: '52px' }}
               data-testid="filter-caution"
             >
               <span className="whitespace-nowrap">
@@ -552,7 +552,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
                   ? 'bg-[#E74C3C] text-white'
                   : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
               }`}
-              style={{ minHeight: '64px' }}
+              style={{ minHeight: '52px' }}
               data-testid="filter-danger"
             >
               <span className="whitespace-nowrap">
@@ -581,7 +581,7 @@ export function ScanResultScreen({ onBack }: ScanResultScreenProps) {
         )}
 
         {/* Scrollable Content */}
-        <div className="flex-1 space-y-3 overflow-y-auto p-3">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
           {/* Menu Items */}
           {filteredResults.length > 0 ? (
             <div className="space-y-2">
